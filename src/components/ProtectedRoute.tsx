@@ -1,27 +1,44 @@
 // components/ProtectedRoute.tsx
 import React from "react";
 import { Navigate, useLocation } from "react-router-dom";
-import { useAuthContext } from "../libs/contexts/useAuthContext";
+import { useProfileStore } from "../libs/stores/useProfileStore";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
   allowedRoles?: Array<"super_admin" | "admin" | "resident">;
   requireAuth?: boolean;
+  redirectIfAuthenticated?: boolean; // New prop
+  redirectTo?: string; // Where to redirect authenticated users
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   children,
   allowedRoles = [],
   requireAuth = true,
+  redirectIfAuthenticated = false,
+  redirectTo = "/",
 }) => {
-  const { user, profile } = useAuthContext();
-
-
   const location = useLocation();
+  const { user, profile } = useProfileStore();
+
+  console.log(user, profile)
+
+  // Redirect authenticated users away from auth pages
+  if (redirectIfAuthenticated && user) {
+    // Redirect based on user role
+    if (profile?.role === "super_admin") {
+      return <Navigate to="/super-admin" replace />;
+    } else if (profile?.role === "admin") {
+      return <Navigate to="/admin" replace />;
+    } else if (profile?.role === "resident") {
+      return <Navigate to="/owner" replace />;
+    }
+    return <Navigate to={redirectTo} replace />;
+  }
 
   // Redirect to login if authentication required but user not logged in
   if (requireAuth && !user) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
+    return <Navigate to="/sign-in" state={{ from: location }} replace />;
   }
 
   // Check if user has required role

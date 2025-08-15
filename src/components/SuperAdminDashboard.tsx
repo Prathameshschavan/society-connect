@@ -1,58 +1,159 @@
-import {
-  Building2,
-  Plus,
-  Search,
-  Filter,
-  Edit,
-  Eye,
-  Trash2,
-  CheckCircle,
-  Clock,
-  Home,
-} from "lucide-react";
-import useCommonService from "../hooks/serviceHooks/useCommonService";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { Building2, Plus, Edit, Eye, Trash2, Home } from "lucide-react";
 import TopNav from "./TopNav";
+import { useCallback, useEffect, useState } from "react";
+import OnboardSocietyModal from "./Modals/OnboardSocietyModal";
+import {
+  useOrganizationStore,
+  type Organization,
+} from "../libs/stores/useOrganizationStore";
+import useOrganizationService from "../hooks/serviceHooks/useOrganizationService";
+import GenericTable, {
+  type TableAction,
+  type TableColumn,
+} from "./ui/GenericTable";
+
+// Define PaginationInfo interface
+interface PaginationInfo {
+  currentPage: number;
+  totalPages: number;
+  totalItems: number;
+  pageSize: number;
+  hasNextPage: boolean;
+  hasPrevPage: boolean;
+}
 
 const SuperAdminDashboard = () => {
-  const { getStatusColor, getStatusIcon } = useCommonService();
+  const [isOnboardModalOpen, setIsOnboardModalOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  // Sample societies data
-  const societiesData = [
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [pagination, setPagination] = useState<PaginationInfo>({
+    currentPage: 1,
+    totalPages: 1,
+    totalItems: 0,
+    pageSize: 10,
+    hasNextPage: false,
+    hasPrevPage: false,
+  });
+
+  const { organizations, organizationsCount, totalUnitsCount } =
+    useOrganizationStore();
+  const { fetchOrganization, searchOrganizations } = useOrganizationService();
+
+  // Load data with pagination
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      const result = await fetchOrganization({
+        page: currentPage,
+        pageSize: pageSize,
+      });
+
+      if (result) {
+        setPagination(result.pagination);
+      }
+    } catch (error) {
+      console.error("Error loading data:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadData();
+  }, [currentPage, pageSize]);
+
+  // Pagination handlers
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  const handlePageSizeChange = (newPageSize: number) => {
+    setPageSize(newPageSize);
+    setCurrentPage(1); // Reset to first page when page size changes
+  };
+
+  const columns: TableColumn<Organization>[] = [
     {
-      id: 1,
-      name: "Sunrise Apartments",
-      type: "Residential",
-      city: "Mumbai",
-      totalUnits: 120,
-      status: "active",
-      onboardedDate: "2024-01-15",
-      admin: "Rajesh Kumar",
-      adminContact: "+91 98765 43210",
+      key: "name",
+      header: "Society Name",
+      render: (org) => (
+        <div>
+          <div className="font-medium text-gray-900">{org.name}</div>
+          <div className="text-sm text-gray-500">{org.id}</div>
+        </div>
+      ),
     },
     {
-      id: 2,
-      name: "Green Valley Society",
-      type: "Residential",
-      city: "Pune",
-      totalUnits: 85,
-      status: "active",
-      onboardedDate: "2024-02-20",
-      admin: "Priya Sharma",
-      adminContact: "+91 87654 32109",
+      key: "city",
+      header: "Location",
+      className: "text-gray-700",
     },
     {
-      id: 3,
-      name: "Metro Heights",
-      type: "Commercial",
-      city: "Delhi",
-      totalUnits: 50,
-      status: "pending",
-      onboardedDate: "2024-03-10",
-      admin: "Amit Patel",
-      adminContact: "+91 76543 21098",
+      key: "total_units",
+      header: "Units",
+      className: "text-gray-900 font-medium",
+    },
+    {
+      key: "admin",
+      header: "Admin",
+      render: (org) => (
+        <div>
+          <div className="text-gray-900 font-medium">
+            {org?.admin?.[0]?.full_name || "N/A"}
+          </div>
+          <div className="text-sm text-gray-500">
+            {org?.admin?.[0]?.phone || ""}
+          </div>
+        </div>
+      ),
     },
   ];
 
+  const actions: TableAction<Organization>[] = [
+    {
+      icon: <Eye className="w-4 h-4" />,
+      onClick: (org) => console.log("View", org),
+      className:
+        "p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors",
+      label: "View",
+    },
+    {
+      icon: <Edit className="w-4 h-4" />,
+      onClick: (org) => console.log("Edit", org),
+      className:
+        "p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors",
+      label: "Edit",
+    },
+    {
+      icon: <Trash2 className="w-4 h-4" />,
+      onClick: (org) => console.log("Delete", org),
+      className:
+        "p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors",
+      label: "Delete",
+    },
+  ];
+
+  function debounce<T extends (...args: any[]) => void>(
+    func: T,
+    wait: number
+  ): (...args: Parameters<T>) => void {
+    let timeout: NodeJS.Timeout;
+    return (...args: Parameters<T>) => {
+      clearTimeout(timeout);
+      timeout = setTimeout(() => func(...args), wait);
+    };
+  }
+
+  const debouncedSearch = useCallback(
+    debounce((searchQuery: string) => {
+      searchOrganizations(searchQuery);
+    }, 500),
+    [searchOrganizations]
+  );
   return (
     <div className="min-h-screen bg-gray-50">
       <TopNav view="owner" />
@@ -70,8 +171,10 @@ const SuperAdminDashboard = () => {
                 </p>
               </div>
               <button
-                onClick={() => {}}
-                className="flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors shadow-lg"
+                onClick={() => {
+                  setIsOnboardModalOpen(true);
+                }}
+                className="cursor-pointer flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors shadow-lg"
               >
                 <Plus className="w-5 h-5" />
                 Onboard New Society
@@ -80,171 +183,55 @@ const SuperAdminDashboard = () => {
           </div>
 
           {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl p-6 text-white">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-blue-100 text-sm font-medium">
                     Total Societies
                   </p>
-                  <p className="text-3xl font-bold">147</p>
+                  <p className="text-3xl font-bold">{organizationsCount}</p>
                 </div>
                 <Building2 className="w-8 h-8 text-blue-200" />
               </div>
             </div>
-
-            <div className="bg-gradient-to-r from-green-500 to-green-600 rounded-xl p-6 text-white">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-green-100 text-sm font-medium">
-                    Active Societies
-                  </p>
-                  <p className="text-3xl font-bold">128</p>
-                </div>
-                <CheckCircle className="w-8 h-8 text-green-200" />
-              </div>
-            </div>
-
-            <div className="bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-xl p-6 text-white">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-yellow-100 text-sm font-medium">
-                    Pending Approval
-                  </p>
-                  <p className="text-3xl font-bold">12</p>
-                </div>
-                <Clock className="w-8 h-8 text-yellow-200" />
-              </div>
-            </div>
-
             <div className="bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl p-6 text-white">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-purple-100 text-sm font-medium">
                     Total Units
                   </p>
-                  <p className="text-3xl font-bold">12,456</p>
+                  <p className="text-3xl font-bold">{totalUnitsCount}</p>
                 </div>
                 <Home className="w-8 h-8 text-purple-200" />
               </div>
             </div>
           </div>
 
-          {/* Societies Table */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-            <div className="p-6 border-b border-gray-200">
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <h2 className="text-xl font-semibold text-gray-900">
-                  All Societies
-                </h2>
-                <div className="flex gap-3">
-                  <div className="relative">
-                    <Search className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                    <input
-                      type="text"
-                      placeholder="Search societies..."
-                      className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                  </div>
-                  <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
-                    <Filter className="w-4 h-4" />
-                    Filter
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="text-left py-4 px-6 font-medium text-gray-900">
-                      Society Name
-                    </th>
-                    <th className="text-left py-4 px-6 font-medium text-gray-900">
-                      Type
-                    </th>
-                    <th className="text-left py-4 px-6 font-medium text-gray-900">
-                      Location
-                    </th>
-                    <th className="text-left py-4 px-6 font-medium text-gray-900">
-                      Units
-                    </th>
-                    <th className="text-left py-4 px-6 font-medium text-gray-900">
-                      Admin
-                    </th>
-                    <th className="text-left py-4 px-6 font-medium text-gray-900">
-                      Status
-                    </th>
-                    <th className="text-left py-4 px-6 font-medium text-gray-900">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {societiesData.map((society) => (
-                    <tr key={society.id} className="hover:bg-gray-50">
-                      <td className="py-4 px-6">
-                        <div>
-                          <div className="font-medium text-gray-900">
-                            {society.name}
-                          </div>
-                          <div className="text-sm text-gray-500">
-                            ID: SOC{society.id.toString().padStart(3, "0")}
-                          </div>
-                        </div>
-                      </td>
-                      <td className="py-4 px-6 text-gray-700">
-                        {society.type}
-                      </td>
-                      <td className="py-4 px-6 text-gray-700">
-                        {society.city}
-                      </td>
-                      <td className="py-4 px-6 text-gray-900 font-medium">
-                        {society.totalUnits}
-                      </td>
-                      <td className="py-4 px-6">
-                        <div>
-                          <div className="text-gray-900 font-medium">
-                            {society.admin}
-                          </div>
-                          <div className="text-sm text-gray-500">
-                            {society.adminContact}
-                          </div>
-                        </div>
-                      </td>
-                      <td className="py-4 px-6">
-                        <span
-                          className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(
-                            society.status
-                          )}`}
-                        >
-                          {getStatusIcon(society.status)}
-                          {society.status.charAt(0).toUpperCase() +
-                            society.status.slice(1)}
-                        </span>
-                      </td>
-                      <td className="py-4 px-6">
-                        <div className="flex items-center gap-2">
-                          <button className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
-                            <Eye className="w-4 h-4" />
-                          </button>
-                          <button className="p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors">
-                            <Edit className="w-4 h-4" />
-                          </button>
-                          <button className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
+          <GenericTable
+            title="All Societies"
+            columns={columns}
+            data={organizations}
+            actions={actions}
+            loading={loading}
+            emptyMessage="No Society Found"
+            showSearch
+            searchPlaceholder="Search society"
+            showPagination
+            pagination={pagination}
+            onPageChange={handlePageChange}
+            onPageSizeChange={handlePageSizeChange}
+            pageSizeOptions={[5, 10, 20, 50]}
+            onSearch={(searchQuery) => {
+              debouncedSearch(searchQuery);
+            }}
+          />
         </div>
       </main>
+      <OnboardSocietyModal
+        isOpen={isOnboardModalOpen}
+        onClose={() => setIsOnboardModalOpen(false)}
+      />
     </div>
   );
 };

@@ -8,33 +8,18 @@ import {
 } from "lucide-react";
 import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-// import { useAuthContext } from "../libs/contexts/useAuthContext"; // Adjust path as needed
 import ConfirmationAlert from "./Modals/ConfirmationAlert";
 import { supabase } from "../libs/supabase/supabaseClient";
+import { useProfileStore } from "../libs/stores/useProfileStore";
 
 const TopNav: React.FC<{ view: "admin" | "owner" }> = ({ view }) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const { profile } = useProfileStore();
   const [isLogoutConfirmationOpen, setIsLogoutConfirmationOpen] =
     useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
-  // const { signOut, profile } = useAuthContext();
-
-  const clearLocalStorage = (): void => {
-    localStorage.removeItem("supabase_session");
-    localStorage.removeItem("user_data");
-    localStorage.removeItem("user_profile");
-  };
-
-  const signOut = async (): Promise<{ error: unknown }> => {
-    console.log("object");
-    const { error } = await supabase.auth.signOut();
-    if (!error) {
-      clearLocalStorage();
-    }
-
-    return { error };
-  };
+  const { reset: resetProfile } = useProfileStore();
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -55,8 +40,9 @@ const TopNav: React.FC<{ view: "admin" | "owner" }> = ({ view }) => {
 
   const handleLogout = async () => {
     try {
-      await signOut();
-      navigate("/login");
+      await supabase.auth.signOut();
+      resetProfile();
+      navigate("/sign-in");
     } catch (error) {
       console.error("Logout error:", error);
     }
@@ -122,10 +108,10 @@ const TopNav: React.FC<{ view: "admin" | "owner" }> = ({ view }) => {
                   {/* User Info */}
                   <div className="px-4 py-2 border-b border-gray-100">
                     <p className="text-sm font-medium text-gray-900">
-                      {/* {profile?.full_name || "User"} */}
+                      {profile?.full_name || "User"}
                     </p>
                     <p className="text-xs text-gray-500 capitalize">
-                      {/* {profile?.role?.replace("_", " ") || "Role"} */}
+                      {profile?.role?.replace("_", " ") || "Role"}
                     </p>
                   </div>
 

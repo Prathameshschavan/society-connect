@@ -37,9 +37,14 @@ function App() {
           </ProtectedRoute>
         }
       ></Route>
-
-      <Route path="/*" element={<SignIn />}></Route>
-      <Route path="/sign-in" element={<SignIn />}></Route>
+      <Route
+        path="/sign-in"
+        element={
+          <ProtectedRoute requireAuth={false} redirectIfAuthenticated={true}>
+            <SignIn />
+          </ProtectedRoute>
+        }
+      />
       <Route path="/sign-up" element={<SignUp />}></Route>
       <Route path="/unauthorized" element={<UnauthorizedPage />}></Route>
     </Routes>

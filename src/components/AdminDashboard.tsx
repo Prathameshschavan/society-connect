@@ -2,73 +2,28 @@ import {
   AlertCircle,
   CheckCircle,
   CreditCard,
-  Filter,
   Plus,
-  Search,
   Settings,
 } from "lucide-react";
-
-import useCommonService from "../hooks/serviceHooks/useCommonService";
 import TopNav from "./TopNav";
+import OnboardResidentModal from "./Modals/OnboardResidentModal";
+import { useEffect, useState } from "react";
+import useAdminService from "../hooks/serviceHooks/useAdminService";
+import { useProfileStore } from "../libs/stores/useProfileStore";
 
 const AdminDashboard = () => {
-  const { getStatusColor, getStatusIcon } = useCommonService();
+  const { fetchResidents } = useAdminService();
+  const [isOnboardModalOpen, setIsOnboardModalOpen] = useState(false);
+  const { residents } = useProfileStore();
   const adminData = {
     totalDue: 275000,
     totalPaid: 180000,
     pendingPayments: 18,
   };
 
-  const roomsData = [
-    {
-      id: 1,
-      roomNumber: "A-101",
-      ownerName: "Rajesh Kumar",
-      status: "paid",
-      amount: 5000,
-      dueDate: "2025-08-05",
-    },
-    {
-      id: 2,
-      roomNumber: "A-102",
-      ownerName: "Priya Sharma",
-      status: "pending",
-      amount: 5000,
-      dueDate: "2025-08-05",
-    },
-    {
-      id: 3,
-      roomNumber: "A-103",
-      ownerName: "Amit Patel",
-      status: "overdue",
-      amount: 5500,
-      dueDate: "2025-08-05",
-    },
-    {
-      id: 4,
-      roomNumber: "B-201",
-      ownerName: "Sunita Gupta",
-      status: "paid",
-      amount: 5000,
-      dueDate: "2025-08-05",
-    },
-    {
-      id: 5,
-      roomNumber: "B-202",
-      ownerName: "Vikram Singh",
-      status: "pending",
-      amount: 5000,
-      dueDate: "2025-08-05",
-    },
-    {
-      id: 6,
-      roomNumber: "B-203",
-      ownerName: "Meera Joshi",
-      status: "overdue",
-      amount: 5500,
-      dueDate: "2025-08-05",
-    },
-  ];
+  useEffect(() => {
+    fetchResidents();
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -132,7 +87,10 @@ const AdminDashboard = () => {
 
           {/* Actions */}
           <div className="flex flex-col sm:flex-row gap-4">
-            <button className="flex items-center justify-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors">
+            <button
+              onClick={() => setIsOnboardModalOpen(true)}
+              className="cursor-pointer flex items-center justify-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors"
+            >
               <Plus className="w-5 h-5" />
               Add Room Owner
             </button>
@@ -149,7 +107,7 @@ const AdminDashboard = () => {
                 <h2 className="text-xl font-semibold text-gray-900">
                   Room Status
                 </h2>
-                <div className="flex gap-3">
+                {/* <div className="flex gap-3">
                   <div className="relative">
                     <Search className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                     <input
@@ -162,7 +120,7 @@ const AdminDashboard = () => {
                     <Filter className="w-4 h-4" />
                     Filter
                   </button>
-                </div>
+                </div> */}
               </div>
             </div>
 
@@ -188,18 +146,18 @@ const AdminDashboard = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
-                  {roomsData.map((room) => (
+                  {residents.map((room) => (
                     <tr key={room.id} className="hover:bg-gray-50">
                       <td className="py-4 px-6 font-medium text-gray-900">
-                        {room.roomNumber}
+                        {room.unit_number}
                       </td>
                       <td className="py-4 px-6 text-gray-700">
-                        {room.ownerName}
+                        {room.full_name}
                       </td>
                       <td className="py-4 px-6 text-gray-900 font-medium">
-                        ₹{room.amount.toLocaleString()}
+                        ₹{room.role.toLocaleString()}
                       </td>
-                      <td className="py-4 px-6">
+                      {/* <td className="py-4 px-6">
                         <span
                           className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(
                             room.status
@@ -209,10 +167,10 @@ const AdminDashboard = () => {
                           {room.status.charAt(0).toUpperCase() +
                             room.status.slice(1)}
                         </span>
-                      </td>
-                      <td className="py-4 px-6 text-gray-600">
-                        {new Date(room.dueDate).toLocaleDateString("en-IN")}
-                      </td>
+                      </td> */}
+                      {/* <td className="py-4 px-6 text-gray-600">
+                        {new Date(room.).toLocaleDateString("en-IN")}
+                      </td> */}
                     </tr>
                   ))}
                 </tbody>
@@ -221,6 +179,10 @@ const AdminDashboard = () => {
           </div>
         </div>
       </main>
+      <OnboardResidentModal
+        isOpen={isOnboardModalOpen}
+        onClose={() => setIsOnboardModalOpen(false)}
+      />
     </div>
   );
 };

@@ -12,6 +12,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../libs/supabase/supabaseClient";
 import toast from "react-hot-toast";
+import { useProfileStore } from "../libs/stores/useProfileStore";
 
 interface SignUpFormData {
   name: string;
@@ -26,6 +27,7 @@ const SignUp: React.FC = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const { setProfile, setUser } = useProfileStore();
 
   const {
     register,
@@ -94,10 +96,12 @@ const SignUp: React.FC = () => {
 
       if (authData.user) {
         // The profile will be created automatically by the database trigger
+        setUser(authData?.user);
+        setProfile(authData?.user?.user_metadata as never);
         console.log("User created successfully:", authData.user);
 
         toast.success("Registration successfully");
-        navigate("/login");
+        navigate("/sign-in");
       }
     } catch (error: unknown) {
       console.error("Signup error:", error);
@@ -320,7 +324,7 @@ const SignUp: React.FC = () => {
             <p className="text-sm text-gray-600">
               Already have an account?{" "}
               <button
-                onClick={() => navigate("/login")}
+                onClick={() => navigate("/sign-in")}
                 className="text-indigo-600 hover:text-indigo-500 font-medium"
               >
                 Sign in here

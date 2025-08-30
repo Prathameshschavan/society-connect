@@ -1,18 +1,10 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import {
-  CheckCircle,
-  CreditCard,
-  Edit,
-  Eye,
-  ReceiptText,
-  Settings,
-} from "lucide-react";
+import { Edit, Eye, ReceiptText } from "lucide-react";
 import TopNav from "./TopNav";
 import OnboardResidentModal from "./Modals/OnboardResidentModal";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import useAdminService from "../hooks/serviceHooks/useAdminService";
-import { useNavigate } from "react-router-dom";
 import { useOrganizationStore } from "../libs/stores/useOrganizationStore";
 import GenericTable, {
   type PaginationInfo,
@@ -26,13 +18,10 @@ import {
 } from "../libs/stores/useMaintenanceStore";
 import ViewMaintananceDetailsModal from "./Modals/ViewMaintananceDetailsModal";
 import UpdateMaintananceStatusModal from "./Modals/UpdateMaintananceStatusModal";
-import { supabase } from "../libs/supabase/supabaseClient";
-
 const AdminDashboard = () => {
   const { createBillsWithPenaltyForAllResidents, fetchMaintenanceBills } =
     useAdminService();
   const { maintenanceBills } = useMaintenanceStore();
-  const navigate = useNavigate();
   const [isOnboardModalOpen, setIsOnboardModalOpen] = useState(false);
   const { residentOrganization } = useOrganizationStore();
   const { shortMonth, getStatusIcon, getStatusColor } = useCommonService();
@@ -118,12 +107,6 @@ const AdminDashboard = () => {
     }
   };
 
-  const adminData = {
-    totalDue: 275000,
-    totalPaid: 180000,
-    pendingPayments: 18,
-  };
-
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
   };
@@ -133,22 +116,16 @@ const AdminDashboard = () => {
     setCurrentPage(1); // Reset to first page when page size changes
   };
 
-  function debounce<T extends (...args: any[]) => void>(
-    func: T,
-    wait: number
-  ): (...args: Parameters<T>) => void {
-    let timeout: NodeJS.Timeout;
-    return (...args: Parameters<T>) => {
-      clearTimeout(timeout);
-      timeout = setTimeout(() => func(...args), wait);
-    };
-  }
-
-  const debouncedSearch = useCallback(
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    debounce((searchQuery: string) => {}, 500),
-    []
-  );
+  // function debounce<T extends (...args: any[]) => void>(
+  //   func: T,
+  //   wait: number
+  // ): (...args: Parameters<T>) => void {
+  //   let timeout: NodeJS.Timeout;
+  //   return (...args: Parameters<T>) => {
+  //     clearTimeout(timeout);
+  //     timeout = setTimeout(() => func(...args), wait);
+  //   };
+  // }
 
   const columns: TableColumn<MaintenanceBill>[] = [
     {
@@ -178,11 +155,7 @@ const AdminDashboard = () => {
     },
     {
       key: "currentAmount",
-      header: (
-        <p>
-          Maintenance  Amount
-        </p>
-      ),
+      header: <p>Maintenance Amount</p>,
       render: (bill) => (
         <div>
           <div className=" text-gray-900">₹ {bill?.amount}</div>
@@ -382,9 +355,7 @@ const AdminDashboard = () => {
             onPageChange={handlePageChange}
             onPageSizeChange={handlePageSizeChange}
             pageSizeOptions={[5, 10, 20, 50]}
-            onSearch={(searchQuery) => {
-              debouncedSearch(searchQuery);
-            }}
+            onSearch={() => {}}
           />
         </div>
       </main>

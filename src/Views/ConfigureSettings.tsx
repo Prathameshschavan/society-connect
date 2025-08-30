@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import { useForm, type SubmitHandler } from "react-hook-form";
 import {
   Building2,
@@ -164,23 +164,6 @@ const SocietyConfigurationPage: React.FC = () => {
     setPageSize(newPageSize);
     setCurrentPage(1); // Reset to first page when page size changes
   };
-
-  function debounce<T extends (...args: any[]) => void>(
-    func: T,
-    wait: number
-  ): (...args: Parameters<T>) => void {
-    let timeout: NodeJS.Timeout;
-    return (...args: Parameters<T>) => {
-      clearTimeout(timeout);
-      timeout = setTimeout(() => func(...args), wait);
-    };
-  }
-
-  const debouncedSearch = useCallback(
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    debounce((searchQuery: string) => {}, 500),
-    []
-  );
 
   const {
     register,
@@ -775,9 +758,7 @@ const SocietyConfigurationPage: React.FC = () => {
             onPageChange={handlePageChange}
             onPageSizeChange={handlePageSizeChange}
             pageSizeOptions={[5, 10, 20, 50]}
-            onSearch={(searchQuery) => {
-              debouncedSearch(searchQuery);
-            }}
+            onSearch={() => {}}
           />
         </div>
       </div>
@@ -802,7 +783,7 @@ const SocietyConfigurationPage: React.FC = () => {
         onConfirm={async () => {
           await permanentlyDeleteResident(selectedProfile?.id as string);
           fetchResidents({ orgId, sortBy: "unit_number", sortOrder: "asc" });
-          setIsDeleteConfirmationModalOpen(false)
+          setIsDeleteConfirmationModalOpen(false);
         }}
       />
     </div>

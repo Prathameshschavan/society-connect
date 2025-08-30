@@ -14,12 +14,14 @@ import toast from "react-hot-toast";
 import { supabaseAdmin } from "../../libs/supabase/supabaseAdmin";
 import { useProfileStore } from "../../libs/stores/useProfileStore";
 import useAdminService from "../../hooks/serviceHooks/useAdminService";
+import { useOrganizationStore } from "../../libs/stores/useOrganizationStore";
 
 export interface ResidentFormData {
   // Personal Info
   fullName: string;
   phone: string;
   email: string;
+  role: string;
   emergencyContact: string;
   emergencyContactName: string;
 
@@ -27,6 +29,7 @@ export interface ResidentFormData {
   unitNumber: string;
   squareFootage: string;
   unitType:
+    | "1RK"
     | "1BHK"
     | "2BHK"
     | "3BHK"
@@ -70,6 +73,7 @@ const OnboardResidentModal: React.FC<OnboardResidentModalProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { profile } = useProfileStore();
   const { fetchResidents } = useAdminService();
+  const { residentOrganization } = useOrganizationStore();
 
   const {
     register,
@@ -81,13 +85,14 @@ const OnboardResidentModal: React.FC<OnboardResidentModalProps> = ({
   } = useForm<ResidentFormData>({
     defaultValues: {
       fullName: "",
+      role: "resident",
       phone: "",
       email: "",
       emergencyContact: "",
       emergencyContactName: "",
       unitNumber: "",
       squareFootage: "",
-      unitType: "2BHK",
+      unitType: "1RK",
       occupancyType: "Owner",
       totalFamilyMembers: 1,
       adultsCount: 1,
@@ -138,7 +143,6 @@ const OnboardResidentModal: React.FC<OnboardResidentModalProps> = ({
   };
 
   const onFormSubmit: SubmitHandler<ResidentFormData> = async (data) => {
-    console.log(data);
     setIsSubmitting(true);
     try {
       // Check if user already exists
@@ -155,7 +159,7 @@ const OnboardResidentModal: React.FC<OnboardResidentModalProps> = ({
 
       const userObject = {
         organization_id: profile?.organization_id,
-        role: "resident",
+        role: data?.role,
         full_name: data?.fullName,
         phone: data?.phone,
         unit_number: data?.unitNumber,
@@ -193,7 +197,11 @@ const OnboardResidentModal: React.FC<OnboardResidentModalProps> = ({
         return;
       }
 
-      await fetchResidents();
+      await fetchResidents({
+        orgId: profile?.organization_id,
+        sortBy: "unit_number",
+        sortOrder: "asc",
+      });
 
       onClose();
       setCurrentStep(1);
@@ -211,6 +219,91 @@ const OnboardResidentModal: React.FC<OnboardResidentModalProps> = ({
     setCurrentStep(1);
     reset();
     onClose();
+  };
+
+  const unitNumbers = [
+    { roomNo: "001", name: "Vinit Bharti", number: "8983153894" },
+    { roomNo: "002", name: "Pratibha Bhatkar", number: "8433631562" },
+    { roomNo: "003", name: "Shailesh Devale", number: "9773960445" },
+    { roomNo: "004", name: "Bhushan Dalvi", number: null },
+    { roomNo: "005", name: "Mahendra Gavnang", number: "9619395317" },
+    { roomNo: "006", name: "Suhas Shetkar", number: "9404915304" },
+    { roomNo: "008", name: "Eknath Patil", number: "8820263031" },
+    { roomNo: "009", name: "Chellengi Gala", number: null },
+    { roomNo: "101", name: "Kamlesh Bhosle", number: "9969461624" },
+    { roomNo: "102", name: "Durga Prasad Yadav", number: "8450938601" },
+    { roomNo: "103", name: "Shiva Prasad Yadav", number: "null" },
+    { roomNo: "104", name: "Milind Parad", number: "8530605153" },
+    { roomNo: "105", name: "Shyam Ayre", number: "7030759071" },
+    { roomNo: "106", name: "Ulka Krishna Lakhan", number: "9322410490" },
+    { roomNo: "107", name: "Amit Arun Pirdankar", number: "8805602685" },
+    { roomNo: "108", name: "Nilesh kisan Bhosle", number: "8983316198" },
+    { roomNo: "201", name: "Atul Bovlekar", number: "9920554171" },
+    { roomNo: "202", name: "Archana More", number: "9220260882" },
+    { roomNo: "203", name: "Mahesh Yashavant Bhamat", number: "9029548856" },
+    { roomNo: "204", name: "Mohan Panchal", number: "7700026054" },
+    { roomNo: "205", name: "Suraj Shankar Masaye", number: "9220793967" },
+    { roomNo: "206", name: "Manoj Jaiswal", number: "8828979771" },
+    { roomNo: "207", name: "Lalita Gangaram Mali", number: "9167456491" },
+    { roomNo: "208", name: "Samir Sonu Karan", number: "9820518922" },
+    { roomNo: "301", name: "Jitu Patel", number: "9867299205" },
+    { roomNo: "302", name: "Rongaji Shivgan", number: "8149622998" },
+    {
+      roomNo: "303",
+      name: "Satish Kumar Kailashnath Singh",
+      number: "7039844259",
+    },
+    { roomNo: "304", name: "Shivaji Patil", number: "9702508085" },
+    { roomNo: "305", name: "Laxmi Muddalmani", number: "9769386581" },
+    { roomNo: "306", name: "Santosh Kumar Pandey", number: "9022404735" },
+    { roomNo: "307", name: "Chetan Fagare", number: "9022900427" },
+    { roomNo: "308", name: "Sharad Patil", number: "9764600777" },
+    { roomNo: "401", name: "Bhumi Monde", number: "9004715662" },
+    { roomNo: "402", name: "Rakesh More", number: "8692884588" },
+    { roomNo: "403", name: "Vrushal Pichurle", number: null },
+    { roomNo: "404", name: "Jaymanjay Singh", number: "9920436406" },
+    { roomNo: "405", name: "Akshay Kadvadkar", number: "9768597275" },
+    { roomNo: "406", name: "Yam Bahadur Rai", number: "9920859707" },
+    { roomNo: "407", name: "Sandeep Dhivar", number: "9867614563" },
+    { roomNo: "408", name: "Ajay Dambare", number: "8652044573" },
+    { roomNo: "501", name: "Lakdewala", number: null },
+    { roomNo: "502", name: "Mohan Bhanushali", number: "8600364341" },
+    { roomNo: "503", name: "Chellengi", number: null },
+    { roomNo: "504", name: "Chellengi", number: null },
+  ];
+
+  const addBulkResidents = () => {
+    try {
+      unitNumbers.forEach(async (unit) => {
+        console.log(unit);
+        const data = {
+          organization_id: residentOrganization?.id,
+          role: "resident",
+          full_name: unit?.name,
+          phone: unit?.number ? unit?.number : `9000000${unit?.roomNo}`,
+          unit_number: unit?.roomNo,
+          square_footage: 300,
+          must_change_password: false,
+          created_at: new Date(),
+          updated_at: new Date(),
+          emergency_contact: { name: "", phone: "" },
+          unit_type: "1RK",
+          family_members: { child: 0, adult: 1 },
+          vehicles: { hasVehicles: false, twoWheeler: 0, fourWheeler: 0 },
+          is_deleted: false,
+        };
+        const { error: authError } = await supabaseAdmin.auth.admin.createUser({
+          email: `${data.phone}@society.app`,
+          password: "123456", // Default password - user should change this
+          email_confirm: true,
+          user_metadata: data,
+        });
+
+        console.log(authError);
+      });
+    } catch (error) {
+      console.log(error);
+    }
   };
 
   const renderStepContent = () => {
@@ -277,6 +370,28 @@ const OnboardResidentModal: React.FC<OnboardResidentModalProps> = ({
               {errors.phone && (
                 <p className="text-red-500 text-xs mt-1">
                   {errors.phone.message}
+                </p>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Role *
+              </label>
+              <select
+                {...register("role", {
+                  required: "Role is required",
+                })}
+                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                  errors.role ? "border-red-500" : "border-gray-300"
+                }`}
+              >
+                <option value="admin">Admin</option>
+                <option value="resident">Resident</option>
+              </select>
+              {errors.role && (
+                <p className="text-red-500 text-xs mt-1">
+                  {errors.role.message}
                 </p>
               )}
             </div>
@@ -385,6 +500,7 @@ const OnboardResidentModal: React.FC<OnboardResidentModalProps> = ({
                 }`}
               >
                 <option value="Studio">Studio</option>
+                <option value="1RK">1RK</option>
                 <option value="1BHK">1 BHK</option>
                 <option value="2BHK">2 BHK</option>
                 <option value="3BHK">3 BHK</option>
@@ -767,6 +883,7 @@ const OnboardResidentModal: React.FC<OnboardResidentModalProps> = ({
       onClose={handleModalClose}
       size="lg"
     >
+      <button onClick={addBulkResidents}>add bulk test residents</button>
       <form onSubmit={handleSubmit(onFormSubmit)}>
         {/* Progress Steps */}
         <div className="px-6 py-4 bg-gray-50">

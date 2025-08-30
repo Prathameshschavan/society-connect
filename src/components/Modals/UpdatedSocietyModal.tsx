@@ -1,35 +1,28 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useForm, type SubmitHandler } from "react-hook-form";
 import {
   Building2,
   Phone,
-  User,
   Hash,
   CheckCircle,
   ArrowRight,
   ArrowLeft,
   MapPin,
+  Save,
 } from "lucide-react";
 import Modal from "./Modal";
 import useOrganizationService from "../../hooks/serviceHooks/useOrganizationService";
 import { supabase } from "../../libs/supabase/supabaseClient";
 import toast from "react-hot-toast";
-import { supabaseAdmin } from "../../libs/supabase/supabaseAdmin";
 import type { Organization } from "../../libs/stores/useOrganizationStore";
 
-export interface SocietyFormData {
+export interface UpdateSocietyFormData {
   name: string;
   address: string;
   city: string;
   state: string;
   pincode: string;
   phone: string;
-  //   email: string;
-  adminContactName: string;
-  adminPhone: string;
-  adminUnitNumber: string;
-  adminSquareFootage: string;
-  //   adminEmail: string;
   registrationNumber: string;
   establishedDate: string;
   totalFlats: number;
@@ -37,14 +30,16 @@ export interface SocietyFormData {
   maintenanceFixedAmount: number;
 }
 
-interface OnboardSocietyModalProps {
+interface UpdateSocietyModalProps {
   isOpen: boolean;
   onClose: () => void;
+  societyData: Organization | null;
 }
 
-const OnboardSocietyModal: React.FC<OnboardSocietyModalProps> = ({
+const UpdateSocietyModal: React.FC<UpdateSocietyModalProps> = ({
   isOpen,
   onClose,
+  societyData,
 }) => {
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -56,7 +51,8 @@ const OnboardSocietyModal: React.FC<OnboardSocietyModalProps> = ({
     formState: { errors },
     trigger,
     reset,
-  } = useForm<SocietyFormData>({
+    setValue,
+  } = useForm<UpdateSocietyFormData>({
     defaultValues: {
       name: "",
       address: "",
@@ -64,12 +60,6 @@ const OnboardSocietyModal: React.FC<OnboardSocietyModalProps> = ({
       state: "",
       pincode: "",
       phone: "",
-      //   email: "",
-      adminContactName: "",
-      adminPhone: "",
-      adminSquareFootage: "",
-      adminUnitNumber: "",
-      //   adminEmail: "",
       registrationNumber: "",
       establishedDate: "",
       totalFlats: 0,
@@ -78,12 +68,28 @@ const OnboardSocietyModal: React.FC<OnboardSocietyModalProps> = ({
     },
   });
 
+  // Populate form with existing data when modal opens
+  useEffect(() => {
+    if (societyData && isOpen) {
+      setValue("name", societyData.name || "");
+      setValue("address", societyData.address || "");
+      setValue("city", societyData.city || "");
+      setValue("state", societyData.state || "");
+      setValue("pincode", societyData.pincode || "");
+      setValue("phone", societyData.phone || "");
+      setValue("registrationNumber", societyData.registration_number || "");
+      setValue("establishedDate", societyData.established_date || "");
+      setValue("totalFlats", societyData.total_units || 0);
+      setValue("maintenanceRatePerSqft", societyData.maintenance_rate || 0);
+      setValue("maintenanceFixedAmount", 0); // Add this field to Organization type if needed
+    }
+  }, [societyData, isOpen, setValue]);
+
   const steps = [
     { id: 1, title: "Basic Info", icon: Building2 },
     { id: 2, title: "Location", icon: MapPin },
     { id: 3, title: "Contact", icon: Phone },
-    { id: 4, title: "Admin", icon: User },
-    { id: 5, title: "Property", icon: Hash },
+    { id: 4, title: "Property", icon: Hash },
   ];
 
   // Define fields for each step for validation
@@ -91,8 +97,7 @@ const OnboardSocietyModal: React.FC<OnboardSocietyModalProps> = ({
     1: ["name"],
     2: ["address", "city", "state", "pincode"],
     3: ["phone"],
-    4: ["adminContactName", "adminPhone"],
-    5: ["totalFlats"],
+    4: ["totalFlats"],
   } as const;
 
   const validateStep = async (step: number): Promise<boolean> => {
@@ -107,7 +112,7 @@ const OnboardSocietyModal: React.FC<OnboardSocietyModalProps> = ({
     e.preventDefault();
     const isValid = await validateStep(currentStep);
     if (isValid) {
-      setCurrentStep((prev) => Math.min(prev + 1, 5));
+      setCurrentStep((prev) => Math.min(prev + 1, 4));
     }
   };
 
@@ -115,26 +120,15 @@ const OnboardSocietyModal: React.FC<OnboardSocietyModalProps> = ({
     setCurrentStep((prev) => Math.max(prev - 1, 1));
   };
 
-  const onFormSubmit: SubmitHandler<SocietyFormData> = async (data) => {
+  const onFormSubmit: SubmitHandler<UpdateSocietyFormData> = async (data) => {
+    if (!societyData?.id) {
+      toast.error("Society ID not found");
+      return;
+    }
+
     setIsSubmitting(true);
     try {
-      const { data: existingUser } = await supabaseAdmin
-        .from("profiles")
-        .select("*")
-        .eq("phone", data.adminPhone)
-        .single();
-
-      if (existingUser) {
-        toast.error("Admin with is phone number already registered");
-        return;
-      }
-
-      const syntheticEmail = `${data.adminPhone}@society.app`;
-
-      const organizationData: Omit<
-        Organization,
-        "id" | "created_at" | "admin"
-      > = {
+      const updateData = {
         name: data.name,
         address: data.address || "",
         city: data.city || "",
@@ -142,57 +136,28 @@ const OnboardSocietyModal: React.FC<OnboardSocietyModalProps> = ({
         pincode: data.pincode || "",
         phone: data.phone || "",
         maintenance_rate: data.maintenanceRatePerSqft || 0,
-        maintenance_amount: data.maintenanceFixedAmount || 0,
         total_units: data.totalFlats || 0,
         registration_number: data.registrationNumber || "",
-        established_date: data.establishedDate || null,
-        updated_at: new Date().toISOString()
+        established_date: data.establishedDate || "",
       };
 
-      const { data: orgData, error } = await supabase
+      const { error } = await supabase
         .from("organizations")
-        .insert([organizationData])
-        .select()
-        .single();
+        .update(updateData)
+        .eq("id", societyData.id);
 
       if (error) {
         throw new Error(error.message);
-      }
-
-      // 4. Create admin user using admin client
-      const { error: authError } = await supabaseAdmin.auth.admin.createUser({
-        email: syntheticEmail,
-        password: "123456",
-        email_confirm: true,
-        user_metadata: {
-          role: "admin",
-          full_name: data.adminContactName,
-          phone: data.adminPhone,
-          organization_id: orgData?.id,
-          unit_number: data?.adminUnitNumber,
-          square_footage: data?.adminSquareFootage
-        },
-      });
-
-      if (authError) {
-        console.error("Auth error:", authError);
-
-        // Cleanup organization if user creation fails
-        await supabase.from("organizations").delete().eq("id", orgData.id);
-
-        toast.error(authError.message);
-        return;
       }
 
       await fetchOrganization({});
 
       onClose();
       setCurrentStep(1);
-      reset();
-      toast.success("Society and admin created successfully!");
+      toast.success("Society updated successfully!");
     } catch (error) {
-      console.error("Error creating society:", error);
-      toast.error("Society onboarding failed!");
+      console.error("Error updating society:", error);
+      toast.error("Failed to update society!");
     } finally {
       setIsSubmitting(false);
     }
@@ -217,7 +182,7 @@ const OnboardSocietyModal: React.FC<OnboardSocietyModalProps> = ({
                 Basic Information
               </h3>
               <p className="text-sm text-gray-600">
-                Let's start with your society's basic details
+                Update your society's basic details
               </p>
             </div>
 
@@ -282,7 +247,7 @@ const OnboardSocietyModal: React.FC<OnboardSocietyModalProps> = ({
                 Location Details
               </h3>
               <p className="text-sm text-gray-600">
-                Where is your society located?
+                Update your society's location information
               </p>
             </div>
 
@@ -402,7 +367,7 @@ const OnboardSocietyModal: React.FC<OnboardSocietyModalProps> = ({
                 Contact Information
               </h3>
               <p className="text-sm text-gray-600">
-                How can residents reach your society?
+                Update your society's contact details
               </p>
             </div>
 
@@ -431,170 +396,10 @@ const OnboardSocietyModal: React.FC<OnboardSocietyModalProps> = ({
                 </p>
               )}
             </div>
-
-            {/* <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Society Email Address *
-              </label>
-              <input
-                type="email"
-                {...register("email", {
-                  required: "Email is required",
-                  pattern: {
-                    value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-                    message: "Please enter a valid email address",
-                  },
-                })}
-                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent ${
-                  errors.email ? "border-red-500" : "border-gray-300"
-                }`}
-                placeholder="Enter society email"
-              />
-              {errors.email && (
-                <p className="text-red-500 text-xs mt-1">
-                  {errors.email.message}
-                </p>
-              )}
-            </div> */}
           </div>
         );
 
       case 4:
-        return (
-          <div className="space-y-4">
-            <div className="text-center mb-6">
-              <div className="inline-flex items-center justify-center w-12 h-12 bg-indigo-100 rounded-full mb-3">
-                <User className="w-6 h-6 text-indigo-600" />
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900">
-                Admin Contact
-              </h3>
-              <p className="text-sm text-gray-600">
-                Who will be the primary administrator?
-              </p>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Admin Name *
-              </label>
-              <input
-                type="text"
-                {...register("adminContactName", {
-                  required: "Admin name is required",
-                  minLength: {
-                    value: 2,
-                    message: "Name must be at least 2 characters",
-                  },
-                })}
-                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent ${
-                  errors.adminContactName ? "border-red-500" : "border-gray-300"
-                }`}
-                placeholder="Enter admin name"
-              />
-              {errors.adminContactName && (
-                <p className="text-red-500 text-xs mt-1">
-                  {errors.adminContactName.message}
-                </p>
-              )}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Admin Phone *
-              </label>
-              <input
-                type="tel"
-                {...register("adminPhone", {
-                  required: "Admin phone is required",
-                  pattern: {
-                    value: /^\d{10}$/,
-                    message: "Phone must be exactly 10 digits",
-                  },
-                })}
-                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent ${
-                  errors.adminPhone ? "border-red-500" : "border-gray-300"
-                }`}
-                placeholder="Enter admin phone"
-                maxLength={10}
-              />
-              {errors.adminPhone && (
-                <p className="text-red-500 text-xs mt-1">
-                  {errors.adminPhone.message}
-                </p>
-              )}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Admin Unit
-              </label>
-              <input
-                type="text"
-                {...register("adminUnitNumber", {})}
-                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent ${
-                  errors.adminUnitNumber ? "border-red-500" : "border-gray-300"
-                }`}
-                placeholder="Enter admin unit"
-                maxLength={10}
-              />
-              {errors.adminUnitNumber && (
-                <p className="text-red-500 text-xs mt-1">
-                  {errors.adminUnitNumber.message}
-                </p>
-              )}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Admin Unit's Square Footage
-              </label>
-              <input
-                type="text"
-                {...register("adminSquareFootage", {})}
-                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent ${
-                  errors.adminSquareFootage
-                    ? "border-red-500"
-                    : "border-gray-300"
-                }`}
-                placeholder="Enter admin unit's square footage"
-                maxLength={10}
-              />
-              {errors.adminSquareFootage && (
-                <p className="text-red-500 text-xs mt-1">
-                  {errors.adminSquareFootage.message}
-                </p>
-              )}
-            </div>
-
-            {/* <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Administrator Email *
-              </label>
-              <input
-                type="email"
-                {...register("adminEmail", {
-                  required: "Administrator email is required",
-                  pattern: {
-                    value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-                    message: "Please enter a valid email address",
-                  },
-                })}
-                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent ${
-                  errors.adminEmail ? "border-red-500" : "border-gray-300"
-                }`}
-                placeholder="Enter administrator email"
-              />
-              {errors.adminEmail && (
-                <p className="text-red-500 text-xs mt-1">
-                  {errors.adminEmail.message}
-                </p>
-              )}
-            </div> */}
-          </div>
-        );
-
-      case 5:
         return (
           <div className="space-y-4">
             <div className="text-center mb-6">
@@ -605,7 +410,7 @@ const OnboardSocietyModal: React.FC<OnboardSocietyModalProps> = ({
                 Property Information
               </h3>
               <p className="text-sm text-gray-600">
-                Final details about your society
+                Update your society's property details
               </p>
             </div>
 
@@ -654,9 +459,6 @@ const OnboardSocietyModal: React.FC<OnboardSocietyModalProps> = ({
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                 placeholder="Enter maintenance rate per sqft"
               />
-              <p className="text-xs text-gray-500 mt-1">
-                Optional: You can set this up later
-              </p>
             </div>
 
             <div>
@@ -677,9 +479,6 @@ const OnboardSocietyModal: React.FC<OnboardSocietyModalProps> = ({
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                 placeholder="Enter maintenance fixed amount"
               />
-              <p className="text-xs text-gray-500 mt-1">
-                Optional: You can set this up later
-              </p>
             </div>
           </div>
         );
@@ -693,7 +492,7 @@ const OnboardSocietyModal: React.FC<OnboardSocietyModalProps> = ({
 
   return (
     <Modal
-      title="Onboard Society"
+      title="Update Society"
       isOpen={isOpen}
       onClose={handleModalClose}
       size="lg"
@@ -754,7 +553,7 @@ const OnboardSocietyModal: React.FC<OnboardSocietyModalProps> = ({
             Previous
           </button>
 
-          {currentStep < 5 ? (
+          {currentStep < 4 ? (
             <button
               type="button"
               onClick={nextStep}
@@ -767,17 +566,17 @@ const OnboardSocietyModal: React.FC<OnboardSocietyModalProps> = ({
             <button
               type="submit"
               disabled={isSubmitting}
-              className="inline-flex items-center gap-2 px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              className="inline-flex items-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isSubmitting ? (
                 <>
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                  Creating...
+                  Updating...
                 </>
               ) : (
                 <>
-                  <CheckCircle className="w-4 h-4" />
-                  Complete Setup
+                  <Save className="w-4 h-4" />
+                  Update Society
                 </>
               )}
             </button>
@@ -788,4 +587,4 @@ const OnboardSocietyModal: React.FC<OnboardSocietyModalProps> = ({
   );
 };
 
-export default OnboardSocietyModal;
+export default UpdateSocietyModal;

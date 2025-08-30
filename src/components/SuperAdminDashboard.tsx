@@ -12,6 +12,9 @@ import GenericTable, {
   type TableAction,
   type TableColumn,
 } from "./ui/GenericTable";
+import ConfirmationAlert from "./Modals/ConfirmationAlert";
+import UpdateSocietyModal from "./Modals/UpdatedSocietyModal";
+import ViewSocietyDetailsModal from "./Modals/ViewSocietyDetailsModal";
 
 // Define PaginationInfo interface
 interface PaginationInfo {
@@ -25,7 +28,12 @@ interface PaginationInfo {
 
 const SuperAdminDashboard = () => {
   const [isOnboardModalOpen, setIsOnboardModalOpen] = useState(false);
+  const [isUpdateSocietyModalOpen, setIsUpdateSocietyModalOpen] =
+    useState(false);
+  const [isViewSocietyModalOpen, setIsViewSocietyModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [confirmationAlert, setConfirmationAlert] = useState(false);
+  const [selectedOrg, setSelectedOrg] = useState<Organization | null>(null);
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -41,7 +49,8 @@ const SuperAdminDashboard = () => {
 
   const { organizations, organizationsCount, totalUnitsCount } =
     useOrganizationStore();
-  const { fetchOrganization, searchOrganizations } = useOrganizationService();
+  const { fetchOrganization, searchOrganizations, softDeleteOrganization } =
+    useOrganizationService();
 
   // Load data with pagination
   const loadData = async () => {
@@ -116,23 +125,32 @@ const SuperAdminDashboard = () => {
   const actions: TableAction<Organization>[] = [
     {
       icon: <Eye className="w-4 h-4" />,
-      onClick: (org) => console.log("View", org),
+      onClick: (org) => {
+        setSelectedOrg(org);
+        setIsViewSocietyModalOpen(true);
+      },
       className:
-        "p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors",
+        "cursor-pointer p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors",
       label: "View",
     },
     {
       icon: <Edit className="w-4 h-4" />,
-      onClick: (org) => console.log("Edit", org),
+      onClick: (org) => {
+        setSelectedOrg(org);
+        setIsUpdateSocietyModalOpen(true);
+      },
       className:
-        "p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors",
+        "cursor-pointer p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors",
       label: "Edit",
     },
     {
       icon: <Trash2 className="w-4 h-4" />,
-      onClick: (org) => console.log("Delete", org),
+      onClick: (org) => {
+        setSelectedOrg(org);
+        setConfirmationAlert(true);
+      },
       className:
-        "p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors",
+        "cursor-pointer p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors",
       label: "Delete",
     },
   ];
@@ -232,8 +250,28 @@ const SuperAdminDashboard = () => {
         isOpen={isOnboardModalOpen}
         onClose={() => setIsOnboardModalOpen(false)}
       />
+      <UpdateSocietyModal
+        isOpen={isUpdateSocietyModalOpen}
+        onClose={() => setIsUpdateSocietyModalOpen(false)}
+        societyData={selectedOrg}
+      />
+      <ViewSocietyDetailsModal
+        isOpen={isViewSocietyModalOpen}
+        onClose={() => setIsViewSocietyModalOpen(false)}
+        society={selectedOrg}
+      />
+      <ConfirmationAlert
+        isOpen={confirmationAlert}
+        onClose={() => setConfirmationAlert(false)}
+        message="Are you sure want to delete this organization?"
+        showIcon
+        onConfirm={async () => {
+          await softDeleteOrganization(selectedOrg?.id as string);
+          setConfirmationAlert(false);
+        }}
+      />
     </div>
   );
 };
-
+//
 export default SuperAdminDashboard;

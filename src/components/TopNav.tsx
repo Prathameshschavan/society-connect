@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import {
   FileText,
   Home,
@@ -11,6 +12,7 @@ import { useNavigate } from "react-router-dom";
 import ConfirmationAlert from "./Modals/ConfirmationAlert";
 import { supabase } from "../libs/supabase/supabaseClient";
 import { useProfileStore } from "../libs/stores/useProfileStore";
+import { useOrganizationStore } from "../libs/stores/useOrganizationStore";
 
 const TopNav: React.FC<{ view: "admin" | "owner" }> = ({ view }) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -20,6 +22,7 @@ const TopNav: React.FC<{ view: "admin" | "owner" }> = ({ view }) => {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const { reset: resetProfile } = useProfileStore();
+  const { residentOrganization } = useOrganizationStore();
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -69,15 +72,20 @@ const TopNav: React.FC<{ view: "admin" | "owner" }> = ({ view }) => {
 
             {view === "admin" && (
               <div className="hidden md:flex space-x-8">
-                <button className="flex items-center space-x-2 text-blue-600 font-medium">
+                {/* <button className="flex items-center space-x-2 text-blue-600 font-medium">
                   <Home className="w-4 h-4" />
                   <span>Dashboard</span>
                 </button>
                 <button className="flex items-center space-x-2 text-gray-600 hover:text-gray-900">
                   <FileText className="w-4 h-4" />
                   <span>Reports</span>
-                </button>
-                <button className="flex items-center space-x-2 text-gray-600 hover:text-gray-900">
+                </button> */}
+                <button
+                  onClick={() =>
+                    navigate(`/configure-settings/${residentOrganization?.id}`)
+                  }
+                  className="flex items-center space-x-2 text-gray-600 hover:text-gray-900"
+                >
                   <Settings className="w-4 h-4" />
                   <span>Settings</span>
                 </button>

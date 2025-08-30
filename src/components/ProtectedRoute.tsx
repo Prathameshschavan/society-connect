@@ -21,8 +21,6 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   const location = useLocation();
   const { user, profile } = useProfileStore();
 
-  console.log(user, profile)
-
   // Redirect authenticated users away from auth pages
   if (redirectIfAuthenticated && user) {
     // Redirect based on user role
@@ -33,6 +31,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     } else if (profile?.role === "resident") {
       return <Navigate to="/owner" replace />;
     }
+    console.log("none of the above", profile);
     return <Navigate to={redirectTo} replace />;
   }
 

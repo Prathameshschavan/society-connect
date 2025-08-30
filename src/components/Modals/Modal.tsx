@@ -103,7 +103,7 @@ const Modal: React.FC<ModalProps> = ({
             {showCloseButton && (
               <button
                 onClick={onClose}
-                className="p-1 rounded-lg hover:bg-gray-100 transition-colors flex-shrink-0"
+                className="cursor-pointer p-1 rounded-lg hover:bg-gray-100 transition-colors flex-shrink-0"
                 aria-label="Close modal"
               >
                 <X className="w-5 h-5 text-gray-500" />

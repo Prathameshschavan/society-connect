@@ -6,13 +6,12 @@ import { useNavigate } from "react-router-dom";
 import type { TSignIn } from "../types/user.types";
 import CustomInput from "../components/ui/CustomInput";
 import toast from "react-hot-toast";
-import { supabase } from "../libs/supabase/supabaseClient";
-import { useProfileStore } from "../libs/stores/useProfileStore";
+import useAuthService from "../hooks/serviceHooks/useAuthService";
 
 const SignIn: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-  const { setUser, setProfile } = useProfileStore();
+  const { signIn } = useAuthService();
 
   const {
     handleSubmit,
@@ -24,29 +23,7 @@ const SignIn: React.FC = () => {
     setIsLoading(true);
 
     try {
-      const { error, data: userData } = await supabase.auth.signInWithPassword({
-        email: `${data?.phone}@society.app`,
-        password: data?.password,
-      });
-
-      if (error) {
-        console.error("Sign in error:", error);
-        toast.error(
-          typeof error === "string" ? error : error?.message || "Login failed"
-        );
-        return;
-      }
-
-      if (!userData?.user) {
-        toast.error("No user data received");
-        return;
-      }
-
-      setUser(userData?.user);
-      setProfile(userData?.user?.user_metadata as never);
-
-      toast.success("Login successful!");
-      navigate("/super-admin");
+      await signIn(data);
     } catch (error: unknown) {
       console.error("Unexpected error:", error);
       toast.error("An unexpected error occurred. Please try again.");

@@ -1,7 +1,8 @@
 @import "tailwindcss";
 
-*{
-    font-family: "Poppins", sans-serif;
+* {
+  font-family: "Poppins", sans-serif;
+  scrollbar-width: thin !important;
 }
 
 .poppins-thin {
@@ -110,4 +111,8 @@
   font-family: "Poppins", sans-serif;
   font-weight: 900;
   font-style: italic;
+}
+
+button {
+  cursor: pointer !important;
 }

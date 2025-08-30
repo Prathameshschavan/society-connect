@@ -1,10 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import React, { type ReactNode } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 export interface TableColumn<T> {
   key: keyof T | string;
-  header: string;
+  header: string | ReactNode;
   render?: (item: T) => React.ReactNode;
   className?: string;
 }
@@ -37,7 +37,7 @@ export interface GenericTableProps<T> {
   showFilter?: boolean;
   onFilter?: () => void;
   emptyMessage?: string;
-  
+
   // Pagination props
   pagination?: PaginationInfo;
   onPageChange?: (page: number) => void;
@@ -47,9 +47,9 @@ export interface GenericTableProps<T> {
 }
 
 // Loading skeleton component
-const TableSkeleton: React.FC<{ columns: number; rows?: number }> = ({ 
-  columns, 
-  rows = 5 
+const TableSkeleton: React.FC<{ columns: number; rows?: number }> = ({
+  columns,
+  rows = 5,
 }) => (
   <tbody>
     {[...Array(rows)].map((_, rowIndex) => (
@@ -75,19 +75,26 @@ const TablePagination: React.FC<{
   onPageChange: (page: number) => void;
   onPageSizeChange?: (pageSize: number) => void;
   pageSizeOptions?: number[];
-}> = ({ 
-  pagination, 
-  onPageChange, 
+}> = ({
+  pagination,
+  onPageChange,
   onPageSizeChange,
-  pageSizeOptions = [5, 10, 20, 50] 
+  pageSizeOptions = [5, 10, 20, 50],
 }) => {
-  const { currentPage, totalPages, totalItems, pageSize, hasNextPage, hasPrevPage } = pagination;
+  const {
+    currentPage,
+    totalPages,
+    totalItems,
+    pageSize,
+    hasNextPage,
+    hasPrevPage,
+  } = pagination;
 
   // Generate page numbers to show
   const getPageNumbers = () => {
     const pages = [];
     const maxVisible = 5;
-    
+
     if (totalPages <= maxVisible) {
       for (let i = 1; i <= totalPages; i++) {
         pages.push(i);
@@ -107,7 +114,7 @@ const TablePagination: React.FC<{
         }
       }
     }
-    
+
     return pages;
   };
 
@@ -116,9 +123,10 @@ const TablePagination: React.FC<{
       {/* Items info */}
       <div className="flex items-center gap-4">
         <span className="text-sm text-gray-700">
-          Showing {((currentPage - 1) * pageSize) + 1} to {Math.min(currentPage * pageSize, totalItems)} of {totalItems} entries
+          Showing {(currentPage - 1) * pageSize + 1} to{" "}
+          {Math.min(currentPage * pageSize, totalItems)} of {totalItems} entries
         </span>
-        
+
         {/* Page size selector */}
         {onPageSizeChange && (
           <div className="flex items-center gap-2">
@@ -128,8 +136,10 @@ const TablePagination: React.FC<{
               onChange={(e) => onPageSizeChange(Number(e.target.value))}
               className="border border-gray-300 rounded px-2 py-1 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
-              {pageSizeOptions.map(size => (
-                <option key={size} value={size}>{size}</option>
+              {pageSizeOptions.map((size) => (
+                <option key={size} value={size}>
+                  {size}
+                </option>
               ))}
             </select>
           </div>
@@ -158,18 +168,20 @@ const TablePagination: React.FC<{
               >
                 1
               </button>
-              {currentPage > 4 && <span className="px-2 text-gray-500">...</span>}
+              {currentPage > 4 && (
+                <span className="px-2 text-gray-500">...</span>
+              )}
             </>
           )}
 
-          {getPageNumbers().map(page => (
+          {getPageNumbers().map((page) => (
             <button
               key={page}
               onClick={() => onPageChange(page)}
               className={`px-3 py-1.5 text-sm border rounded ${
                 page === currentPage
-                  ? 'bg-blue-500 text-white border-blue-500'
-                  : 'border-gray-300 hover:bg-gray-100'
+                  ? "bg-blue-500 text-white border-blue-500"
+                  : "border-gray-300 hover:bg-gray-100"
               }`}
             >
               {page}
@@ -178,7 +190,9 @@ const TablePagination: React.FC<{
 
           {currentPage < totalPages - 2 && totalPages > 5 && (
             <>
-              {currentPage < totalPages - 3 && <span className="px-2 text-gray-500">...</span>}
+              {currentPage < totalPages - 3 && (
+                <span className="px-2 text-gray-500">...</span>
+              )}
               <button
                 onClick={() => onPageChange(totalPages)}
                 className="px-3 py-1.5 text-sm border border-gray-300 rounded hover:bg-gray-100"
@@ -219,9 +233,9 @@ function GenericTable<T extends Record<string, any>>({
   onPageChange,
   onPageSizeChange,
   pageSizeOptions,
-  showPagination = true
+  showPagination = true,
 }: GenericTableProps<T>) {
-  const [searchQuery, setSearchQuery] = React.useState('');
+  const [searchQuery, setSearchQuery] = React.useState("");
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
@@ -232,9 +246,9 @@ function GenericTable<T extends Record<string, any>>({
     if (column.render) {
       return column.render(item);
     }
-    
+
     const value = item[column.key as keyof T];
-    return value?.toString() || '';
+    return value?.toString() || "";
   };
 
   const totalColumns = columns.length + (actions.length > 0 ? 1 : 0);
@@ -246,9 +260,7 @@ function GenericTable<T extends Record<string, any>>({
         <div className="p-6 border-b border-gray-200">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             {title && (
-              <h2 className="text-xl font-semibold text-gray-900">
-                {title}
-              </h2>
+              <h2 className="text-xl font-semibold text-gray-900">{title}</h2>
             )}
             {(showSearch || showFilter) && (
               <div className="flex gap-3">
@@ -264,7 +276,7 @@ function GenericTable<T extends Record<string, any>>({
                   </div>
                 )}
                 {showFilter && (
-                  <button 
+                  <button
                     onClick={onFilter}
                     className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
                   >
@@ -283,9 +295,11 @@ function GenericTable<T extends Record<string, any>>({
           <thead className="bg-gray-50">
             <tr>
               {columns.map((column, index) => (
-                <th 
+                <th
                   key={index}
-                  className={`text-left py-4 px-6 font-medium text-gray-900 ${column.className || ''}`}
+                  className={`text-left py-4 px-6 font-medium text-gray-900 ${
+                    column.className || ""
+                  }`}
                 >
                   {column.header}
                 </th>
@@ -303,8 +317,8 @@ function GenericTable<T extends Record<string, any>>({
           ) : data.length === 0 ? (
             <tbody>
               <tr>
-                <td 
-                  colSpan={totalColumns} 
+                <td
+                  colSpan={totalColumns}
                   className="py-12 px-6 text-center text-gray-500"
                 >
                   {emptyMessage}
@@ -313,34 +327,47 @@ function GenericTable<T extends Record<string, any>>({
             </tbody>
           ) : (
             <tbody className="divide-y divide-gray-200">
-              {data.map((item, rowIndex) => (
-                <tr key={rowIndex} className="hover:bg-gray-50">
-                  {columns.map((column, colIndex) => (
-                    <td 
-                      key={colIndex}
-                      className={`py-4 px-6 ${column.className || ''}`}
-                    >
-                      {renderCellValue(item, column)}
-                    </td>
-                  ))}
-                  {actions.length > 0 && (
-                    <td className="py-4 px-6">
-                      <div className="flex items-center gap-2">
-                        {actions.map((action, actionIndex) => (
-                          <button
-                            key={actionIndex}
-                            onClick={() => action.onClick(item)}
-                            className={action.className || "p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"}
-                            title={action.label}
-                          >
-                            {action.icon}
-                          </button>
-                        ))}
-                      </div>
-                    </td>
-                  )}
-                </tr>
-              ))}
+              {data.map((item, rowIndex) => {
+                return (
+                  <tr key={rowIndex} className="hover:bg-gray-50">
+                    {columns.map((column, colIndex) => (
+                      <td
+                        key={colIndex}
+                        className={`py-4 px-6 ${column.className || ""}`}
+                      >
+                        {renderCellValue(item, column)}
+                      </td>
+                    ))}
+                    {actions.length > 0 && (
+                      <td className="py-4 px-6">
+                        <div className="flex items-center gap-2">
+                          {actions.map((action, actionIndex) => {
+                            if (
+                              item?.role === "admin" &&
+                              action?.label === "Delete"
+                            ) {
+                              return <></>;
+                            }
+                            return (
+                              <button
+                                key={actionIndex}
+                                onClick={() => action.onClick(item)}
+                                className={
+                                  action.className ||
+                                  "p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                }
+                                title={action.label}
+                              >
+                                {action.icon}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </td>
+                    )}
+                  </tr>
+                );
+              })}
             </tbody>
           )}
         </table>

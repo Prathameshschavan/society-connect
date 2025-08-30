@@ -8,6 +8,7 @@ import SignIn from "./Views/SignIn";
 import ProtectedRoute from "./components/ProtectedRoute";
 import SignUp from "./Views/SignUp";
 import UnauthorizedPage from "./Views/Unauthorized";
+import SocietyConfigurationPage from "./Views/ConfigureSettings";
 
 function App() {
   return (
@@ -15,7 +16,7 @@ function App() {
       <Route
         path="/admin"
         element={
-          <ProtectedRoute allowedRoles={["admin"]}>
+          <ProtectedRoute allowedRoles={["admin", "resident"]}>
             <AdminDashboard />
           </ProtectedRoute>
         }
@@ -45,8 +46,24 @@ function App() {
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/*"
+        element={
+          <ProtectedRoute requireAuth={false} redirectIfAuthenticated={true}>
+            <SignIn />
+          </ProtectedRoute>
+        }
+      />
       <Route path="/sign-up" element={<SignUp />}></Route>
       <Route path="/unauthorized" element={<UnauthorizedPage />}></Route>
+      <Route
+        path="/configure-settings/:orgId"
+        element={
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <SocietyConfigurationPage />
+          </ProtectedRoute>
+        }
+      ></Route>
     </Routes>
   );
 }

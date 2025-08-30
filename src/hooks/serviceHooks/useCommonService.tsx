@@ -26,7 +26,38 @@ const useCommonService = () => {
         return "text-gray-600 bg-gray-100";
     }
   };
-  return { getStatusColor, getStatusIcon };
+
+  const shortMonth = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+  ];
+
+  const longMonth = [
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
+  ];
+
+  return { getStatusColor, getStatusIcon, shortMonth, longMonth };
 };
 
 export default useCommonService;

@@ -32,8 +32,6 @@ export interface Profile {
   unit_number?: string;
   square_footage?: number;
   must_change_password: boolean;
-  security_question?: string;
-  security_answer_hash?: string;
   created_at: string;
   updated_at: string;
   organizations?: Organization;

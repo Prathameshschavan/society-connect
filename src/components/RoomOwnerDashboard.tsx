@@ -3,9 +3,11 @@ import { useState } from "react";
 import useCommonService from "../hooks/serviceHooks/useCommonService";
 import PaymentModal from "./Modals/PaymentModal";
 import TopNav from "./TopNav";
+import { useProfileStore } from "../libs/stores/useProfileStore";
 
 const RoomOwnerDashboard = () => {
-  const { getStatusIcon, getStatusColor } = useCommonService();
+  const { getStatusIcon, getStatusColor, longMonth } = useCommonService();
+  const { profile } = useProfileStore();
 
   const [showPaymentModal, setShowPaymentModal] = useState(false);
 
@@ -63,12 +65,12 @@ const RoomOwnerDashboard = () => {
                 <h1 className="text-2xl font-bold text-gray-900">
                   Payment Ledger
                 </h1>
-                <p className="text-gray-600 mt-1">Amit Patel • Room A-103</p>
+                <p className="text-gray-600 mt-1">{profile?.full_name} • Room {profile?.unit_number}</p>
               </div>
               <div className="text-right">
                 <p className="text-sm text-gray-500">Current Month</p>
                 <p className="text-lg font-semibold text-gray-900">
-                  August 2025
+                  {longMonth[new Date().getMonth()]} {new Date().getFullYear()}
                 </p>
               </div>
             </div>

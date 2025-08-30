@@ -16,9 +16,9 @@ export interface Organization {
   maintenance_rate?: number;
   total_units?: number;
   registration_number?: string;
-  established_date?: string;
+  established_date?: string | null;
   created_at?: string;
-  updated_at?: string;
+  updated_at?: string | number;
   admin: Profile[];
 }
 
@@ -74,7 +74,9 @@ export const useOrganizationStore = create<OrganizationState>()(
       name: "organization-storage",
       partialize: (state) => ({
         organizations: state.organizations,
-        selectedOrganization: state.residentOrganization,
+        residentOrganization: state.residentOrganization,
+        organizationsCount: state.organizationsCount,
+        totalUnitsCount: state.totalUnitsCount,
       }),
     }
   )

@@ -1,47 +1,284 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import {
-  AlertCircle,
   CheckCircle,
   CreditCard,
-  Plus,
+  Edit,
+  Eye,
+  ReceiptText,
   Settings,
 } from "lucide-react";
 import TopNav from "./TopNav";
 import OnboardResidentModal from "./Modals/OnboardResidentModal";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import useAdminService from "../hooks/serviceHooks/useAdminService";
-import { useProfileStore } from "../libs/stores/useProfileStore";
+import { useNavigate } from "react-router-dom";
+import { useOrganizationStore } from "../libs/stores/useOrganizationStore";
+import GenericTable, {
+  type PaginationInfo,
+  type TableAction,
+  type TableColumn,
+} from "./ui/GenericTable";
+import useCommonService from "../hooks/serviceHooks/useCommonService";
+import {
+  useMaintenanceStore,
+  type MaintenanceBill,
+} from "../libs/stores/useMaintenanceStore";
+import ViewMaintananceDetailsModal from "./Modals/ViewMaintananceDetailsModal";
+import UpdateMaintananceStatusModal from "./Modals/UpdateMaintananceStatusModal";
+import { supabase } from "../libs/supabase/supabaseClient";
 
 const AdminDashboard = () => {
-  const { fetchResidents } = useAdminService();
+  const { createBillsWithPenaltyForAllResidents, fetchMaintenanceBills } =
+    useAdminService();
+  const { maintenanceBills } = useMaintenanceStore();
+  const navigate = useNavigate();
   const [isOnboardModalOpen, setIsOnboardModalOpen] = useState(false);
-  const { residents } = useProfileStore();
+  const { residentOrganization } = useOrganizationStore();
+  const { shortMonth, getStatusIcon, getStatusColor } = useCommonService();
+  const [selectedMonth, setSelectedMonth] = useState({
+    month: `${(new Date().getMonth() + 1).toString().padStart(2, "0")}`,
+    year: `${new Date().getFullYear()}`,
+  });
+
+  const [loading, setLoading] = useState(false);
+  const [generateBillLoading, setGenerateBillLoading] = useState(false);
+  const [isOpenMaintananceDetailsModal, setIsOpenMaintananceDetailsModal] =
+    useState(false);
+  const [
+    isOpenUpdateMaintananceDetailsModal,
+    setIsOpenUpdateMaintananceDetailsModal,
+  ] = useState(false);
+  const [selectedBill, setSelectedBill] = useState<MaintenanceBill | null>(
+    null
+  );
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [pagination, setPagination] = useState<PaginationInfo>({
+    currentPage: 1,
+    totalPages: 1,
+    totalItems: 0,
+    pageSize: 10,
+    hasNextPage: false,
+    hasPrevPage: false,
+  });
+
+  // Load data with pagination
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      const result = await fetchMaintenanceBills({
+        page: currentPage,
+        pageSize: pageSize,
+        filters: {
+          billMonth: selectedMonth?.month,
+          billYear: selectedMonth?.year,
+        },
+      });
+
+      if (result) {
+        setPagination(result.pagination);
+      }
+    } catch (error) {
+      console.error("Error loading data:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadData();
+  }, [currentPage, pageSize, selectedMonth]);
+
+  const handleCreateBill = async () => {
+    try {
+      setGenerateBillLoading(true);
+      const date = new Date();
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = 15;
+
+      const res = await createBillsWithPenaltyForAllResidents({
+        billMonth: `${month}`,
+        billYear: `${year}`,
+        dueDate: `${year}-${month}-${day}`,
+        maintenanceFixedAmount:
+          residentOrganization?.maintenance_amount as number,
+        penaltyFixedAmount: 100,
+        extraCharges: 0,
+      });
+
+      console.log(res);
+    } catch (error) {
+      console.log(error);
+    } finally {
+      setGenerateBillLoading(false);
+    }
+  };
+
   const adminData = {
     totalDue: 275000,
     totalPaid: 180000,
     pendingPayments: 18,
   };
 
-  useEffect(() => {
-    fetchResidents();
-  }, []);
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
 
+  const handlePageSizeChange = (newPageSize: number) => {
+    setPageSize(newPageSize);
+    setCurrentPage(1); // Reset to first page when page size changes
+  };
+
+  function debounce<T extends (...args: any[]) => void>(
+    func: T,
+    wait: number
+  ): (...args: Parameters<T>) => void {
+    let timeout: NodeJS.Timeout;
+    return (...args: Parameters<T>) => {
+      clearTimeout(timeout);
+      timeout = setTimeout(() => func(...args), wait);
+    };
+  }
+
+  const debouncedSearch = useCallback(
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    debounce((searchQuery: string) => {}, 500),
+    []
+  );
+
+  const columns: TableColumn<MaintenanceBill>[] = [
+    {
+      key: "resident",
+      header: "Resident",
+      render: (bill) => (
+        <div>
+          <p className="font-medium text-gray-900">
+            {bill.resident?.unit_number || "N/A"}
+          </p>
+          <p className="font-light text-gray-900">{bill.resident?.full_name}</p>
+        </div>
+      ),
+      className: "text-gray-900 font-medium",
+    },
+
+    {
+      key: "monthYear",
+      header: "Month/Year",
+      render: (bill) => (
+        <div>
+          <div className=" text-gray-900">
+            {shortMonth[Number(bill.bill_month) - 1]} {bill?.bill_year}
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: "currentAmount",
+      header: (
+        <p>
+          Maintenance  Amount
+        </p>
+      ),
+      render: (bill) => (
+        <div>
+          <div className=" text-gray-900">₹ {bill?.amount}</div>
+        </div>
+      ),
+    },
+    // {
+    //   key: "penalty",
+    //   header: "Penalty",
+    //   render: (bill) => (
+    //     <div>
+    //       <div className=" text-gray-900">₹ {bill?.amount}</div>
+    //     </div>
+    //   ),
+    // },
+    // {
+    //   key: "totalAmount",
+    //   header: (
+    //     <p>
+    //       Total <br /> Amount
+    //     </p>
+    //   ),
+    //   render: (bill) => (
+    //     <div>
+    //       <div className=" text-gray-900">₹ {bill?.amount}</div>
+    //     </div>
+    //   ),
+    // },
+    {
+      key: "status",
+      header: "Status",
+      render: (bill) => (
+        <div>
+          <span
+            className={`capitalize inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(
+              bill.status as string
+            )}`}
+          >
+            {getStatusIcon(bill.status as string)}
+            {bill.status}
+          </span>
+        </div>
+      ),
+    },
+  ];
+
+  const actions: TableAction<MaintenanceBill>[] = [
+    {
+      icon: <Eye className="w-4 h-4" />,
+      onClick: (bill: MaintenanceBill) => {
+        setSelectedBill(bill);
+        setIsOpenMaintananceDetailsModal(true);
+      },
+      className:
+        "cursor-pointer p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors",
+      label: "View",
+    },
+    ...(selectedMonth?.month ===
+      `${(new Date().getMonth() + 1).toString().padStart(2, "0")}` &&
+    selectedMonth?.year === `${new Date().getFullYear()}`
+      ? [
+          {
+            icon: <Edit className="w-4 h-4" />,
+            onClick: (bill: MaintenanceBill) => {
+              setSelectedBill(bill);
+              setIsOpenUpdateMaintananceDetailsModal(true);
+            },
+            className:
+              "cursor-pointer p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors",
+            label: "Edit",
+          },
+        ]
+      : []),
+  ];
+  // async function markAllMaintenancePaid() {
+  //   const payload = {
+  //     status: "paid",
+  //   };
+
+  //   const { data, error } = await supabase
+  //     .from("maintenance_bills")
+  //     .update(payload) // applies to all rows without filters
+  //     .eq("bill_month", "0")
+  //     .select("id, status"); // return affected ids and status
+
+  //   if (error) throw error;
+  //   return data;
+  // }
   return (
     <div className="min-h-screen bg-gray-50">
       <TopNav view="admin" />
+      {/* <button onClick={markAllMaintenancePaid}>all paid</button> */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="space-y-6">
-          {/* Header */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">
-              Admin Dashboard
-            </h1>
-            <p className="text-gray-600">
-              Manage your society maintenance payments
-            </p>
-          </div>
-
           {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl p-6 text-white">
               <div className="flex items-center justify-between">
                 <div>
@@ -69,119 +306,102 @@ const AdminDashboard = () => {
                 <CheckCircle className="w-8 h-8 text-green-200" />
               </div>
             </div>
+          </div> */}
 
-            <div className="bg-gradient-to-r from-orange-500 to-orange-600 rounded-xl p-6 text-white">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-orange-100 text-sm font-medium">
-                    Pending Payments
-                  </p>
-                  <p className="text-3xl font-bold">
-                    {adminData.pendingPayments}
-                  </p>
-                </div>
-                <AlertCircle className="w-8 h-8 text-orange-200" />
-              </div>
-            </div>
-          </div>
-
-          {/* Actions */}
-          <div className="flex flex-col sm:flex-row gap-4">
-            <button
-              onClick={() => setIsOnboardModalOpen(true)}
-              className="cursor-pointer flex items-center justify-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors"
-            >
-              <Plus className="w-5 h-5" />
-              Add Room Owner
-            </button>
-            <button className="flex items-center justify-center gap-2 bg-gray-100 text-gray-700 px-6 py-3 rounded-lg font-medium hover:bg-gray-200 transition-colors">
-              <Settings className="w-5 h-5" />
-              Configure Settings
-            </button>
-          </div>
-
-          {/* Rooms Table */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-            <div className="p-6 border-b border-gray-200">
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <h2 className="text-xl font-semibold text-gray-900">
-                  Room Status
-                </h2>
-                {/* <div className="flex gap-3">
-                  <div className="relative">
-                    <Search className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                    <input
-                      type="text"
-                      placeholder="Search rooms..."
-                      className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                  </div>
-                  <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
-                    <Filter className="w-4 h-4" />
-                    Filter
-                  </button>
-                </div> */}
-              </div>
+          <div className="flex justify-between gap-4">
+            <div className="">
+              <h1 className="text-2xl font-bold text-gray-900 mb-2">
+                {residentOrganization?.name} Dashboard
+              </h1>
+              <p className="text-gray-600">
+                Manage your society maintenance payments
+              </p>
             </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="text-left py-4 px-6 font-medium text-gray-900">
-                      Room
-                    </th>
-                    <th className="text-left py-4 px-6 font-medium text-gray-900">
-                      Owner Name
-                    </th>
-                    <th className="text-left py-4 px-6 font-medium text-gray-900">
-                      Amount
-                    </th>
-                    <th className="text-left py-4 px-6 font-medium text-gray-900">
-                      Status
-                    </th>
-                    <th className="text-left py-4 px-6 font-medium text-gray-900">
-                      Due Date
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {residents.map((room) => (
-                    <tr key={room.id} className="hover:bg-gray-50">
-                      <td className="py-4 px-6 font-medium text-gray-900">
-                        {room.unit_number}
-                      </td>
-                      <td className="py-4 px-6 text-gray-700">
-                        {room.full_name}
-                      </td>
-                      <td className="py-4 px-6 text-gray-900 font-medium">
-                        ₹{room.role.toLocaleString()}
-                      </td>
-                      {/* <td className="py-4 px-6">
-                        <span
-                          className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(
-                            room.status
-                          )}`}
-                        >
-                          {getStatusIcon(room.status)}
-                          {room.status.charAt(0).toUpperCase() +
-                            room.status.slice(1)}
-                        </span>
-                      </td> */}
-                      {/* <td className="py-4 px-6 text-gray-600">
-                        {new Date(room.).toLocaleDateString("en-IN")}
-                      </td> */}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="flex gap-4 self-center">
+              <select
+                onChange={(e) => {
+                  setCurrentPage(1);
+                  setSelectedMonth({ ...selectedMonth, month: e.target.value });
+                }}
+                value={selectedMonth?.month}
+                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${"border-gray-300"}`}
+              >
+                {shortMonth.map((month, i) => {
+                  return (
+                    <option
+                      key={month}
+                      value={(i + 1).toString().padStart(2, "0")}
+                    >
+                      {month}
+                    </option>
+                  );
+                })}
+              </select>
+              <select
+                value={selectedMonth?.year}
+                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${"border-gray-300"}`}
+                onChange={(e) => {
+                  setCurrentPage(1);
+                  setSelectedMonth({ ...selectedMonth, year: e.target.value });
+                }}
+              >
+                {Array.from(
+                  { length: new Date().getFullYear() - 2000 + 1 },
+                  (_, index) => {
+                    const year = new Date().getFullYear() - index;
+                    return (
+                      <option key={year} value={year}>
+                        {year}
+                      </option>
+                    );
+                  }
+                )}
+              </select>
             </div>
           </div>
+          <button
+            disabled={generateBillLoading}
+            onClick={handleCreateBill}
+            className="flex items-center whitespace-nowrap justify-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+          >
+            <ReceiptText className="w-5 h-5" />
+            {generateBillLoading ? "Generating..." : "Generate Bill"}
+          </button>
+
+          <GenericTable
+            title="Maintenance"
+            columns={columns}
+            data={maintenanceBills}
+            actions={actions}
+            loading={loading}
+            emptyMessage="No maintenence bill is generated this month"
+            searchPlaceholder="Search resident"
+            showPagination
+            pagination={pagination}
+            onPageChange={handlePageChange}
+            onPageSizeChange={handlePageSizeChange}
+            pageSizeOptions={[5, 10, 20, 50]}
+            onSearch={(searchQuery) => {
+              debouncedSearch(searchQuery);
+            }}
+          />
         </div>
       </main>
       <OnboardResidentModal
         isOpen={isOnboardModalOpen}
         onClose={() => setIsOnboardModalOpen(false)}
+      />
+      <ViewMaintananceDetailsModal
+        bill={selectedBill}
+        isOpen={isOpenMaintananceDetailsModal}
+        onClose={() => setIsOpenMaintananceDetailsModal(false)}
+      />
+      <UpdateMaintananceStatusModal
+        bill={selectedBill}
+        isOpen={isOpenUpdateMaintananceDetailsModal}
+        onClose={() => setIsOpenUpdateMaintananceDetailsModal(false)}
+        onSuccess={loadData}
       />
     </div>
   );

@@ -29,15 +29,19 @@ interface PaginationInfo {
   hasPrevPage: boolean;
 }
 
-interface FetchOrganizationResponse {
+export interface FetchOrganizationResponse {
   data: Organization[];
   pagination: PaginationInfo;
   totalUnitsSum: number;
 }
 
 const useOrganizationService = () => {
-  const { setOrganizations, setOrganizationsCount, setTotalUnitsCount } =
-    useOrganizationStore();
+  const {
+    setOrganizations,
+    setOrganizationsCount,
+    setTotalUnitsCount,
+    organizations,
+  } = useOrganizationStore();
 
   const fetchOrganization = async ({
     orgId,
@@ -48,15 +52,7 @@ const useOrganizationService = () => {
     sortOrder = "desc",
     filters = {},
   }: FetchOrganizationParams = {}): Promise<FetchOrganizationResponse | null> => {
-    console.log("Fetching organizations with params:", {
-      orgId,
-      page,
-      pageSize,
-      searchQuery,
-      sortBy,
-      sortOrder,
-      filters,
-    });
+
 
     try {
       // Calculate offset for pagination
@@ -64,16 +60,19 @@ const useOrganizationService = () => {
       const to = from + pageSize - 1;
 
       // Build base query
-      let query = supabase.from("organizations").select(
-        `
+      let query = supabase
+        .from("organizations")
+        .select(
+          `
         *, 
         admin:profiles(
           full_name,
           phone
         )        
       `,
-        { count: "exact" }
-      );
+          { count: "exact" }
+        )
+        .eq("is_deleted", false);
 
       // Apply search filter - FIXED VERSION
       if (searchQuery.trim()) {
@@ -120,13 +119,8 @@ const useOrganizationService = () => {
         return null;
       }
 
-      // Get total units sum for all organizations (not just current page)
-      const { data: allOrgsData } = await supabase
-        .from("organizations")
-        .select("total_units");
-
       const totalUnitsSum =
-        allOrgsData?.reduce((sum, org) => sum + (org.total_units || 0), 0) || 0;
+        data?.reduce((sum, org) => sum + (org.total_units || 0), 0) || 0;
 
       // Calculate pagination info
       const totalItems = count || 0;
@@ -155,9 +149,6 @@ const useOrganizationService = () => {
         totalUnitsSum,
       };
 
-      console.log(
-        `Fetched ${data.length} organizations (page ${currentPage}/${totalPages})`
-      );
       return response;
     } catch (error) {
       console.error("Fetch organizations error:", error);
@@ -226,6 +217,87 @@ const useOrganizationService = () => {
     });
   };
 
+  const updateOrganization = async (
+    orgId: string,
+    updateData: Organization
+  ): Promise<Organization | null> => {
+    try {
+
+      const { data, error } = await supabase
+        .from("organizations")
+        .update({
+          ...updateData,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", orgId)
+        .select(
+          `
+          *, 
+          admin:profiles(
+            full_name,
+            phone
+          )        
+        `
+        )
+        .single();
+
+      if (error) {
+        toast.error("Failed to update society");
+        return null;
+      }
+
+      if (!data) {
+        toast.error("No data returned after update");
+        return null;
+      }
+
+      // Update the organization in the store
+      const updatedOrganizations = organizations.map((org) =>
+        org.id === orgId ? { ...org, ...data } : org
+      );
+      setOrganizations(updatedOrganizations as never);
+
+      toast.success("Society updated successfully");
+
+      return data as Organization;
+    } catch (error) {
+      console.error("Update organization error:", error);
+      toast.error("Something went wrong while updating society");
+      return null;
+    }
+  };
+
+  const softDeleteOrganization = async (orgId: string): Promise<boolean> => {
+    try {
+
+      const { data, error } = await supabase
+        .from("organizations")
+        .update({
+          is_deleted: true,
+          deleted_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", orgId)
+        .select("name")
+        .single();
+
+      if (error) {
+        toast.error("Failed to delete society");
+        return false;
+      }
+
+      await fetchOrganization({});
+
+      toast.success(`Society "${data?.name}" deleted successfully`);
+
+      return true;
+    } catch (error) {
+      console.error("Soft delete organization error:", error);
+      toast.error("Something went wrong while deleting society");
+      return false;
+    }
+  };
+
   return {
     fetchOrganization,
     searchOrganizations,
@@ -233,6 +305,8 @@ const useOrganizationService = () => {
     filterOrganizations,
     getNextPage,
     getPreviousPage,
+    updateOrganization,
+    softDeleteOrganization,
   };
 };
 

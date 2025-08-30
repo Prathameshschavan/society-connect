@@ -407,7 +407,6 @@ const useAdminService = () => {
         hasPrevPage,
       };
 
-      console.log(data);
 
       setMaintenanceBills(data);
 

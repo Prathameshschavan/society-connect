@@ -18,9 +18,11 @@ import {
 } from "../libs/stores/useMaintenanceStore";
 import ViewMaintananceDetailsModal from "./Modals/ViewMaintananceDetailsModal";
 import UpdateMaintananceStatusModal from "./Modals/UpdateMaintananceStatusModal";
+import { useProfileStore } from "../libs/stores/useProfileStore";
 const AdminDashboard = () => {
   const { createBillsWithPenaltyForAllResidents, fetchMaintenanceBills } =
     useAdminService();
+  const { profile } = useProfileStore();
   const { maintenanceBills } = useMaintenanceStore();
   const [isOnboardModalOpen, setIsOnboardModalOpen] = useState(false);
   const { residentOrganization } = useOrganizationStore();
@@ -89,7 +91,7 @@ const AdminDashboard = () => {
       const month = String(date.getMonth() + 1).padStart(2, "0");
       const day = 15;
 
-      const res = await createBillsWithPenaltyForAllResidents({
+      await createBillsWithPenaltyForAllResidents({
         billMonth: `${month}`,
         billYear: `${year}`,
         dueDate: `${year}-${month}-${day}`,
@@ -98,8 +100,6 @@ const AdminDashboard = () => {
         penaltyFixedAmount: 100,
         extraCharges: 0,
       });
-
-      console.log(res);
     } catch (error) {
       console.log(error);
     } finally {
@@ -333,20 +333,22 @@ const AdminDashboard = () => {
               </select>
             </div>
           </div>
-          <button
-            disabled={generateBillLoading}
-            onClick={handleCreateBill}
-            className="flex items-center whitespace-nowrap justify-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg font-medium transition-colors"
-          >
-            <ReceiptText className="w-5 h-5" />
-            {generateBillLoading ? "Generating..." : "Generate Bill"}
-          </button>
+          {profile?.role === "admin" && (
+            <button
+              disabled={generateBillLoading}
+              onClick={handleCreateBill}
+              className="flex items-center whitespace-nowrap justify-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+            >
+              <ReceiptText className="w-5 h-5" />
+              {generateBillLoading ? "Generating..." : "Generate Bill"}
+            </button>
+          )}
 
           <GenericTable
             title="Maintenance"
             columns={columns}
             data={maintenanceBills}
-            actions={actions}
+            actions={profile?.role === "admin" ? actions : []}
             loading={loading}
             emptyMessage="No maintenence bill is generated this month"
             searchPlaceholder="Search resident"

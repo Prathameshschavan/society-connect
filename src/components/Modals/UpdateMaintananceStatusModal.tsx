@@ -42,12 +42,11 @@ const UpdateMaintananceStatusModal: React.FC<UpdateMaintananceModalProps> = ({
     setLoading(true);
 
     try {
-      const res = await updateMaintenanceStatus({
+      await updateMaintenanceStatus({
         status: selectedStatus,
         id: bill?.id as string,
       });
 
-      console.log(res);
       onSuccess?.();
       // Close modal after successful update
       onClose();

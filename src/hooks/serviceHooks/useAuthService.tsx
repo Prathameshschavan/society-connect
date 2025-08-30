@@ -67,7 +67,6 @@ const useAuthService = () => {
   };
 
   const fetchProfile = async (profileId?: string) => {
-    console.log(profileId);
     try {
       let query:
         | PostgrestFilterBuilder<any, any, any[], "profiles", unknown>

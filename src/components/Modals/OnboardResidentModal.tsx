@@ -275,7 +275,6 @@ const OnboardResidentModal: React.FC<OnboardResidentModalProps> = ({
   const addBulkResidents = () => {
     try {
       unitNumbers.forEach(async (unit) => {
-        console.log(unit);
         const data = {
           organization_id: residentOrganization?.id,
           role: "resident",

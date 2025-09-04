@@ -94,7 +94,7 @@ const AdminDashboard = () => {
       await createBillsWithPenaltyForAllResidents({
         billMonth: `${month}`,
         billYear: `${year}`,
-        dueDate: `${year}-${month}-${15}`,
+        dueDate: `${year}-${month}-${day}`,
         maintenanceFixedAmount:
           residentOrganization?.maintenance_amount as number,
         penaltyFixedAmount: 100,

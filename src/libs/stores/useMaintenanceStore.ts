@@ -1,6 +1,7 @@
 // stores/useMaintenanceStore.ts
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import type { BillBreakdown } from "../../hooks/serviceHooks/useAdminService";
 
 export interface MaintenanceBill {
   id: string;
@@ -16,6 +17,7 @@ export interface MaintenanceBill {
   penalty?: number;
   created_at?: string;
   updated_at?: string;
+  breakdown: BillBreakdown;
   // Optional resident data if fetched with join
   resident?: {
     id: string;
@@ -42,11 +44,16 @@ interface MaintenanceState {
   setPendingAmount: (amount: number) => void;
   setPaidAmount: (amount: number) => void;
   setOverdueAmount: (amount: number) => void;
-  updateBillStatus: (billId: string, status: "pending" | "paid" | "overdue") => void;
+  updateBillStatus: (
+    billId: string,
+    status: "pending" | "paid" | "overdue"
+  ) => void;
   addMaintenanceBill: (bill: MaintenanceBill) => void;
-  updateMaintenanceBill: (billId: string, updates: Partial<MaintenanceBill>) => void;
+  updateMaintenanceBill: (
+    billId: string,
+    updates: Partial<MaintenanceBill>
+  ) => void;
   reset: () => void;
-
 }
 
 export const useMaintenanceStore = create<MaintenanceState>()(

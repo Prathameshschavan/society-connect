@@ -23,7 +23,7 @@ const ViewMaintananceDetailsModal: React.FC<ViewMaintananceModalProps> = ({
   onClose,
   bill,
 }) => {
-  const { getStatusColor, getStatusIcon } = useCommonService();
+  const { getStatusColor, getStatusIcon, longMonth } = useCommonService();
   return (
     <Modal
       title={`Maintanance Details`}
@@ -141,16 +141,34 @@ const ViewMaintananceDetailsModal: React.FC<ViewMaintananceModalProps> = ({
             Amount Breakdown
           </h3>
           <div className="space-y-3">
+            {bill?.breakdown?.dues.map((due) => {
+              return (
+                <>
+                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                    <span className="text-gray-600">
+                      Maintenance ({longMonth[Number(due?.month) - 1]})
+                    </span>
+                    <span className="font-medium text-gray-900">
+                      ₹{due?.amount}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                    <span className="text-gray-600">
+                      Penalty ({longMonth[Number(due?.month) - 1]})
+                    </span>
+                    <span className="font-medium text-red-600">
+                      ₹{due?.penalty || 0}
+                    </span>
+                  </div>
+                </>
+              );
+            })}
             <div className="flex justify-between items-center py-2 border-b border-gray-100">
-              <span className="text-gray-600">Maintenance Amount</span>
-              <span className="font-medium text-gray-900">
-                ₹{bill?.amount?.toLocaleString()}
+              <span className="text-gray-600">
+                Maintenance ({longMonth[Number(bill?.bill_month) - 1]})
               </span>
-            </div>
-            <div className="flex justify-between items-center py-2 border-b border-gray-100">
-              <span className="text-gray-600">Penalty</span>
-              <span className="font-medium text-red-600">
-                ₹{bill?.penalty || 0}
+              <span className="font-medium text-gray-900">
+                ₹{bill?.breakdown?.base}
               </span>
             </div>
             {/* <div className="flex justify-between items-center py-2 border-b border-gray-100">
@@ -164,7 +182,7 @@ const ViewMaintananceDetailsModal: React.FC<ViewMaintananceModalProps> = ({
                 Total Amount
               </span>
               <span className="text-xl font-bold text-blue-600">
-                ₹{(bill?.amount || 0) + (bill?.penalty || 0)}
+                ₹{bill?.amount}
               </span>
             </div>
           </div>

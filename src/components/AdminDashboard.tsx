@@ -94,7 +94,7 @@ const AdminDashboard = () => {
       await createBillsWithPenaltyForAllResidents({
         billMonth: `${month}`,
         billYear: `${year}`,
-        dueDate: `${year}-${month}-${day}`,
+        dueDate: `${year}-${month}-${15}`,
         maintenanceFixedAmount:
           residentOrganization?.maintenance_amount as number,
         penaltyFixedAmount: 100,
@@ -281,7 +281,7 @@ const AdminDashboard = () => {
             </div>
           </div> */}
 
-          <div className="flex justify-between gap-4">
+          <div className=" flex flex-col sm:flex-row justify-between gap-4">
             <div className="">
               <h1 className="text-2xl font-bold text-gray-900 mb-2">
                 {residentOrganization?.name} Dashboard
@@ -291,7 +291,7 @@ const AdminDashboard = () => {
               </p>
             </div>
 
-            <div className="flex gap-4 self-center">
+            <div className="flex gap-4 self-center w-full sm:w-fit">
               <select
                 onChange={(e) => {
                   setCurrentPage(1);
@@ -337,7 +337,7 @@ const AdminDashboard = () => {
             <button
               disabled={generateBillLoading}
               onClick={handleCreateBill}
-              className="flex items-center whitespace-nowrap justify-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+              className="w-full sm:w-fit flex items-center whitespace-nowrap justify-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg font-medium transition-colors"
             >
               <ReceiptText className="w-5 h-5" />
               {generateBillLoading ? "Generating..." : "Generate Bill"}

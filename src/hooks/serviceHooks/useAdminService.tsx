@@ -4,6 +4,32 @@ import { useProfileStore } from "../../libs/stores/useProfileStore";
 import { supabase } from "../../libs/supabase/supabaseClient";
 import toast from "react-hot-toast";
 
+type CreateBillsArgs = {
+  maintenanceFixedAmount: number;
+  billMonth: string; // accepts "03" or "3" or "Mar"
+  billYear: string; // "2025"
+  dueDate: string; // "YYYY-MM-DD"
+  penaltyFixedAmount: number; // fixed penalty applied per overdue month carried
+  extraCharges?: number; // current period extra, default 0
+};
+
+export type DuesLine = {
+  month: string; // "01".."12"
+  year: string; // "YYYY"
+  status: "overdue";
+  amount: number; // that month’s base (from prior bill.amount)
+  previousExtra: number; // that month’s extra (from prior bill.extra)
+  penalty: number; // fixed penalty applied per overdue month
+  subtotal: number; // amount + previousExtra + penalty
+  note?: string;
+};
+
+export type BillBreakdown = {
+  base: number; // current period base (maintenanceFixedAmount)
+  extra: number; // current period extraCharges
+  dues: DuesLine[]; // multiple months supported
+};
+
 interface FetchResidentsParams {
   orgId?: string;
   page?: number;
@@ -228,71 +254,166 @@ const useAdminService = () => {
     }
   };
 
+
   const createBillsWithPenaltyForAllResidents = async ({
     billMonth,
-    dueDate,
     billYear,
+    dueDate,
     maintenanceFixedAmount,
-    // penaltyFixedAmount,
+    penaltyFixedAmount,
     extraCharges = 0,
-  }: {
-    maintenanceFixedAmount: number;
-    billMonth: string;
-    billYear: string;
-    dueDate: string;
-    penaltyFixedAmount: number;
-    extraCharges?: number;
-  }) => {
-    // 1. Fetch all residents
+  }: CreateBillsArgs) => {
+    // Guards
+    if (!profile?.organization_id)
+      return { error: "Missing organization context" }; // org context required [1]
+    if (Number.isNaN(Number(maintenanceFixedAmount)))
+      return { error: "maintenanceFixedAmount must be a number" }; // numeric guard [1]
+    if (Number.isNaN(Number(penaltyFixedAmount)))
+      return { error: "penaltyFixedAmount must be a number" }; // numeric guard [1]
+    if (Number.isNaN(Number(extraCharges)))
+      return { error: "extraCharges must be a number" }; // numeric guard [1]
+
+    // 1) Residents in org
     const { data: residents, error: errRes } = await supabase
       .from("profiles")
       .select("id")
-      .eq("organization_id", profile?.organization_id);
+      .eq("organization_id", profile.organization_id); // fetch resident ids [3]
+    if (errRes || !residents?.length)
+      return { error: errRes || "No residents found" }; // handle no residents [3]
+    const residentIds = residents.map((r) => r.id); // collect ids [3]
 
-    if (errRes || !residents) {
-      return { error: errRes || "No residents found" };
+    // 2) Normalize month/year to zero-padded strings
+    const toMonthIndex = (m: string) => {
+      const map: Record<string, number> = {
+        jan: 1,
+        feb: 2,
+        mar: 3,
+        apr: 4,
+        may: 5,
+        jun: 6,
+        jul: 7,
+        aug: 8,
+        sep: 9,
+        oct: 10,
+        nov: 11,
+        dec: 12,
+      };
+      const lower = m.toLowerCase();
+      if (map[lower]) return map[lower];
+      const n = Number(m);
+      return n >= 1 && n <= 12 ? n : NaN;
+    }; // support "03", "3", or "Mar" [2]
+    const monthIndex = toMonthIndex(billMonth); // parse month [2]
+    const yearNum = Number(billYear); // parse year [2]
+    if (Number.isNaN(monthIndex) || Number.isNaN(yearNum)) {
+      return { error: "Invalid billMonth or billYear" }; // validate period [2]
+    }
+    const currMonthStr = String(monthIndex).padStart(2, "0"); // "01".."12" [2]
+    const currYearStr = String(yearNum); // "YYYY" [2]
+
+    // Period key for comparison (YYYY-MM)
+    const periodKey = (y: string, m: string) => `${y}-${m}`; // lexicographic key [1]
+    const targetKey = periodKey(currYearStr, currMonthStr); // target period key [1]
+
+    // 3) Load all overdue bills strictly before the target period (one row = one dues line)
+    const { data: overdueBills, error: errOverdue } = await supabase
+      .from("maintenance_bills")
+      .select("resident_id, amount, extra, status, bill_month, bill_year")
+      .in("resident_id", residentIds)
+      .eq("status", "overdue")
+      // .eq("bill_month", String(Number(currMonthStr) - 1).padStart(2, "0")) // only prior overdue carried [3]
+      // .eq("bill_year", currYearStr); // only prior overdue carried [3]
+    if (errOverdue) return { error: errOverdue }; // propagate error [3]
+
+    // Group prior overdue rows per resident without cross-month accumulation
+    const overdueByResident = new Map<
+      string,
+      Array<{ month: string; year: string; amount: number; extra: number }>
+    >(); // resident → list of prior months [1]
+    overdueBills?.forEach((b) => {
+      const y = String(b.bill_year ?? ""); // ensure string [1]
+      const m = String(b.bill_month ?? ""); // ensure string [1]
+      if (!y || !m) return; // skip malformed [1]
+      const key = periodKey(y, m); // month key [1]
+      if (key >= targetKey) return; // only strictly before current period [1]
+      const amount =
+        typeof b.amount === "number" ? b.amount : Number(b.amount) || 0; // normalize [1]
+      const prevExtra =
+        typeof b.extra === "number" ? b.extra : Number(b.extra) || 0; // normalize [1]
+      const list = overdueByResident.get(b.resident_id) ?? []; // list [1]
+      list.push({ month: m, year: y, amount, extra: prevExtra }); // push per month [1]
+      overdueByResident.set(b.resident_id, list); // save [1]
+    }); // end mapping [1]
+
+    // Optional: sort dues oldest-first for readability
+    for (const [rid, list] of overdueByResident) {
+      list.sort((a, b) => (a.year + a.month).localeCompare(b.year + b.month)); // ascending [1]
+      overdueByResident.set(rid, list); // save sorted [1]
     }
 
-    // 2. Fetch previous unpaid bills for these residents
-    const residentIds =  residents.map((r) => r.id);
-    const { data: unpaidBills, error: errBills } = await supabase
+    // 4) Avoid duplicates for the target period
+    const { data: existingBills, error: errExisting } = await supabase
       .from("maintenance_bills")
-      .select("resident_id, amount")
+      .select("resident_id")
       .in("resident_id", residentIds)
-      .neq("status", "paid");
+      .eq("bill_month", currMonthStr)
+      .eq("bill_year", currYearStr); // existing current-period bills [3]
+    if (errExisting) return { error: errExisting }; // propagate error [3]
+    const already = new Set(existingBills?.map((b) => b.resident_id) ?? []); // resident ids [3]
 
-    if (errBills) return { error: errBills };
+    // 5) Compose bills with multi-month dues and per-month penalty, then upsert
+    const rows = residents
+      .filter((r) => !already.has(r.id)) // skip if already billed [3]
+      .map((r) => {
+        const base = Number(maintenanceFixedAmount); // current base [1]
+        const extra = Number(extraCharges); // current extra [1]
+        const prior = overdueByResident.get(r.id) ?? []; // all prior months [1]
 
-    // 3. Map unpaid bills by resident
-    const unpaidMap: Record<string, number> = {};
-    unpaidBills?.forEach((bill) => {
-      if (!unpaidMap[bill.resident_id]) unpaidMap[bill.resident_id] = 0;
-      unpaidMap[bill.resident_id] += bill.amount;
-    });
+        // Build dues lines with month’s own base and extra, plus fixed penalty
+        const dues: DuesLine[] = prior.map((p) => {
+          const penalty = Number(penaltyFixedAmount); // per-month penalty [1]
+          const subtotal = maintenanceFixedAmount + extraCharges + penalty; // per-line subtotal [1]
+          return {
+            month: p.month,
+            year: p.year,
+            status: "overdue",
+            amount: maintenanceFixedAmount || p.amount, // month’s base only [1]
+            previousExtra: extraCharges || p.extra, // month’s extra only [1]
+            penalty, // per-month penalty [1]
+            subtotal, // additive per month [1]
+            note: "Overdue carried with fixed penalty and its original extra", // explanation [5]
+          };
+        }); // end dues [1]
 
-    // 4. Create bills with penalty
-    const bills = residents.map((resident) => {
-      const previousDue = unpaidMap[resident.id] || 0;
-      const currentBill = maintenanceFixedAmount + extraCharges;
-      const totalAmount = currentBill + previousDue;
+        const duesTotal = dues.reduce((s, d) => s + d.subtotal, 0); // sum dues [1]
+        const total = base + extra + duesTotal; // final amount [5]
+        const breakdown: BillBreakdown = { base, extra, dues }; // persisted JSON [1]
 
-      return {
-        resident_id: resident.id,
-        organization_id: profile?.organization_id,
-        amount: totalAmount,
-        due_date: dueDate,
-        bill_month: billMonth,
-        bill_year: billYear,
-        status: "pending",
-      };
-    });
+        return {
+          resident_id: r.id,
+          organization_id: profile.organization_id,
+          amount: total, // transparent sum of parts [5]
+          due_date: dueDate,
+          bill_month: currMonthStr,
+          bill_year: currYearStr,
+          status: "pending",
+          extra, // store current period extra [1]
+          penalty: dues.length ? Number(penaltyFixedAmount) : 0, // optional top-level reference [5]
+          breakdown, // JSONB line items [1]
+        };
+      }); // end map [1]
 
-    // 5. Bulk insert all bills
+    if (!rows.length) return { data: [], error: null }; // nothing to insert [4]
+
     const { data, error } = await supabase
       .from("maintenance_bills")
-      .insert(bills);
+      .upsert(rows, {
+        onConflict: "resident_id,bill_month,bill_year",
+        ignoreDuplicates: false,
+      })
+      .select(); // requires unique (resident_id,bill_month,bill_year) [4]
 
-    return { data, error };
+    return { data, error }; // return result [4]
   };
 
   const fetchMaintenanceBills = async ({
@@ -406,7 +527,6 @@ const useAdminService = () => {
         hasNextPage,
         hasPrevPage,
       };
-
 
       setMaintenanceBills(data);
 

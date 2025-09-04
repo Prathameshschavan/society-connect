@@ -138,7 +138,7 @@ const TablePagination: React.FC<{
 
   return (
     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between px-4 sm:px-6 py-4 border-t border-gray-200 bg-gray-50">
-      <div className="flex items-center gap-4">
+      <div className="flex items-center justify-between gap-4">
         <span className="text-sm text-gray-700">
           Showing {(currentPage - 1) * pageSize + 1} to{" "}
           {Math.min(currentPage * pageSize, totalItems)} of {totalItems} entries
@@ -162,7 +162,7 @@ const TablePagination: React.FC<{
         )}
       </div>
 
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-wrap justify-center  items-center gap-2">
         <button
           onClick={() => onPageChange(currentPage - 1)}
           disabled={!hasPrevPage}

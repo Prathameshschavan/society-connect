@@ -19,7 +19,8 @@ import {
 import ViewMaintananceDetailsModal from "./Modals/ViewMaintananceDetailsModal";
 import UpdateMaintananceStatusModal from "./Modals/UpdateMaintananceStatusModal";
 import { useProfileStore } from "../libs/stores/useProfileStore";
-import { supabase } from "../libs/supabase/supabaseClient";
+
+
 const AdminDashboard = () => {
   const { createBillsWithPenaltyForAllResidents, fetchMaintenanceBills } =
     useAdminService();
@@ -114,20 +115,20 @@ const AdminDashboard = () => {
     }
   };
 
-  async function markAllMaintenancePaid() {
-    const payload = {
-      status: "paid",
-    };
+  // async function markAllMaintenancePaid() {
+  //   const payload = {
+  //     status: "paid",
+  //   };
 
-    const { data, error } = await supabase
-      .from("maintenance_bills")
-      .update(payload) // applies to all rows without filters
-      .eq("bill_month", triggerMonth)
-      .select("id, status"); // return affected ids and status
+  //   const { data, error } = await supabase
+  //     .from("maintenance_bills")
+  //     .update(payload) // applies to all rows without filters
+  //     .eq("bill_month", triggerMonth)
+  //     .select("id, status"); // return affected ids and status
 
-    if (error) throw error;
-    return data;
-  }
+  //   if (error) throw error;
+  //   return data;
+  // }
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);

@@ -2,7 +2,6 @@
 import React, { useState } from "react";
 import { Building } from "lucide-react";
 import { useForm } from "react-hook-form";
-import { useNavigate } from "react-router-dom";
 import type { TSignIn } from "../types/user.types";
 import CustomInput from "../components/ui/CustomInput";
 import toast from "react-hot-toast";
@@ -10,7 +9,6 @@ import useAuthService from "../hooks/serviceHooks/useAuthService";
 
 const SignIn: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
-  const navigate = useNavigate();
   const { signIn } = useAuthService();
 
   const {

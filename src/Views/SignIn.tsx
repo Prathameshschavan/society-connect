@@ -36,26 +36,28 @@ const SignIn: React.FC = () => {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
       <div className="max-w-md w-full">
         {/* Logo/Header */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-indigo-600 rounded-full mb-4">
-            <Building className="w-8 h-8 text-white" />
-          </div>
-          <h1 className="text-2xl font-bold text-gray-900">Society Connect</h1>
-          <p className="text-gray-600 mt-2">
-            Manage your society maintenance effortlessly
-          </p>
-        </div>
-
-        {/* Signin Form */}
         <div className="bg-white rounded-xl shadow-xl p-8">
-          <div className="mb-6">
+          <div className="text-center -mt-[60px] mb-8">
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-indigo-600 rounded-full mb-2">
+              <Building className="w-8 h-8 text-white" />
+            </div>
+            <h1 className="text-xl font-bold text-gray-900">
+              Society Connect
+            </h1>
+            <p className="text-gray-600  mt-1">
+              Manage your society maintenance effortlessly
+            </p>
+          </div>
+
+          {/* Signin Form */}
+          {/* <div className="mb-6">
             <h2 className="text-xl font-semibold text-gray-900">
               Welcome Back
             </h2>
             <p className="text-gray-600 text-sm mt-1">
               Sign in to your account
             </p>
-          </div>
+          </div> */}
 
           <form onSubmit={handleSubmit(onSubmit)}>
             <div className="space-y-4">
@@ -103,7 +105,7 @@ const SignIn: React.FC = () => {
             </div>
           </form>
 
-          <div className="mt-6 text-center">
+          {/* <div className="mt-6 text-center">
             <p className="text-sm text-gray-600">
               Don't have an account?{" "}
               <button
@@ -113,7 +115,7 @@ const SignIn: React.FC = () => {
                 Sign up here
               </button>
             </p>
-          </div>
+          </div> */}
         </div>
       </div>
     </div>

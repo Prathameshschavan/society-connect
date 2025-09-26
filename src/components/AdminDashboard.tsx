@@ -235,10 +235,9 @@ const AdminDashboard = () => {
         "cursor-pointer p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors",
       label: "View",
     },
-    ...((selectedMonth?.month ===
+    ...(selectedMonth?.month ===
       `${(new Date().getMonth() + 1).toString().padStart(2, "0")}` &&
-      selectedMonth?.year === `${new Date().getFullYear()}`) ||
-    true
+    selectedMonth?.year === `${new Date().getFullYear()}`
       ? [
           {
             icon: <Edit className="w-4 h-4" />,
@@ -257,7 +256,7 @@ const AdminDashboard = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <TopNav view="admin" />
-      <button onClick={markAllMaintenancePaid}>all paid</button>
+      {/* <button onClick={markAllMaintenancePaid}>all paid</button> */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="space-y-6">
           {/* Stats Cards */}

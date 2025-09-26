@@ -387,6 +387,7 @@ const OnboardResidentModal: React.FC<OnboardResidentModalProps> = ({
               >
                 <option value="admin">Admin</option>
                 <option value="resident">Resident</option>
+                <option value="tenant">Tenant</option>
               </select>
               {errors.role && (
                 <p className="text-red-500 text-xs mt-1">

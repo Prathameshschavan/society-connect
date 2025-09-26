@@ -1,11 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import {
-  Home,
-  Settings,
-  Users,
-  ChevronDown,
-  LogOut,
-} from "lucide-react";
+import { Home, Settings, Users, ChevronDown, LogOut } from "lucide-react";
 import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import ConfirmationAlert from "./Modals/ConfirmationAlert";
@@ -52,7 +46,7 @@ const TopNav: React.FC<{ view: "admin" | "owner" }> = ({ view }) => {
 
   const handleSettings = () => {
     setIsDropdownOpen(false);
-    navigate("/settings");
+    navigate(`/configure-settings/${residentOrganization?.id}`);
   };
 
   return (
@@ -79,7 +73,7 @@ const TopNav: React.FC<{ view: "admin" | "owner" }> = ({ view }) => {
                   <FileText className="w-4 h-4" />
                   <span>Reports</span>
                 </button> */}
-                <button
+                {/* <button
                   onClick={() =>
                     navigate(`/configure-settings/${residentOrganization?.id}`)
                   }
@@ -87,7 +81,7 @@ const TopNav: React.FC<{ view: "admin" | "owner" }> = ({ view }) => {
                 >
                   <Settings className="w-4 h-4" />
                   <span>Settings</span>
-                </button>
+                </button> */}
               </div>
             )}
           </div>

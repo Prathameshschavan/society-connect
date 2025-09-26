@@ -183,6 +183,8 @@ const SocietyConfigurationPage: React.FC = () => {
       total_units: 0,
       maintenance_rate: 0,
       maintenance_amount: 0,
+      tenant_maintenance_rate: 0,
+      tenant_maintenance_amount: 0,
     },
   });
 
@@ -206,6 +208,8 @@ const SocietyConfigurationPage: React.FC = () => {
         total_units: data.total_units || 0,
         maintenance_rate: data.maintenance_rate || 0,
         maintenance_amount: data.maintenance_amount || 0,
+        tenant_maintenance_rate: data.tenant_maintenance_rate || 0,
+        tenant_maintenance_amount: data.tenant_maintenance_amount || 0,
       };
 
       const { error } = await supabase
@@ -528,9 +532,8 @@ const SocietyConfigurationPage: React.FC = () => {
                       valueAsNumber: true,
                     })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                    placeholder="Enter maintenance rate per sqft"
                   />
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-[10px] text-gray-500 mt-1">
                     Example: If rate is ₹2.50, a 1000 sq ft unit will pay
                     ₹2,500/month
                   </p>
@@ -552,7 +555,48 @@ const SocietyConfigurationPage: React.FC = () => {
                       valueAsNumber: true,
                     })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                    placeholder="Enter maintenance rate per sqft"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Tenant Maintenance Rate (₹ per sq ft)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    {...register("tenant_maintenance_rate", {
+                      min: {
+                        value: 0,
+                        message: "Rate cannot be negative",
+                      },
+                      valueAsNumber: true,
+                    })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  />
+                  <p className="text-[10px] text-gray-500 mt-1">
+                    Example: If rate is ₹2.50, a 1000 sq ft unit will pay
+                    ₹2,500/month
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Tanent Maintenance Fixed Amount (₹ per month)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    {...register("tenant_maintenance_amount", {
+                      min: {
+                        value: 0,
+                        message: "Maintenance amount cannot be negative",
+                      },
+                      valueAsNumber: true,
+                    })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                   />
                 </div>
               </div>
@@ -608,6 +652,14 @@ const SocietyConfigurationPage: React.FC = () => {
           setValue("total_units", data?.[0].total_units || 0);
           setValue("maintenance_rate", data?.[0].maintenance_rate || 0);
           setValue("maintenance_amount", data?.[0].maintenance_amount || 0);
+          setValue(
+            "tenant_maintenance_rate",
+            data?.[0].tenant_maintenance_rate || 0
+          );
+          setValue(
+            "tenant_maintenance_amount",
+            data?.[0].tenant_maintenance_amount || 0
+          );
         }
       } catch (error) {
         console.error("Unexpected error:", error);
@@ -669,7 +721,7 @@ const SocietyConfigurationPage: React.FC = () => {
                 className="inline-flex items-center gap-2 px-3 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
               >
                 <ArrowLeft className="w-4 h-4" />
-                Back to Dashboard
+                <span className="hidden md:block">Back to Dashboard</span>
               </button>
               <div className="h-6 w-px bg-gray-300" />
               <div className="flex items-center gap-3">
@@ -693,14 +745,14 @@ const SocietyConfigurationPage: React.FC = () => {
         <form onSubmit={handleSubmit(onSubmit)}>
           <div className="bg-white rounded-lg shadow-sm border border-gray-200">
             {/* Tab Navigation */}
-            <div className="border-b border-gray-200">
-              <nav className="flex space-x-8 px-6" aria-label="Tabs">
+            <div className="border-b border-gray-200 overflow-auto">
+              <nav className="flex items-center" aria-label="Tabs">
                 {tabs.map((tab) => (
                   <button
                     key={tab.id}
                     type="button"
                     onClick={() => setActiveTab(tab.id)}
-                    className={`flex whitespace-nowrap items-center gap-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                    className={`flex whitespace-nowrap items-center gap-2 py-4 px-4 border-b-2 font-medium text-sm transition-colors ${
                       activeTab === tab.id
                         ? "border-indigo-500 text-indigo-600"
                         : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"

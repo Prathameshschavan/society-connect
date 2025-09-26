@@ -19,6 +19,7 @@ import {
 import ViewMaintananceDetailsModal from "./Modals/ViewMaintananceDetailsModal";
 import UpdateMaintananceStatusModal from "./Modals/UpdateMaintananceStatusModal";
 import { useProfileStore } from "../libs/stores/useProfileStore";
+import { supabase } from "../libs/supabase/supabaseClient";
 const AdminDashboard = () => {
   const { createBillsWithPenaltyForAllResidents, fetchMaintenanceBills } =
     useAdminService();
@@ -83,12 +84,15 @@ const AdminDashboard = () => {
     loadData();
   }, [currentPage, pageSize, selectedMonth]);
 
+  const triggerMonth = "04";
+
   const handleCreateBill = async () => {
     try {
       setGenerateBillLoading(true);
       const date = new Date();
       const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const month =
+        triggerMonth || String(date.getMonth() + 1).padStart(2, "0");
       const day = 15;
 
       await createBillsWithPenaltyForAllResidents({
@@ -99,6 +103,9 @@ const AdminDashboard = () => {
           residentOrganization?.maintenance_amount as number,
         penaltyFixedAmount: 100,
         extraCharges: 0,
+        tenantMaintenanceFixedAmount:
+          residentOrganization?.tenant_maintenance_amount as number,
+        tenantPenaltyFixedAmount: 100,
       });
     } catch (error) {
       console.log(error);
@@ -106,6 +113,21 @@ const AdminDashboard = () => {
       setGenerateBillLoading(false);
     }
   };
+
+  async function markAllMaintenancePaid() {
+    const payload = {
+      status: "paid",
+    };
+
+    const { data, error } = await supabase
+      .from("maintenance_bills")
+      .update(payload) // applies to all rows without filters
+      .eq("bill_month", triggerMonth)
+      .select("id, status"); // return affected ids and status
+
+    if (error) throw error;
+    return data;
+  }
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -213,9 +235,10 @@ const AdminDashboard = () => {
         "cursor-pointer p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors",
       label: "View",
     },
-    ...(selectedMonth?.month ===
+    ...((selectedMonth?.month ===
       `${(new Date().getMonth() + 1).toString().padStart(2, "0")}` &&
-    selectedMonth?.year === `${new Date().getFullYear()}`
+      selectedMonth?.year === `${new Date().getFullYear()}`) ||
+    true
       ? [
           {
             icon: <Edit className="w-4 h-4" />,
@@ -230,24 +253,11 @@ const AdminDashboard = () => {
         ]
       : []),
   ];
-  // async function markAllMaintenancePaid() {
-  //   const payload = {
-  //     status: "paid",
-  //   };
 
-  //   const { data, error } = await supabase
-  //     .from("maintenance_bills")
-  //     .update(payload) // applies to all rows without filters
-  //     .eq("bill_month", "0")
-  //     .select("id, status"); // return affected ids and status
-
-  //   if (error) throw error;
-  //   return data;
-  // }
   return (
     <div className="min-h-screen bg-gray-50">
       <TopNav view="admin" />
-      {/* <button onClick={markAllMaintenancePaid}>all paid</button> */}
+      <button onClick={markAllMaintenancePaid}>all paid</button>
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="space-y-6">
           {/* Stats Cards */}

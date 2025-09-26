@@ -14,6 +14,8 @@ export interface Organization {
   email?: string;
   maintenance_amount?: number;
   maintenance_rate?: number;
+  tenant_maintenance_amount?: number;
+  tenant_maintenance_rate?: number;
   total_units?: number;
   registration_number?: string;
   established_date?: string | null;

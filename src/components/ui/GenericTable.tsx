@@ -166,10 +166,10 @@ const TablePagination: React.FC<{
         <button
           onClick={() => onPageChange(currentPage - 1)}
           disabled={!hasPrevPage}
-          className="flex items-center gap-1 px-3 py-1.5 text-sm border border-gray-300 rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex items-center self-stretch gap-1 px-3 py-1.5 text-sm border border-gray-300 rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <ChevronLeft className="w-4 h-4" />
-          Previous
+          <span className="hidden md:block">Previous</span>
         </button>
 
         <div className="flex items-center gap-1">
@@ -219,9 +219,9 @@ const TablePagination: React.FC<{
         <button
           onClick={() => onPageChange(currentPage + 1)}
           disabled={!hasNextPage}
-          className="flex items-center gap-1 px-3 py-1.5 text-sm border border-gray-300 rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex items-center self-stretch gap-1 px-3 py-1.5 text-sm border border-gray-300 rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Next
+          <span className="hidden md:block">Next</span>
           <ChevronRight className="w-4 h-4" />
         </button>
       </div>
@@ -299,8 +299,6 @@ function GenericTable<T extends Record<string, any>>({
   // - Mobile cards only below the same breakpoint
   const tableWrapperVisibility = `hidden sm:block`;
   const cardsWrapperVisibility = `sm:hidden`;
-
-  console.log(actions);
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200">

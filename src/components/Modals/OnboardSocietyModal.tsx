@@ -146,7 +146,8 @@ const OnboardSocietyModal: React.FC<OnboardSocietyModalProps> = ({
         total_units: data.totalFlats || 0,
         registration_number: data.registrationNumber || "",
         established_date: data.establishedDate || null,
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
+        extras:[]
       };
 
       const { data: orgData, error } = await supabase

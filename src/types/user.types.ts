@@ -26,7 +26,7 @@ export interface Organization {
 export interface Profile {
   id: string;
   organization_id?: string;
-  role: 'super_admin' | 'admin' | 'resident';
+  role: "super_admin" | "admin" | "resident" | "tenant";
   full_name: string;
   phone: string;
   unit_number?: string;
@@ -41,10 +41,12 @@ export interface AuthContextType {
   user: User | null;
   profile: Profile | null;
   loading: boolean;
-  signIn: (phone: string, password: string) => Promise<{ data: any; error: any; profile?: Profile | null; }>;
+  signIn: (
+    phone: string,
+    password: string
+  ) => Promise<{ data: any; error: any; profile?: Profile | null }>;
   signOut: () => Promise<{ error: unknown }>;
   fetchUserProfile: (userId: string) => Promise<void>;
   setUser: (user: User | null) => void;
   setProfile: (profile: Profile | null) => void;
 }
-

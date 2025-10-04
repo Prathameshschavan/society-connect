@@ -20,7 +20,6 @@ import ViewMaintananceDetailsModal from "./Modals/ViewMaintananceDetailsModal";
 import UpdateMaintananceStatusModal from "./Modals/UpdateMaintananceStatusModal";
 import { useProfileStore } from "../libs/stores/useProfileStore";
 
-
 const AdminDashboard = () => {
   const { createBillsWithPenaltyForAllResidents, fetchMaintenanceBills } =
     useAdminService();
@@ -103,7 +102,7 @@ const AdminDashboard = () => {
         maintenanceFixedAmount:
           residentOrganization?.maintenance_amount as number,
         penaltyFixedAmount: 100,
-        extraCharges: 0,
+        extras: residentOrganization?.extras,
         tenantMaintenanceFixedAmount:
           residentOrganization?.tenant_maintenance_amount as number,
         tenantPenaltyFixedAmount: 100,

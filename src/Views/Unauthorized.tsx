@@ -1,4 +1,4 @@
-import { Shield, Home, ArrowLeft, Lock, AlertTriangle } from 'lucide-react';
+import { Shield, Home, ArrowLeft, Lock, AlertTriangle } from "lucide-react";
 
 const UnauthorizedPage = () => {
   const handleGoBack = () => {
@@ -7,12 +7,12 @@ const UnauthorizedPage = () => {
 
   const handleGoHome = () => {
     // Replace with your home page navigation logic
-    console.log('Navigate to home page');
+    console.log("Navigate to home page");
   };
 
   const handleContactAdmin = () => {
     // Replace with your admin contact logic
-    console.log('Contact administrator');
+    console.log("Contact administrator");
   };
 
   return (
@@ -44,18 +44,30 @@ const UnauthorizedPage = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
             <div className="bg-gray-50 rounded-lg p-4">
               <Lock className="w-6 h-6 text-gray-600 mx-auto mb-2" />
-              <h3 className="font-semibold text-gray-900 text-sm">Restricted Area</h3>
-              <p className="text-xs text-gray-600 mt-1">This section requires special permissions</p>
+              <h3 className="font-semibold text-gray-900 text-sm">
+                Restricted Area
+              </h3>
+              <p className="text-xs text-gray-600 mt-1">
+                This section requires special permissions
+              </p>
             </div>
             <div className="bg-gray-50 rounded-lg p-4">
               <Shield className="w-6 h-6 text-gray-600 mx-auto mb-2" />
-              <h3 className="font-semibold text-gray-900 text-sm">Role-Based Access</h3>
-              <p className="text-xs text-gray-600 mt-1">Only committee members can access this</p>
+              <h3 className="font-semibold text-gray-900 text-sm">
+                Role-Based Access
+              </h3>
+              <p className="text-xs text-gray-600 mt-1">
+                Only committee members can access this
+              </p>
             </div>
             <div className="bg-gray-50 rounded-lg p-4">
               <AlertTriangle className="w-6 h-6 text-gray-600 mx-auto mb-2" />
-              <h3 className="font-semibold text-gray-900 text-sm">Session Expired</h3>
-              <p className="text-xs text-gray-600 mt-1">Please sign in again to continue</p>
+              <h3 className="font-semibold text-gray-900 text-sm">
+                Session Expired
+              </h3>
+              <p className="text-xs text-gray-600 mt-1">
+                Please sign in again to continue
+              </p>
             </div>
           </div>
 
@@ -87,7 +99,9 @@ const UnauthorizedPage = () => {
 
         {/* Help Section */}
         <div className="bg-white rounded-xl shadow-lg p-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Need Access?</h2>
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">
+            Need Access?
+          </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-left">
             <div>
               <h3 className="font-medium text-gray-900 mb-2">For Residents:</h3>
@@ -99,7 +113,9 @@ const UnauthorizedPage = () => {
               </ul>
             </div>
             <div>
-              <h3 className="font-medium text-gray-900 mb-2">For Committee Members:</h3>
+              <h3 className="font-medium text-gray-900 mb-2">
+                For Committee Members:
+              </h3>
               <ul className="text-sm text-gray-600 space-y-1">
                 <li>• Contact the system administrator</li>
                 <li>• Verify your committee role status</li>
@@ -108,21 +124,25 @@ const UnauthorizedPage = () => {
               </ul>
             </div>
           </div>
-          
+
           {/* Contact Information */}
           <div className="mt-6 pt-6 border-t border-gray-200">
             <div className="bg-blue-50 rounded-lg p-4">
-              <h4 className="font-medium text-blue-900 mb-2">Need immediate assistance?</h4>
+              <h4 className="font-medium text-blue-900 mb-2">
+                Need immediate assistance?
+              </h4>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                 <div>
                   <p className="text-blue-800">
-                    <span className="font-medium">Society Office:</span><br />
+                    <span className="font-medium">Society Office:</span>
+                    <br />
                     Monday - Saturday, 9 AM - 6 PM
                   </p>
                 </div>
                 <div>
                   <p className="text-blue-800">
-                    <span className="font-medium">Emergency Contact:</span><br />
+                    <span className="font-medium">Emergency Contact:</span>
+                    <br />
                     Available 24/7 for urgent issues
                   </p>
                 </div>

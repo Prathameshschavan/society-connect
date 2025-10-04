@@ -1,56 +1,150 @@
-import { AlertCircle } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import useCommonService from "../hooks/serviceHooks/useCommonService";
 import PaymentModal from "./Modals/PaymentModal";
 import TopNav from "./TopNav";
 import { useProfileStore } from "../libs/stores/useProfileStore";
+import type {
+  PaginationInfo,
+  TableAction,
+  TableColumn,
+} from "./ui/GenericTable";
+import type { MaintenanceBill } from "../libs/stores/useMaintenanceStore";
+import { Eye } from "lucide-react";
+import GenericTable from "./ui/GenericTable";
+import useResidentService from "../hooks/serviceHooks/useResidentService";
+import { useResidentStore } from "../libs/stores/useResidentStore";
+import ViewMaintananceDetailsModal from "./Modals/ViewMaintananceDetailsModal";
 
 const RoomOwnerDashboard = () => {
-  const { getStatusIcon, getStatusColor, longMonth } = useCommonService();
+  const { getStatusIcon, getStatusColor, longMonth, shortMonth } =
+    useCommonService();
   const { profile } = useProfileStore();
+  const { bills } = useResidentStore();
+  const { fetchMaintenanceBills } = useResidentService();
+
+  const [loading, setLoading] = useState(false);
 
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [selectedBill, setSelectedBill] = useState<MaintenanceBill | null>(
+    null
+  );
+  const [isOpenMaintananceDetailsModal, setIsOpenMaintananceDetailsModal] =
+    useState(false);
 
-  const paymentHistory = [
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [pagination, setPagination] = useState<PaginationInfo>({
+    currentPage: 1,
+    totalPages: 1,
+    totalItems: 0,
+    pageSize: 10,
+    hasNextPage: false,
+    hasPrevPage: false,
+  });
+
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      const result = await fetchMaintenanceBills({
+        page: currentPage,
+        pageSize: pageSize,
+      });
+
+      if (result) {
+        setPagination(result.pagination);
+      }
+    } catch (error) {
+      console.error("Error loading data:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  const handlePageSizeChange = (newPageSize: number) => {
+    setPageSize(newPageSize);
+    setCurrentPage(1); // Reset to first page when page size changes
+  };
+
+  useEffect(() => {
+    loadData();
+  }, [currentPage, pageSize]);
+
+  const columns: TableColumn<MaintenanceBill>[] = [
     {
-      month: "July 2025",
-      amountDue: 5000,
-      penalty: 0,
-      totalPaid: 5000,
-      status: "paid",
-      datePaid: "2025-07-03",
+      key: "monthYear",
+      header: "Month/Year",
+      render: (bill) => (
+        <div>
+          <div className=" text-gray-900">
+            {shortMonth[Number(bill.bill_month) - 1]} {bill?.bill_year}
+          </div>
+        </div>
+      ),
     },
     {
-      month: "June 2025",
-      amountDue: 5000,
-      penalty: 0,
-      totalPaid: 5000,
-      status: "paid",
-      datePaid: "2025-06-02",
+      key: "currentAmount",
+      header: <p>Maintenance Amount</p>,
+      render: (bill) => (
+        <div>
+          <div className=" text-gray-900">₹ {bill?.amount}</div>
+        </div>
+      ),
     },
+    // {
+    //   key: "penalty",
+    //   header: "Penalty",
+    //   render: (bill) => (
+    //     <div>
+    //       <div className=" text-gray-900">₹ {bill?.amount}</div>
+    //     </div>
+    //   ),
+    // },
+    // {
+    //   key: "totalAmount",
+    //   header: (
+    //     <p>
+    //       Total <br /> Amount
+    //     </p>
+    //   ),
+    //   render: (bill) => (
+    //     <div>
+    //       <div className=" text-gray-900">₹ {bill?.amount}</div>
+    //     </div>
+    //   ),
+    // },
     {
-      month: "May 2025",
-      amountDue: 5000,
-      penalty: 250,
-      totalPaid: 5250,
-      status: "paid",
-      datePaid: "2025-05-15",
+      key: "status",
+      header: "Status",
+      render: (bill) => (
+        <div>
+          <span
+            className={`capitalize inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(
+              bill.status as string
+            )}`}
+          >
+            {getStatusIcon(bill.status as string)}
+            {bill.status}
+          </span>
+        </div>
+      ),
     },
+  ];
+
+  const actions: TableAction<MaintenanceBill>[] = [
     {
-      month: "April 2025",
-      amountDue: 5000,
-      penalty: 0,
-      totalPaid: 5000,
-      status: "paid",
-      datePaid: "2025-04-01",
-    },
-    {
-      month: "August 2025",
-      amountDue: 5000,
-      penalty: 500,
-      totalPaid: 0,
-      status: "overdue",
-      datePaid: "-",
+      icon: <Eye className="w-4 h-4" />,
+      onClick: (bill: MaintenanceBill) => {
+        setSelectedBill(bill);
+        setIsOpenMaintananceDetailsModal(true);
+      },
+      className:
+        "cursor-pointer p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors",
+      label: "View",
     },
   ];
   return (
@@ -65,7 +159,9 @@ const RoomOwnerDashboard = () => {
                 <h1 className="text-2xl font-bold text-gray-900">
                   Payment Ledger
                 </h1>
-                <p className="text-gray-600 mt-1">{profile?.full_name} • Room {profile?.unit_number}</p>
+                <p className="text-gray-600 mt-1">
+                  {profile?.full_name} • Room {profile?.unit_number}
+                </p>
               </div>
               <div className="text-right">
                 <p className="text-sm text-gray-500">Current Month</p>
@@ -77,7 +173,7 @@ const RoomOwnerDashboard = () => {
           </div>
 
           {/* Current Pending Amount */}
-          <div className="bg-gradient-to-r from-red-50 to-red-100 border border-red-200 rounded-xl p-6">
+          {/* <div className="bg-gradient-to-r from-red-50 to-red-100 border border-red-200 rounded-xl p-6">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
                 <AlertCircle className="w-6 h-6 text-red-600" />
@@ -104,83 +200,35 @@ const RoomOwnerDashboard = () => {
                 Pay Now
               </button>
             </div>
-          </div>
+          </div> */}
 
           {/* Payment History */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-            <div className="p-6 border-b border-gray-200">
-              <h2 className="text-xl font-semibold text-gray-900">
-                Payment History
-              </h2>
-              <p className="text-gray-600 mt-1">
-                Track your maintenance payment records
-              </p>
-            </div>
-
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="text-left py-4 px-6 font-medium text-gray-900">
-                      Month/Year
-                    </th>
-                    <th className="text-left py-4 px-6 font-medium text-gray-900">
-                      Amount Due
-                    </th>
-                    <th className="text-left py-4 px-6 font-medium text-gray-900">
-                      Penalty
-                    </th>
-                    <th className="text-left py-4 px-6 font-medium text-gray-900">
-                      Total Paid
-                    </th>
-                    <th className="text-left py-4 px-6 font-medium text-gray-900">
-                      Status
-                    </th>
-                    <th className="text-left py-4 px-6 font-medium text-gray-900">
-                      Date Paid
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {paymentHistory.map((payment, index) => (
-                    <tr key={index} className="hover:bg-gray-50">
-                      <td className="py-4 px-6 font-medium text-gray-900">
-                        {payment.month}
-                      </td>
-                      <td className="py-4 px-6 text-gray-700">
-                        ₹{payment.amountDue.toLocaleString()}
-                      </td>
-                      <td className="py-4 px-6 text-gray-700">
-                        {payment.penalty > 0 ? `₹${payment.penalty}` : "-"}
-                      </td>
-                      <td className="py-4 px-6 text-gray-900 font-medium">
-                        {payment.totalPaid > 0
-                          ? `₹${payment.totalPaid.toLocaleString()}`
-                          : "-"}
-                      </td>
-                      <td className="py-4 px-6">
-                        <span
-                          className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(
-                            payment.status
-                          )}`}
-                        >
-                          {getStatusIcon(payment.status)}
-                          {payment.status.charAt(0).toUpperCase() +
-                            payment.status.slice(1)}
-                        </span>
-                      </td>
-                      <td className="py-4 px-6 text-gray-600">
-                        {payment.datePaid}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <GenericTable
+              title="Payment History"
+              columns={columns}
+              data={bills}
+              actions={actions}
+              loading={loading}
+              emptyMessage="No maintenence bill is generated this month"
+              searchPlaceholder="Search resident"
+              showPagination
+              pagination={pagination}
+              onPageChange={handlePageChange}
+              onPageSizeChange={handlePageSizeChange}
+              pageSizeOptions={[5, 10, 20, 50]}
+              onSearch={() => {}}
+            />
           </div>
           {showPaymentModal && <PaymentModal setOpen={setShowPaymentModal} />}
         </div>
       </main>
+      <ViewMaintananceDetailsModal
+        bill={selectedBill}
+        residentInfo={false}
+        isOpen={isOpenMaintananceDetailsModal}
+        onClose={() => setIsOpenMaintananceDetailsModal(false)}
+      />
     </div>
   );
 };

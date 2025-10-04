@@ -5,7 +5,7 @@ import { useProfileStore } from "../libs/stores/useProfileStore";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  allowedRoles?: Array<"super_admin" | "admin" | "resident">;
+  allowedRoles?: Array<"super_admin" | "admin" | "resident" | "tenant">;
   requireAuth?: boolean;
   redirectIfAuthenticated?: boolean; // New prop
   redirectTo?: string; // Where to redirect authenticated users
@@ -28,8 +28,8 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
       return <Navigate to="/super-admin" replace />;
     } else if (profile?.role === "admin") {
       return <Navigate to="/admin" replace />;
-    } else if (profile?.role === "resident") {
-      return <Navigate to="/admin" replace />;
+    } else if (profile?.role === "resident" || profile?.role === "tenant") {
+      return <Navigate to="/owner" replace />;
     }
     console.log("none of the above", profile);
     return <Navigate to={redirectTo} replace />;

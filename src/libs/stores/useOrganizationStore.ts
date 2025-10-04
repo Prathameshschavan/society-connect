@@ -22,6 +22,15 @@ export interface Organization {
   created_at?: string;
   updated_at?: string | number;
   admin: Profile[];
+  extras: ExtraItem[];
+}
+
+export interface ExtraItem {
+  id: string;
+  name: string;
+  amount: number;
+  month: string;
+  year: string;
 }
 
 interface OrganizationState {

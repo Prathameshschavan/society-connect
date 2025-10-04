@@ -98,7 +98,6 @@ const SignUp: React.FC = () => {
         // The profile will be created automatically by the database trigger
         setUser(authData?.user);
         setProfile(authData?.user?.user_metadata as never);
-        console.log("User created successfully:", authData.user);
 
         toast.success("Registration successfully");
         navigate("/sign-in");

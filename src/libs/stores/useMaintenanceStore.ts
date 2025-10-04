@@ -2,6 +2,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { BillBreakdown } from "../../hooks/serviceHooks/useAdminService";
+import type { ExtraItem } from "./useOrganizationStore";
 
 export interface MaintenanceBill {
   id: string;
@@ -18,6 +19,7 @@ export interface MaintenanceBill {
   created_at?: string;
   updated_at?: string;
   breakdown: BillBreakdown;
+  extras: ExtraItem[];
   // Optional resident data if fetched with join
   resident?: {
     id: string;

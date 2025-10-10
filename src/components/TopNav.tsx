@@ -1,5 +1,12 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { Home, Settings, Users, ChevronDown, LogOut } from "lucide-react";
+import {
+  Home,
+  Settings,
+  Users,
+  ChevronDown,
+  LogOut,
+  FileText,
+} from "lucide-react";
 import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import ConfirmationAlert from "./Modals/ConfirmationAlert";
@@ -44,49 +51,45 @@ const TopNav: React.FC<{ view: "admin" | "owner" }> = ({ view }) => {
     }
   };
 
-  const handleSettings = () => {
-    setIsDropdownOpen(false);
-    navigate(`/configure-settings/${residentOrganization?.id}`);
-  };
 
   return (
     <nav className="bg-white border-b border-gray-200 sticky top-0 z-40">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
-          <div className="flex items-center space-x-8">
-            <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                <Home className="w-5 h-5 text-white" />
-              </div>
-              <span className="text-xl font-bold text-gray-900">
-                SocietyTracker
-              </span>
-            </div>
+      <div className="max-w-7xl mx-auto py-2 px-4 sm:px-6 lg:px-8 flex flex-col gap-1">
+        <div className="flex justify-between items-center ">
+          <p>Society Connect</p>
 
+          <div className="flex items-center justify-center ">
             {view === "admin" && (
-              <div className="hidden md:flex space-x-8">
-                {/* <button className="flex items-center space-x-2 text-blue-600 font-medium">
+              <div className="hidden md:flex space-x-6">
+                <button className="flex items-center space-x-1 text-blue-600  font-medium text-sm">
                   <Home className="w-4 h-4" />
                   <span>Dashboard</span>
                 </button>
-                <button className="flex items-center space-x-2 text-gray-600 hover:text-gray-900">
+                <button className="flex items-center space-x-1 text-gray-600 font-light text-sm hover:text-gray-900">
+                  <FileText className="w-4 h-4" />
+                  <span>Income</span>
+                </button>
+                <button className="flex items-center space-x-1 text-gray-600 font-light text-sm hover:text-gray-900">
+                  <FileText className="w-4 h-4" />
+                  <span>Expenses</span>
+                </button>
+                <button className="flex items-center space-x-1 text-gray-600 font-light text-sm hover:text-gray-900">
                   <FileText className="w-4 h-4" />
                   <span>Reports</span>
-                </button> */}
-                {/* <button
+                </button>
+                <button
                   onClick={() =>
                     navigate(`/configure-settings/${residentOrganization?.id}`)
                   }
-                  className="flex items-center space-x-2 text-gray-600 hover:text-gray-900"
+                  className="flex items-center space-x-1 text-gray-600 hover:text-gray-900 font-light text-sm"
                 >
                   <Settings className="w-4 h-4" />
                   <span>Settings</span>
-                </button> */}
+                </button>
               </div>
             )}
           </div>
-
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center text-sm font-extralight space-x-4">
             {/* User Profile Dropdown */}
             <div className="relative" ref={dropdownRef}>
               <button
@@ -96,11 +99,11 @@ const TopNav: React.FC<{ view: "admin" | "owner" }> = ({ view }) => {
                 <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
                   <Users className="w-4 h-4 text-gray-600" />
                 </div>
-                <ChevronDown
+                {/* <ChevronDown
                   className={`w-4 h-4 transition-transform duration-200 ${
                     isDropdownOpen ? "rotate-180" : ""
                   }`}
-                />
+                /> */}
               </button>
 
               {/* Dropdown Menu */}
@@ -111,21 +114,10 @@ const TopNav: React.FC<{ view: "admin" | "owner" }> = ({ view }) => {
                     <p className="text-sm font-medium text-gray-900">
                       {profile?.full_name || "User"}
                     </p>
-                    <p className="text-xs text-gray-500 capitalize">
+                    <p className="text-xs font-light text-gray-500 capitalize">
                       {profile?.role?.replace("_", " ") || "Role"}
                     </p>
                   </div>
-
-                  {/* Menu Items */}
-                  {profile?.role === "admin" && (
-                    <button
-                      onClick={handleSettings}
-                      className="cursor-pointer flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-                    >
-                      <Settings className="w-4 h-4 mr-3" />
-                      Settings
-                    </button>
-                  )}
 
                   <button
                     onClick={() => setIsLogoutConfirmationOpen(true)}

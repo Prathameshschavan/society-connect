@@ -2,7 +2,13 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { useEffect, useState } from "react";
-import { Edit, Eye, ReceiptText } from "lucide-react";
+import {
+  ArrowDown,
+  ChevronDownIcon,
+  Edit,
+  Eye,
+  ReceiptText,
+} from "lucide-react";
 
 import TopNav from "./TopNav";
 import OnboardResidentModal from "./Modals/OnboardResidentModal";
@@ -23,6 +29,7 @@ import { useProfileStore } from "../libs/stores/useProfileStore";
 
 import { currMonth, currYear, shortMonth } from "../utility/dateTimeServices";
 import { columns } from "../config/tableConfig/adminDashboard";
+import { GenericSelect } from "./ui/GenericSelect";
 
 // Do not Remove Comments
 
@@ -179,62 +186,52 @@ const AdminDashboard = () => {
           {/* Header: Organization context and purpose subtitle [web:11] */}
           <div className="flex flex-col sm:flex-row justify-between gap-4">
             <div>
-              <h1 className="text-2xl poppins-medium text-gray-900 mb-2">
+              <h1 className="text-2xl poppins-medium ">
                 {residentOrganization?.name}
               </h1>
-              <p className="text-gray-600">
+              <p className="text-gray-600 text-sm font-light">
                 View and track your society maintenance details
               </p>
             </div>
 
             {/* Filters: Month and Year selectors; changing resets to page 1 [web:6] */}
             <div className="flex gap-4 self-center w-full sm:w-fit">
-              {/* Month selector */}
-              <select
-                onChange={(e) => {
+              <GenericSelect
+                id="months"
+                onChange={(value) => {
                   setCurrentPage(1);
                   setSelectedMonth((prev) => ({
                     ...prev,
-                    month: e.target.value,
+                    month: value,
                   }));
                 }}
+                options={shortMonth.map((month, i) => ({
+                  label: month,
+                  value: (i + 1).toString().padStart(2, "0"),
+                }))}
                 value={selectedMonth.month}
-                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent border-gray-300"
-              >
-                {shortMonth.map((month, i) => (
-                  <option
-                    key={month}
-                    value={(i + 1).toString().padStart(2, "0")}
-                  >
-                    {month}
-                  </option>
-                ))}
-              </select>
+                label="Month"
+              />
 
-              {/* Year selector */}
-              <select
-                value={selectedMonth.year}
-                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent border-gray-300"
-                onChange={(e) => {
+              <GenericSelect
+                id="years"
+                onChange={(value) => {
                   setCurrentPage(1);
                   setSelectedMonth((prev) => ({
                     ...prev,
-                    year: e.target.value,
+                    year: value,
                   }));
                 }}
-              >
-                {Array.from(
+                options={Array.from(
                   { length: new Date().getFullYear() - 2000 + 1 },
                   (_, index) => {
                     const year = new Date().getFullYear() - index;
-                    return (
-                      <option key={year} value={year}>
-                        {year}
-                      </option>
-                    );
+                    return { label: year, value: `${year}` };
                   }
                 )}
-              </select>
+                value={selectedMonth.year}
+                label="Year"
+              />
             </div>
           </div>
 

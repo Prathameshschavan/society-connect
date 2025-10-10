@@ -3,7 +3,6 @@ import {
   Home,
   Settings,
   Users,
-  ChevronDown,
   LogOut,
   FileText,
 } from "lucide-react";

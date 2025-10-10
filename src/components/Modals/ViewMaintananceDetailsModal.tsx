@@ -164,7 +164,10 @@ export function BillPdf({
   const subTotal = useMemo(() => {
     return (
       (bill.breakdown?.base ?? 0) +
-      bill.breakdown?.dues?.reduce((acc, curr) => acc + (curr?.amount + curr?.penalty), 0)
+      bill.breakdown?.dues?.reduce(
+        (acc, curr) => acc + (curr?.amount + curr?.penalty),
+        0
+      )
     );
   }, [bill]);
 
@@ -355,7 +358,9 @@ export function BillPdfDownload({
       document={<BillPdf bill={bill} extras={extras} />}
       fileName={`bill-${bill.id}.pdf`}
     >
-      <Download className="cursor-pointer" />
+      <div className="cursor-pointer border border-gray-100 p-2 rounded-full w-[40px] h-[40px] flex items-center justify-center hover:bg-gray-100">
+        <Download className="w-[20px] h-[20px]" />
+      </div>
     </PDFDownloadLink>
   );
 }
@@ -368,16 +373,12 @@ const ViewMaintananceDetailsModal: React.FC<ViewMaintananceModalProps> = ({
 }) => {
   const { getStatusColor, getStatusIcon, longMonth } = useCommonService();
 
-  // Derive extras for on-screen modal too
-  // const extrasList: ExtraItem[] = [
-  //   bill?.breakdown?.dues?.extras,
-  //   ...(bill?.breakdown?.extras || []),
-  // ];
-
   const extrasList = useMemo(() => {
     const bills = bill?.breakdown?.dues?.map((due) => due?.extras);
     return bill ? [...(bills || []), bill?.breakdown?.extras] : [];
   }, [bill]);
+
+  console.log(extrasList);
 
   return (
     <Modal
@@ -457,15 +458,6 @@ const ViewMaintananceDetailsModal: React.FC<ViewMaintananceModalProps> = ({
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <div
-                className={`w-4 h-4 rounded-full ${
-                  bill?.status === "paid"
-                    ? "bg-green-500"
-                    : bill?.status === "overdue"
-                    ? "bg-red-500"
-                    : "bg-yellow-500"
-                }`}
-              ></div>
               <div>
                 <p className="text-sm text-gray-500">Status</p>
                 <span
@@ -526,13 +518,12 @@ const ViewMaintananceDetailsModal: React.FC<ViewMaintananceModalProps> = ({
                 </span>
               </div>
 
-              <h3 className="text-md font-semibold text-gray-900 mb-2 flex items-center gap-2 mt-4">
-                Additional Charges
-              </h3>
-
               {/* Current extras list */}
               {extrasList.length > 0 && (
                 <>
+                  <h3 className="text-md font-semibold text-gray-900 mb-2 flex items-center gap-2 mt-4">
+                    Additional Charges
+                  </h3>
                   {extrasList.map((ex) => (
                     <ExtraListItem items={ex} />
                   ))}

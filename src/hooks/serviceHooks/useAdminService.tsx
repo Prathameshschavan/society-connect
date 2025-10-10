@@ -1,9 +1,13 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useMaintenanceStore } from "../../libs/stores/useMaintenanceStore";
-import type { ExtraItem } from "../../libs/stores/useOrganizationStore";
+import {
+  useOrganizationStore,
+  type ExtraItem,
+} from "../../libs/stores/useOrganizationStore";
 import { useProfileStore } from "../../libs/stores/useProfileStore";
 import { supabase } from "../../libs/supabase/supabaseClient";
 import toast from "react-hot-toast";
+import { currMonth, currYear } from "../../utility/dateTimeServices";
 
 export type DuesLine = {
   month: string; // "01".."12"
@@ -90,6 +94,7 @@ type UpdateStatusInput = {
 const useAdminService = () => {
   const { profile, setResidents } = useProfileStore();
   const { setMaintenanceBills } = useMaintenanceStore();
+  const { residentOrganization } = useOrganizationStore();
 
   const updateMaintenanceStatus = async (input: UpdateStatusInput) => {
     // Build partial payload, only include payment fields when paid
@@ -248,17 +253,6 @@ const useAdminService = () => {
     }
   };
 
-  type CreateBillsArgs = {
-    billMonth: string;
-    billYear: string | number;
-    dueDate: string; // ISO date
-    maintenanceFixedAmount: number;
-    penaltyFixedAmount: number;
-    tenantMaintenanceFixedAmount: number;
-    tenantPenaltyFixedAmount: number;
-    extras?: ExtraItem[];
-  };
-
   // helper to compute previous YYYY-MM
   const prevPeriod = (yearStr: string, monthStr: string) => {
     const y = Number(yearStr);
@@ -269,35 +263,38 @@ const useAdminService = () => {
     return { year: String(y - 1), month: "12" };
   };
 
-  const createBillsWithPenaltyForAllResidents = async ({
-    billMonth,
-    billYear,
-    dueDate,
-    maintenanceFixedAmount,
-    penaltyFixedAmount,
-    tenantMaintenanceFixedAmount,
-    tenantPenaltyFixedAmount,
-    extras = [],
-  }: CreateBillsArgs & { extras?: ExtraItem[] }) => {
-    // 0) guards
+  const createBillsWithPenaltyForAllResidents = async () => {
     if (!profile?.organization_id)
-      return { error: "Missing organization context" }; // [memory:12]
+      return { error: "Missing organization context" };
+
+    console.log("===> 1", profile?.organization_id);
 
     const numOrErr = (v: any, label: string) =>
       Number.isNaN(Number(v)) ? `${label} must be a number` : null;
 
+    
     for (const [v, label] of [
-      [maintenanceFixedAmount, "maintenanceFixedAmount"],
-      [penaltyFixedAmount, "penaltyFixedAmount"],
-      [tenantMaintenanceFixedAmount, "tenantMaintenanceFixedAmount"],
-      [tenantPenaltyFixedAmount, "tenantPenaltyFixedAmount"],
+      [residentOrganization?.maintenance_amount, "maintenanceFixedAmount"],
+      [residentOrganization?.penalty_amount, "penaltyFixedAmount"],
+      [
+        residentOrganization?.tenant_maintenance_amount,
+        "tenantMaintenanceFixedAmount",
+      ],
+      [
+        residentOrganization?.penalty_amount,
+        "tenantPenaltyFixedAmount",
+      ],
     ] as const) {
       const err = numOrErr(v, label);
+      console.log("object", err)
       if (err) return { error: err }; // [memory:12]
     }
 
+
+    console.log("===> 2");
+
     // Validate extras shape: id, name non-empty, amount > 0
-    const badExtra = (extras ?? []).find(
+    const badExtra = (residentOrganization?.extras ?? []).find(
       (e) =>
         !e ||
         !e.id ||
@@ -308,11 +305,16 @@ const useAdminService = () => {
     if (badExtra)
       return { error: "Invalid extras: id, name and positive amount required" }; // [memory:12]
 
+    console.log("===> 3");
+    
     // 1) resident scope
     const { data: residents, error: errRes } = await supabase
       .from("profiles")
       .select("id, role")
       .eq("organization_id", profile.organization_id);
+
+      console.log("===> 4");
+
     if (errRes || !residents?.length)
       return { error: errRes || "No residents found" }; // [memory:12]
     const residentIds = residents.map((r: any) => r.id); // [memory:12]
@@ -339,8 +341,8 @@ const useAdminService = () => {
       return n >= 1 && n <= 12 ? n : NaN;
     }; // [memory:12]
 
-    const monthIndex = toMonthIndex(String(billMonth));
-    const yearNum = Number(billYear);
+    const monthIndex = toMonthIndex(currMonth);
+    const yearNum = Number(currYear);
     if (Number.isNaN(monthIndex) || Number.isNaN(yearNum)) {
       return { error: "Invalid billMonth or billYear" }; // [memory:12]
     }
@@ -422,16 +424,18 @@ const useAdminService = () => {
       .map((r: any) => {
         const base =
           r.role == "tenant"
-            ? Number(tenantMaintenanceFixedAmount)
-            : Number(maintenanceFixedAmount);
+            ? Number(residentOrganization?.tenant_maintenance_amount)
+            : Number(residentOrganization?.maintenance_amount);
 
         // current period extras (array)
-        const currentExtras: ExtraItem[] = (extras ?? []).map((e) => ({
+        const currentExtras: ExtraItem[] = (
+          residentOrganization?.extras ?? []
+        ).map((e) => ({
           id: String(e.id),
           name: String(e.name),
           amount: Number(e.amount) || 0,
-          month: billMonth,
-          year: billYear as string,
+          month: currMonth,
+          year: currYear as string,
         }));
 
         const extraTotal = currentExtras.reduce(
@@ -449,8 +453,8 @@ const useAdminService = () => {
           console.log(p);
           const penalty =
             r.role == "tenant"
-              ? Number(tenantPenaltyFixedAmount)
-              : Number(penaltyFixedAmount);
+              ? Number(residentOrganization?.penalty_amount)
+              : Number(residentOrganization?.penalty_amount);
 
           // Carry prior extras as arrays; if none recorded previously, carry none
           const previousExtras: ExtraItem[] = Array.isArray(p.extras)
@@ -489,11 +493,13 @@ const useAdminService = () => {
           resident_id: r.id,
           organization_id: profile.organization_id,
           amount: total,
-          due_date: dueDate,
+          due_date: `${currYear}-${currMonth}-${15}`,
           bill_month: currMonthStr,
           bill_year: currYearStr,
           status: "pending",
-          penalty: dues.length ? Number(penaltyFixedAmount) : 0,
+          penalty: dues.length
+            ? Number(residentOrganization?.penalty_amount)
+            : 0,
           breakdown,
         };
       });
@@ -510,6 +516,21 @@ const useAdminService = () => {
 
     return { data, error };
   };
+
+  async function markAllMaintenancePaid() {
+    const payload = {
+      status: "paid",
+    };
+
+    const { data, error } = await supabase
+      .from("maintenance_bills")
+      .update(payload) // applies to all rows without filters
+      .eq("bill_month", currMonth)
+      .select("id, status"); // return affected ids and status
+
+    if (error) throw error;
+    return data;
+  }
 
   const fetchMaintenanceBills = async ({
     orgId = profile?.organization_id,
@@ -645,6 +666,7 @@ const useAdminService = () => {
     createBillsWithPenaltyForAllResidents,
     fetchMaintenanceBills,
     updateMaintenanceStatus,
+    markAllMaintenancePaid,
   };
 };
 

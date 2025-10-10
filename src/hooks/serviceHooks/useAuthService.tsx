@@ -3,10 +3,6 @@ import toast from "react-hot-toast";
 import { supabase } from "../../libs/supabase/supabaseClient";
 import type { TSignIn } from "../../types/user.types";
 import { useProfileStore } from "../../libs/stores/useProfileStore";
-import type {
-  PostgrestFilterBuilder,
-  PostgrestBuilder,
-} from "@supabase/postgrest-js";
 import useOrganizationService from "./useOrganizationService";
 import {
   useOrganizationStore,
@@ -38,11 +34,12 @@ const useAuthService = () => {
         return;
       }
 
-      const { data: profileData, error: profileError }: any =
-        await fetchProfile(userData?.user?.id);
+      const { data: profileData, error: profileError } =
+        await supabase.functions.invoke("get-profile-doc", {
+          body: { id: userData?.user?.id },
+        });
 
       if (profileError) {
-        console.error("Sign in error:", profileError);
         toast.error(
           typeof profileError === "string"
             ? profileError
@@ -63,38 +60,6 @@ const useAuthService = () => {
     } catch (error: unknown) {
       console.error("Unexpected error:", error);
       toast.error("An unexpected error occurred. Please try again.");
-    }
-  };
-
-  const fetchProfile = async (profileId?: string) => {
-    try {
-      let query:
-        | PostgrestFilterBuilder<any, any, any[], "profiles", unknown>
-        | PostgrestBuilder<any>;
-
-      if (profileId) {
-        query = supabase
-          .from("profiles")
-          .select("*")
-          .eq("id", profileId)
-          .single();
-      } else {
-        query = supabase.from("profiles").select("*");
-      }
-
-      const { data, error } = await query;
-
-      if (error) {
-        console.error("Error fetching profile:", error);
-        toast.error("Failed to fetch profile. Please try again.");
-        return null;
-      }
-
-      return { data, error };
-    } catch (error) {
-      console.error("Unexpected error:", error);
-      toast.error("An unexpected error occurred. Please try again.");
-      return null;
     }
   };
 

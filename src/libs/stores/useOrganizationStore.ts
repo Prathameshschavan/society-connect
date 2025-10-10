@@ -16,6 +16,8 @@ export interface Organization {
   maintenance_rate?: number;
   tenant_maintenance_amount?: number;
   tenant_maintenance_rate?: number;
+  penalty_amount?: number;
+  penalty_rate?: number;
   total_units?: number;
   registration_number?: string;
   established_date?: string | null;
@@ -23,6 +25,7 @@ export interface Organization {
   updated_at?: string | number;
   admin: Profile[];
   extras: ExtraItem[];
+  due_date: string;
 }
 
 export interface ExtraItem {

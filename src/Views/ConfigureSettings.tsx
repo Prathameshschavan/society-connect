@@ -1,12 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect } from "react";
-import {
-  useForm,
-  type SubmitHandler,
-  type UseFormRegister,
-  type UseFormSetValue,
-  type UseFormWatch,
-} from "react-hook-form";
+import { useForm, type SubmitHandler } from "react-hook-form";
 import {
   Building2,
   Phone,
@@ -21,23 +15,15 @@ import {
   Edit,
   Trash2,
   Plus,
-  Minus,
 } from "lucide-react";
-import type {
-  ExtraItem,
-  Organization,
-} from "../libs/stores/useOrganizationStore";
+import type { Organization } from "../libs/stores/useOrganizationStore";
 import useOrganizationService, {
   type FetchOrganizationResponse,
 } from "../hooks/serviceHooks/useOrganizationService";
 import toast from "react-hot-toast";
 import { supabase } from "../libs/supabase/supabaseClient";
 import { useNavigate, useParams } from "react-router-dom";
-import GenericTable, {
-  type PaginationInfo,
-  type TableAction,
-  type TableColumn,
-} from "../components/ui/GenericTable";
+import GenericTable, { type TableAction } from "../components/ui/GenericTable";
 import type { Profile } from "../types/user.types";
 import { useProfileStore } from "../libs/stores/useProfileStore";
 import useAdminService from "../hooks/serviceHooks/useAdminService";
@@ -45,6 +31,13 @@ import OnboardResidentModal from "../components/Modals/OnboardResidentModal";
 import ViewResidentDetailsModal from "../components/Modals/ViewResidentDetailsModal";
 import UpdateResidentModal from "../components/Modals/UpdateResidentModal";
 import ConfirmationAlert from "../components/Modals/ConfirmationAlert";
+import Maintenance from "../components/configureSettings/Maintenance";
+import Basic from "../components/configureSettings/Basic";
+import Location from "../components/configureSettings/Location";
+import Contact from "../components/configureSettings/Contact";
+import Property from "../components/configureSettings/Property";
+import usePaginationService from "../hooks/serviceHooks/usePaginationService";
+import { columns } from "../config/tableConfig/configureSettings";
 
 const SocietyConfigurationPage: React.FC = () => {
   const { orgId } = useParams<{ orgId: string }>();
@@ -65,17 +58,15 @@ const SocietyConfigurationPage: React.FC = () => {
   const { fetchResidents, permanentlyDeleteResident } = useAdminService();
   const [loading, setLoading] = useState(false);
   const [isOnboardModalOpen, setIsOnboardModalOpen] = useState(false);
-  // Pagination state
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
-  const [pagination, setPagination] = useState<PaginationInfo>({
-    currentPage: 1,
-    totalPages: 1,
-    totalItems: 0,
-    pageSize: 10,
-    hasNextPage: false,
-    hasPrevPage: false,
-  });
+
+  const {
+    currentPage,
+    handlePageChange,
+    handlePageSizeChange,
+    pageSize,
+    pagination,
+    setPagination,
+  } = usePaginationService();
 
   // Load data with pagination
   const loadData = async () => {
@@ -101,37 +92,6 @@ const SocietyConfigurationPage: React.FC = () => {
   useEffect(() => {
     loadData();
   }, [currentPage, pageSize]);
-
-  const columns: TableColumn<Profile>[] = [
-    {
-      key: "room",
-      header: "Room",
-      render: (profile) => (
-        <div className="font-medium text-gray-900">
-          {profile.unit_number || "N/A"}
-        </div>
-      ),
-      className: "text-gray-900 font-medium",
-    },
-    {
-      key: "name",
-      header: "Resident Name",
-      render: (profile) => (
-        <div>
-          <div className="font-medium text-gray-900">{profile.full_name}</div>
-          <div className="text-sm text-gray-500">{profile.id}</div>
-        </div>
-      ),
-    },
-    {
-      key: "role",
-      header: "Role",
-      className: "text-gray-700",
-      render: (profile) => (
-        <div className=" capitalize text-gray-500">{profile.role}</div>
-      ),
-    },
-  ];
 
   const actions: TableAction<Profile>[] = [
     {
@@ -166,15 +126,6 @@ const SocietyConfigurationPage: React.FC = () => {
     },
   ];
 
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-  };
-
-  const handlePageSizeChange = (newPageSize: number) => {
-    setPageSize(newPageSize);
-    setCurrentPage(1); // Reset to first page when page size changes
-  };
-
   const {
     register,
     handleSubmit,
@@ -196,12 +147,13 @@ const SocietyConfigurationPage: React.FC = () => {
       maintenance_amount: 0,
       tenant_maintenance_rate: 0,
       tenant_maintenance_amount: 0,
+      penalty_amount: 0,
       extras: [],
+      due_date: "",
     },
   });
 
   const onSubmit: SubmitHandler<Organization> = async (data) => {
-    console.log(data);
     if (!orgId) {
       toast.error("Organization ID not found");
       return;
@@ -224,6 +176,9 @@ const SocietyConfigurationPage: React.FC = () => {
         tenant_maintenance_rate: data.tenant_maintenance_rate || 0,
         tenant_maintenance_amount: data.tenant_maintenance_amount || 0,
         extras: data.extras || [],
+        due_date: data.due_date,
+        penalty_rate: data?.penalty_rate,
+        penalty_amount: data?.penalty_amount,
       };
 
       const { error } = await supabase
@@ -255,256 +210,16 @@ const SocietyConfigurationPage: React.FC = () => {
   const renderTabContent = () => {
     switch (activeTab) {
       case "basic":
-        return (
-          <div className="space-y-6">
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                Basic Information
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Society Name *
-                  </label>
-                  <input
-                    type="text"
-                    {...register("name", {
-                      required: "Society name is required",
-                      minLength: {
-                        value: 2,
-                        message: "Society name must be at least 2 characters",
-                      },
-                    })}
-                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent ${
-                      errors.name ? "border-red-500" : "border-gray-300"
-                    }`}
-                    placeholder="Enter society name"
-                  />
-                  {errors.name && (
-                    <p className="text-red-500 text-xs mt-1">
-                      {errors.name.message}
-                    </p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Registration Number
-                  </label>
-                  <input
-                    type="text"
-                    {...register("registration_number")}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                    placeholder="Enter registration number"
-                  />
-                </div>
-
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Established Date
-                  </label>
-                  <input
-                    type="date"
-                    {...register("established_date")}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-        );
+        return <Basic errors={errors} register={register} />;
 
       case "location":
-        return (
-          <div className="space-y-6">
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                Location Details
-              </h3>
-              <div className="space-y-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Complete Address *
-                  </label>
-                  <textarea
-                    {...register("address", {
-                      required: "Address is required",
-                      minLength: {
-                        value: 10,
-                        message: "Please enter a complete address",
-                      },
-                    })}
-                    rows={3}
-                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent ${
-                      errors.address ? "border-red-500" : "border-gray-300"
-                    }`}
-                    placeholder="Enter complete address"
-                  />
-                  {errors.address && (
-                    <p className="text-red-500 text-xs mt-1">
-                      {errors.address.message}
-                    </p>
-                  )}
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      City *
-                    </label>
-                    <input
-                      type="text"
-                      {...register("city", {
-                        required: "City is required",
-                        minLength: {
-                          value: 2,
-                          message: "City name must be at least 2 characters",
-                        },
-                      })}
-                      className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent ${
-                        errors.city ? "border-red-500" : "border-gray-300"
-                      }`}
-                      placeholder="Enter city"
-                    />
-                    {errors.city && (
-                      <p className="text-red-500 text-xs mt-1">
-                        {errors.city.message}
-                      </p>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      State *
-                    </label>
-                    <input
-                      type="text"
-                      {...register("state", {
-                        required: "State is required",
-                        minLength: {
-                          value: 2,
-                          message: "State name must be at least 2 characters",
-                        },
-                      })}
-                      className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent ${
-                        errors.state ? "border-red-500" : "border-gray-300"
-                      }`}
-                      placeholder="Enter state"
-                    />
-                    {errors.state && (
-                      <p className="text-red-500 text-xs mt-1">
-                        {errors.state.message}
-                      </p>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Pincode *
-                    </label>
-                    <input
-                      type="text"
-                      {...register("pincode", {
-                        required: "Pincode is required",
-                        pattern: {
-                          value: /^\d{6}$/,
-                          message: "Pincode must be exactly 6 digits",
-                        },
-                      })}
-                      className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent ${
-                        errors.pincode ? "border-red-500" : "border-gray-300"
-                      }`}
-                      placeholder="Enter 6-digit pincode"
-                      maxLength={6}
-                    />
-                    {errors.pincode && (
-                      <p className="text-red-500 text-xs mt-1">
-                        {errors.pincode.message}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        );
+        return <Location errors={errors} register={register} />;
 
       case "contact":
-        return (
-          <div className="space-y-6">
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                Contact Information
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Society Phone Number *
-                  </label>
-                  <input
-                    type="tel"
-                    {...register("phone", {
-                      required: "Phone number is required",
-                      pattern: {
-                        value: /^\d{10}$/,
-                        message: "Phone must be exactly 10 digits",
-                      },
-                    })}
-                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent ${
-                      errors.phone ? "border-red-500" : "border-gray-300"
-                    }`}
-                    placeholder="Enter 10-digit phone number"
-                    maxLength={10}
-                  />
-                  {errors.phone && (
-                    <p className="text-red-500 text-xs mt-1">
-                      {errors.phone.message}
-                    </p>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        );
+        return <Contact errors={errors} register={register} />;
 
       case "property":
-        return (
-          <div className="space-y-6">
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                Property Information
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Total Number of Units *
-                  </label>
-                  <input
-                    type="number"
-                    min="1"
-                    {...register("total_units", {
-                      required: "Total units is required",
-                      min: {
-                        value: 1,
-                        message: "Total units must be at least 1",
-                      },
-                      valueAsNumber: true,
-                    })}
-                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent ${
-                      errors.total_units ? "border-red-500" : "border-gray-300"
-                    }`}
-                    placeholder="Enter total number of units"
-                  />
-                  {errors.total_units && (
-                    <p className="text-red-500 text-xs mt-1">
-                      {errors.total_units.message}
-                    </p>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        );
+        return <Property errors={errors} register={register} />;
 
       case "maintenance":
         return (
@@ -559,6 +274,9 @@ const SocietyConfigurationPage: React.FC = () => {
           setValue("total_units", data?.[0].total_units || 0);
           setValue("maintenance_rate", data?.[0].maintenance_rate || 0);
           setValue("maintenance_amount", data?.[0].maintenance_amount || 0);
+          setValue("due_date", data?.[0].due_date || "");
+          setValue("penalty_amount", data?.[0].penalty_amount || 0);
+          setValue("penalty_rate", data?.[0].penalty_rate || 0);
           setValue(
             "tenant_maintenance_rate",
             data?.[0].tenant_maintenance_rate || 0
@@ -751,268 +469,3 @@ const SocietyConfigurationPage: React.FC = () => {
 };
 
 export default SocietyConfigurationPage;
-
-const Maintenance: React.FC<{
-  register: UseFormRegister<Organization>;
-  setValue: UseFormSetValue<Organization>;
-  watch: UseFormWatch<Organization>;
-}> = ({ register, setValue, watch }) => {
-  const watchedExtras = watch("extras") || [];
-  const [extras, setExtras] = useState<ExtraItem[]>([]);
-
-  // Sync local state with form state
-  useEffect(() => {
-    if (watchedExtras.length > 0) {
-      setExtras(watchedExtras);
-    }
-  }, [watchedExtras]);
-
-  const addExtra = () => {
-    const newExtra: ExtraItem = {
-      id: Date.now().toString(),
-      name: "",
-      amount: 0,
-      month: "",
-      year: "",
-    };
-    const updatedExtras = [...extras, newExtra];
-    setExtras(updatedExtras);
-    setValue("extras", updatedExtras, { shouldDirty: true });
-  };
-
-  const removeExtra = (id: string) => {
-    const updatedExtras = extras.filter((extra) => extra.id !== id);
-    setExtras(updatedExtras);
-    setValue("extras", updatedExtras, { shouldDirty: true });
-  };
-
-  const updateExtra = (
-    id: string,
-    field: "name" | "amount",
-    value: string | number
-  ) => {
-    const updatedExtras = extras.map((extra) =>
-      extra.id === id ? { ...extra, [field]: value } : extra
-    );
-    setExtras(updatedExtras);
-    setValue("extras", updatedExtras, { shouldDirty: true });
-  };
-
-  return (
-    <div className="space-y-8">
-      {/* Basic Maintenance Section */}
-      <div>
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">
-          Basic Maintenance Configuration
-        </h3>
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-          <div className="flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5" />
-            <div>
-              <h4 className="font-medium text-blue-900">
-                Maintenance Rate Information
-              </h4>
-              <p className="text-sm text-blue-700 mt-1">
-                Set the maintenance rate per square foot. This will be used to
-                calculate monthly maintenance charges for residents based on
-                their unit size.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Maintenance Rate (₹ per sq ft)
-            </label>
-            <input
-              type="number"
-              min="0"
-              step="0.01"
-              {...register("maintenance_rate", {
-                min: {
-                  value: 0,
-                  message: "Rate cannot be negative",
-                },
-                valueAsNumber: true,
-              })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-            />
-            <p className="text-[10px] text-gray-500 mt-1">
-              Example: If rate is ₹2.50, a 1000 sq ft unit will pay ₹2,500/month
-            </p>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Maintenance Fixed Amount (₹ per month)
-            </label>
-            <input
-              type="number"
-              min="0"
-              step="0.01"
-              {...register("maintenance_amount", {
-                min: {
-                  value: 0,
-                  message: "Rate cannot be negative",
-                },
-                valueAsNumber: true,
-              })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Tenant Maintenance Rate (₹ per sq ft)
-            </label>
-            <input
-              type="number"
-              min="0"
-              step="0.01"
-              {...register("tenant_maintenance_rate", {
-                min: {
-                  value: 0,
-                  message: "Rate cannot be negative",
-                },
-                valueAsNumber: true,
-              })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-            />
-            <p className="text-[10px] text-gray-500 mt-1">
-              Example: If rate is ₹2.50, a 1000 sq ft unit will pay ₹2,500/month
-            </p>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Tenant Maintenance Fixed Amount (₹ per month)
-            </label>
-            <input
-              type="number"
-              min="0"
-              step="0.01"
-              {...register("tenant_maintenance_amount", {
-                min: {
-                  value: 0,
-                  message: "Maintenance amount cannot be negative",
-                },
-                valueAsNumber: true,
-              })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Extras Section */}
-      <div>
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-gray-900">
-            Additional Charges (Extras)
-          </h3>
-          <button
-            type="button"
-            onClick={addExtra}
-            className="inline-flex items-center gap-2 px-3 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            Add Extra
-          </button>
-        </div>
-
-        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
-          <div className="flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5" />
-            <div>
-              <h4 className="font-medium text-amber-900">
-                Additional Charges Information
-              </h4>
-              <p className="text-sm text-amber-700 mt-1">
-                Add any additional charges like parking fees, generator charges,
-                security deposits, etc. These will be added to the basic
-                maintenance amount.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="space-y-4">
-          {extras.map((extra) => (
-            <div
-              key={extra.id}
-              className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg border border-gray-200"
-            >
-              <div className="flex-1">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Extra Name
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={extra.name}
-                  onChange={(e) =>
-                    updateExtra(extra.id, "name", e.target.value)
-                  }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                  placeholder="e.g., Parking Fee, Generator Charge"
-                />
-              </div>
-
-              <div className="flex-1">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Amount (₹)
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  required
-                  step="0.01"
-                  value={extra.amount}
-                  onChange={(e) =>
-                    updateExtra(extra.id, "amount", parseFloat(e.target.value))
-                  }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                  placeholder="0.00"
-                />
-              </div>
-
-              <div className="flex items-end pb-2">
-                <button
-                  type="button"
-                  onClick={() => removeExtra(extra.id)}
-                  className="p-2 rounded-lg transition-colors mt-8 text-red-600 hover:bg-red-50 hover:text-red-700"
-                  title="Remove this extra"
-                >
-                  <Minus className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-          ))}
-
-          {extras.length === 0 && (
-            <div className="text-center py-8 text-gray-500">
-              <p>No additional charges added yet.</p>
-              <p className="text-sm">
-                Click "Add Extra" to add additional charges.
-              </p>
-            </div>
-          )}
-        </div>
-
-        {extras.length > 0 && (
-          <div className="mt-4 p-3 bg-gray-100 rounded-lg">
-            <div className="text-sm text-gray-600">
-              <strong>Total Additional Charges: </strong>₹
-              {extras
-                .reduce((total, extra) => total + (extra.amount || 0), 0)
-                .toFixed(2)}{" "}
-              per month
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};

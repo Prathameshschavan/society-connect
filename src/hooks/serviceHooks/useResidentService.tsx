@@ -14,7 +14,7 @@ const useResidentService = () => {
 
   const fetchMaintenanceBills = async ({
     residentId = profile?.id,
-    page = 1,
+    page = 1, 
     pageSize = 10,
     // searchQuery = "",
     // sortBy = "created_at",

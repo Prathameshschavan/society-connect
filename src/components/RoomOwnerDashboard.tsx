@@ -95,28 +95,6 @@ const RoomOwnerDashboard = () => {
         </div>
       ),
     },
-    // {
-    //   key: "penalty",
-    //   header: "Penalty",
-    //   render: (bill) => (
-    //     <div>
-    //       <div className=" text-gray-900">₹ {bill?.amount}</div>
-    //     </div>
-    //   ),
-    // },
-    // {
-    //   key: "totalAmount",
-    //   header: (
-    //     <p>
-    //       Total <br /> Amount
-    //     </p>
-    //   ),
-    //   render: (bill) => (
-    //     <div>
-    //       <div className=" text-gray-900">₹ {bill?.amount}</div>
-    //     </div>
-    //   ),
-    // },
     {
       key: "status",
       header: "Status",

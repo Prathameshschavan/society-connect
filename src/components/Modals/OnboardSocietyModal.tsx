@@ -147,7 +147,8 @@ const OnboardSocietyModal: React.FC<OnboardSocietyModalProps> = ({
         registration_number: data.registrationNumber || "",
         established_date: data.establishedDate || null,
         updated_at: new Date().toISOString(),
-        extras:[]
+        due_date: "",
+        extras: [],
       };
 
       const { data: orgData, error } = await supabase
@@ -171,7 +172,7 @@ const OnboardSocietyModal: React.FC<OnboardSocietyModalProps> = ({
           phone: data.adminPhone,
           organization_id: orgData?.id,
           unit_number: data?.adminUnitNumber,
-          square_footage: data?.adminSquareFootage
+          square_footage: data?.adminSquareFootage,
         },
       });
 

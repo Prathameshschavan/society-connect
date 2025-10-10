@@ -1,63 +1,92 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
+
+import { useEffect, useState } from "react";
 import { Edit, Eye, ReceiptText } from "lucide-react";
+
 import TopNav from "./TopNav";
 import OnboardResidentModal from "./Modals/OnboardResidentModal";
-import { useEffect, useState } from "react";
+import ViewMaintananceDetailsModal from "./Modals/ViewMaintananceDetailsModal";
+import UpdateMaintananceStatusModal from "./Modals/UpdateMaintananceStatusModal";
+
+import GenericTable, { type TableAction } from "./ui/GenericTable";
+
 import useAdminService from "../hooks/serviceHooks/useAdminService";
+import usePaginationService from "../hooks/serviceHooks/usePaginationService";
+
 import { useOrganizationStore } from "../libs/stores/useOrganizationStore";
-import GenericTable, {
-  type PaginationInfo,
-  type TableAction,
-  type TableColumn,
-} from "./ui/GenericTable";
-import useCommonService from "../hooks/serviceHooks/useCommonService";
 import {
   useMaintenanceStore,
   type MaintenanceBill,
 } from "../libs/stores/useMaintenanceStore";
-import ViewMaintananceDetailsModal from "./Modals/ViewMaintananceDetailsModal";
-import UpdateMaintananceStatusModal from "./Modals/UpdateMaintananceStatusModal";
 import { useProfileStore } from "../libs/stores/useProfileStore";
 
-const AdminDashboard = () => {
-  const { createBillsWithPenaltyForAllResidents, fetchMaintenanceBills } =
-    useAdminService();
-  const { profile } = useProfileStore();
-  const { maintenanceBills } = useMaintenanceStore();
-  const [isOnboardModalOpen, setIsOnboardModalOpen] = useState(false);
-  const { residentOrganization } = useOrganizationStore();
-  const { shortMonth, getStatusIcon, getStatusColor } = useCommonService();
-  const [selectedMonth, setSelectedMonth] = useState({
-    month: `${(new Date().getMonth() + 1).toString().padStart(2, "0")}`,
-    year: `${new Date().getFullYear()}`,
-  });
+import { currMonth, currYear, shortMonth } from "../utility/dateTimeServices";
+import { columns } from "../config/tableConfig/adminDashboard";
 
-  const [loading, setLoading] = useState(false);
-  const [generateBillLoading, setGenerateBillLoading] = useState(false);
+// Do not Remove Comments
+
+/**
+ * AdminDashboard
+ *
+ * Responsibilities:
+ * - Displays paginated maintenance bills for the selected month/year.
+ * - Allows admins to generate current-month bills with penalty for all residents.
+ * - Provides per-row actions: view details (always) and edit (only for current month/year).
+ * - Coordinates data fetching via useAdminService with server-side pagination.
+ *
+ * Notes:
+ * - Pagination state is centralized in usePaginationService to keep UI generic and reusable.
+ * - Month/year selection resets to page 1 to avoid empty pages when filters change.
+ * - Modals are controlled with explicit boolean flags and a selected bill object.
+ */
+const AdminDashboard = () => {
+  // Services: server actions for bills and pagination helpers [web:11]
+  const { createBillsWithPenaltyForAllResidents, fetchMaintenanceBills } =
+    useAdminService(); // Data IO: generate and fetch [web:11]
+  const {
+    currentPage,
+    pageSize,
+    setPagination,
+    pagination,
+    setCurrentPage,
+    handlePageChange,
+    handlePageSizeChange,
+  } = usePaginationService(); // Centralized pagination state [web:6]
+
+  // Stores: session/profile, organization context, reactive bills data [web:11]
+  const { profile } = useProfileStore(); // Access control (role) [web:11]
+  const { residentOrganization } = useOrganizationStore(); // Tenant context [web:11]
+  const { maintenanceBills } = useMaintenanceStore(); // Tabular data source [web:11]
+
+  // Local UI State [web:11]
+  const [isOnboardModalOpen, setIsOnboardModalOpen] = useState(false); // Onboarding flow [web:11]
   const [isOpenMaintananceDetailsModal, setIsOpenMaintananceDetailsModal] =
-    useState(false);
+    useState(false); // Read modal [web:11]
   const [
     isOpenUpdateMaintananceDetailsModal,
     setIsOpenUpdateMaintananceDetailsModal,
-  ] = useState(false);
+  ] = useState(false); // Edit modal [web:11]
   const [selectedBill, setSelectedBill] = useState<MaintenanceBill | null>(
     null
-  );
+  ); // Row context [web:11]
 
-  // Pagination state
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
-  const [pagination, setPagination] = useState<PaginationInfo>({
-    currentPage: 1,
-    totalPages: 1,
-    totalItems: 0,
-    pageSize: 10,
-    hasNextPage: false,
-    hasPrevPage: false,
-  });
+  // Filter (month/year) defaults to current calendar period [web:11]
+  const [selectedMonth, setSelectedMonth] = useState({
+    month: currMonth,
+    year: currYear,
+  }); // Server-side filter inputs [web:6]
 
-  // Load data with pagination
+  // Async flags [web:11]
+  const [loading, setLoading] = useState(false); // Data fetch state [web:11]
+  const [generateBillLoading, setGenerateBillLoading] = useState(false); // Generation state [web:11]
+
+  /**
+   * loadData
+   *
+   * Fetches maintenance bills using server-side pagination and applied filters.
+   * On success, updates the pagination info from the API response.
+   */
   const loadData = async () => {
     setLoading(true);
     try {
@@ -65,165 +94,54 @@ const AdminDashboard = () => {
         page: currentPage,
         pageSize: pageSize,
         filters: {
-          billMonth: selectedMonth?.month,
-          billYear: selectedMonth?.year,
+          billMonth: selectedMonth.month,
+          billYear: selectedMonth.year,
         },
-      });
+      }); // Server-side pagination pattern [web:6]
 
       if (result) {
-        setPagination(result.pagination);
+        setPagination(result.pagination); // Keep table pagination in sync [web:6]
       }
     } catch (error) {
-      console.error("Error loading data:", error);
+      // Prefer user feedback in production; console for developer diagnostics
+      console.error("Error loading data:", error); // Debug-only logging [web:11]
     } finally {
       setLoading(false);
     }
   };
 
+  /**
+   * Effect: Fetch whenever pagination or filters change.
+   * Dependency array keeps data in sync with UI controls. [web:6]
+   */
   useEffect(() => {
     loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPage, pageSize, selectedMonth]);
 
-  const triggerMonth = "04";
-
+  /**
+   * handleCreateBill
+   *
+   * Triggers generation of current-month bills with penalty for all residents.
+   * Keep UX responsive with loading flag and consider success/error toasts upstream.
+   */
   const handleCreateBill = async () => {
     try {
       setGenerateBillLoading(true);
-      const date = new Date();
-      const year = date.getFullYear();
-      const month =
-        triggerMonth || String(date.getMonth() + 1).padStart(2, "0");
-      const day = 15;
-
-      await createBillsWithPenaltyForAllResidents({
-        billMonth: `${month}`,
-        billYear: `${year}`,
-        dueDate: `${year}-${month}-${day}`,
-        maintenanceFixedAmount:
-          residentOrganization?.maintenance_amount as number,
-        penaltyFixedAmount: 100,
-        extras: residentOrganization?.extras,
-        tenantMaintenanceFixedAmount:
-          residentOrganization?.tenant_maintenance_amount as number,
-        tenantPenaltyFixedAmount: 100,
-      });
+      await createBillsWithPenaltyForAllResidents();
+      // Optional: refresh after generation if API does not push updates
+      await loadData();
     } catch (error) {
-      console.log(error);
+      console.log(error); // Replace with toast/alert in production [web:11]
     } finally {
       setGenerateBillLoading(false);
     }
   };
 
-  // async function markAllMaintenancePaid() {
-  //   const payload = {
-  //     status: "paid",
-  //   };
-
-  //   const { data, error } = await supabase
-  //     .from("maintenance_bills")
-  //     .update(payload) // applies to all rows without filters
-  //     .eq("bill_month", triggerMonth)
-  //     .select("id, status"); // return affected ids and status
-
-  //   if (error) throw error;
-  //   return data;
-  // }
-
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-  };
-
-  const handlePageSizeChange = (newPageSize: number) => {
-    setPageSize(newPageSize);
-    setCurrentPage(1); // Reset to first page when page size changes
-  };
-
-  // function debounce<T extends (...args: any[]) => void>(
-  //   func: T,
-  //   wait: number
-  // ): (...args: Parameters<T>) => void {
-  //   let timeout: NodeJS.Timeout;
-  //   return (...args: Parameters<T>) => {
-  //     clearTimeout(timeout);
-  //     timeout = setTimeout(() => func(...args), wait);
-  //   };
-  // }
-
-  const columns: TableColumn<MaintenanceBill>[] = [
-    {
-      key: "resident",
-      header: "Resident",
-      render: (bill) => (
-        <div>
-          <p className="font-medium text-gray-900">
-            {bill.resident?.unit_number || "N/A"}
-          </p>
-          <p className="font-light text-gray-900">{bill.resident?.full_name}</p>
-        </div>
-      ),
-      className: "text-gray-900 font-medium",
-    },
-
-    {
-      key: "monthYear",
-      header: "Month/Year",
-      render: (bill) => (
-        <div>
-          <div className=" text-gray-900">
-            {shortMonth[Number(bill.bill_month) - 1]} {bill?.bill_year}
-          </div>
-        </div>
-      ),
-    },
-    {
-      key: "currentAmount",
-      header: <p>Maintenance Amount</p>,
-      render: (bill) => (
-        <div>
-          <div className=" text-gray-900">₹ {bill?.amount}</div>
-        </div>
-      ),
-    },
-    // {
-    //   key: "penalty",
-    //   header: "Penalty",
-    //   render: (bill) => (
-    //     <div>
-    //       <div className=" text-gray-900">₹ {bill?.amount}</div>
-    //     </div>
-    //   ),
-    // },
-    // {
-    //   key: "totalAmount",
-    //   header: (
-    //     <p>
-    //       Total <br /> Amount
-    //     </p>
-    //   ),
-    //   render: (bill) => (
-    //     <div>
-    //       <div className=" text-gray-900">₹ {bill?.amount}</div>
-    //     </div>
-    //   ),
-    // },
-    {
-      key: "status",
-      header: "Status",
-      render: (bill) => (
-        <div>
-          <span
-            className={`capitalize inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(
-              bill.status as string
-            )}`}
-          >
-            {getStatusIcon(bill.status as string)}
-            {bill.status}
-          </span>
-        </div>
-      ),
-    },
-  ];
-
+  /**
+   * Row actions: View always; Edit only if selected period is current month/year.
+   * The Edit action scopes mutation to the active period to preserve historical integrity. [web:11]
+   */
   const actions: TableAction<MaintenanceBill>[] = [
     {
       icon: <Eye className="w-4 h-4" />,
@@ -235,9 +153,7 @@ const AdminDashboard = () => {
         "cursor-pointer p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors",
       label: "View",
     },
-    ...(selectedMonth?.month ===
-      `${(new Date().getMonth() + 1).toString().padStart(2, "0")}` &&
-    selectedMonth?.year === `${new Date().getFullYear()}`
+    ...(selectedMonth.month === currMonth && selectedMonth.year === currYear
       ? [
           {
             icon: <Edit className="w-4 h-4" />,
@@ -255,77 +171,56 @@ const AdminDashboard = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Top navigation fixed to admin view-context [web:11] */}
       <TopNav view="admin" />
-      {/* <button onClick={markAllMaintenancePaid}>all paid</button> */}
+
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="space-y-6">
-          {/* Stats Cards */}
-          {/* <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl p-6 text-white">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-blue-100 text-sm font-medium">
-                    Total Amount Due
-                  </p>
-                  <p className="text-3xl font-bold">
-                    ₹{adminData.totalDue.toLocaleString()}
-                  </p>
-                </div>
-                <CreditCard className="w-8 h-8 text-blue-200" />
-              </div>
-            </div>
-
-            <div className="bg-gradient-to-r from-green-500 to-green-600 rounded-xl p-6 text-white">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-green-100 text-sm font-medium">
-                    Total Paid This Month
-                  </p>
-                  <p className="text-3xl font-bold">
-                    ₹{adminData.totalPaid.toLocaleString()}
-                  </p>
-                </div>
-                <CheckCircle className="w-8 h-8 text-green-200" />
-              </div>
-            </div>
-          </div> */}
-
-          <div className=" flex flex-col sm:flex-row justify-between gap-4">
-            <div className="">
-              <h1 className="text-2xl font-bold text-gray-900 mb-2">
-                {residentOrganization?.name} Dashboard
+          {/* Header: Organization context and purpose subtitle [web:11] */}
+          <div className="flex flex-col sm:flex-row justify-between gap-4">
+            <div>
+              <h1 className="text-2xl poppins-medium text-gray-900 mb-2">
+                {residentOrganization?.name}
               </h1>
               <p className="text-gray-600">
-                Manage your society maintenance payments
+                View and track your society maintenance details
               </p>
             </div>
 
+            {/* Filters: Month and Year selectors; changing resets to page 1 [web:6] */}
             <div className="flex gap-4 self-center w-full sm:w-fit">
+              {/* Month selector */}
               <select
                 onChange={(e) => {
                   setCurrentPage(1);
-                  setSelectedMonth({ ...selectedMonth, month: e.target.value });
+                  setSelectedMonth((prev) => ({
+                    ...prev,
+                    month: e.target.value,
+                  }));
                 }}
-                value={selectedMonth?.month}
-                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${"border-gray-300"}`}
+                value={selectedMonth.month}
+                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent border-gray-300"
               >
-                {shortMonth.map((month, i) => {
-                  return (
-                    <option
-                      key={month}
-                      value={(i + 1).toString().padStart(2, "0")}
-                    >
-                      {month}
-                    </option>
-                  );
-                })}
+                {shortMonth.map((month, i) => (
+                  <option
+                    key={month}
+                    value={(i + 1).toString().padStart(2, "0")}
+                  >
+                    {month}
+                  </option>
+                ))}
               </select>
+
+              {/* Year selector */}
               <select
-                value={selectedMonth?.year}
-                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${"border-gray-300"}`}
+                value={selectedMonth.year}
+                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent border-gray-300"
                 onChange={(e) => {
                   setCurrentPage(1);
-                  setSelectedMonth({ ...selectedMonth, year: e.target.value });
+                  setSelectedMonth((prev) => ({
+                    ...prev,
+                    year: e.target.value,
+                  }));
                 }}
               >
                 {Array.from(
@@ -342,17 +237,24 @@ const AdminDashboard = () => {
               </select>
             </div>
           </div>
-          {profile?.role === "admin" && (
-            <button
-              disabled={generateBillLoading}
-              onClick={handleCreateBill}
-              className="w-full sm:w-fit flex items-center whitespace-nowrap justify-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg font-medium transition-colors"
-            >
-              <ReceiptText className="w-5 h-5" />
-              {generateBillLoading ? "Generating..." : "Generate Bill"}
-            </button>
-          )}
 
+          {/* Admin-only: bulk bill generation for current month period [web:11] */}
+          {profile?.role === "admin" &&
+            selectedMonth.month === currMonth &&
+            selectedMonth.year === currYear &&
+            maintenanceBills?.length === 0 && (
+              <button
+                disabled={generateBillLoading}
+                onClick={handleCreateBill}
+                className="w-full sm:w-fit flex items-center whitespace-nowrap justify-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg font-medium transition-colors disabled:opacity-70"
+                aria-busy={generateBillLoading}
+              >
+                <ReceiptText className="w-5 h-5" />
+                {generateBillLoading ? "Generating..." : "Generate Bill"}
+              </button>
+            )}
+
+          {/* Main table: paginated, searchable list of bills [web:6] */}
           <GenericTable
             title="Maintenance"
             columns={columns}
@@ -366,24 +268,30 @@ const AdminDashboard = () => {
             onPageChange={handlePageChange}
             onPageSizeChange={handlePageSizeChange}
             pageSizeOptions={[5, 10, 20, 50]}
-            onSearch={() => {}}
+            onSearch={() => {
+              /* Hook into this to wire server-side search; keep debounced input upstream [web:6] */
+            }}
           />
         </div>
       </main>
+
+      {/* Ancillary modals: controlled visibility and bill context [web:11] */}
       <OnboardResidentModal
         isOpen={isOnboardModalOpen}
         onClose={() => setIsOnboardModalOpen(false)}
       />
+
       <ViewMaintananceDetailsModal
         bill={selectedBill}
         isOpen={isOpenMaintananceDetailsModal}
         onClose={() => setIsOpenMaintananceDetailsModal(false)}
       />
+
       <UpdateMaintananceStatusModal
         bill={selectedBill}
         isOpen={isOpenUpdateMaintananceDetailsModal}
         onClose={() => setIsOpenUpdateMaintananceDetailsModal(false)}
-        onSuccess={loadData}
+        onSuccess={loadData} // Refresh table after update to reflect latest state [web:6]
       />
     </div>
   );

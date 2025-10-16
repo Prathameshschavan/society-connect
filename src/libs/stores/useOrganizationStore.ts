@@ -26,6 +26,8 @@ export interface Organization {
   admin: Profile[];
   extras: ExtraItem[];
   due_date: string;
+  calculate_maintenance_by: string;
+  is_maintenance_calculated_by_fixed: boolean;
 }
 
 export interface ExtraItem {

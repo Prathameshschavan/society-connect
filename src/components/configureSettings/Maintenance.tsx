@@ -10,6 +10,7 @@ import type {
 } from "../../libs/stores/useOrganizationStore";
 import { useEffect, useState } from "react";
 import { AlertCircle, Minus, Plus } from "lucide-react";
+import { Switch } from "../ui/GenericSwitch";
 
 const Maintenance: React.FC<{
   register: UseFormRegister<Organization>;
@@ -18,6 +19,8 @@ const Maintenance: React.FC<{
 }> = ({ register, setValue, watch }) => {
   const watchedExtras = watch("extras") || [];
   const [extras, setExtras] = useState<ExtraItem[]>([]);
+  const [isMaintenanceCalculatedByFixed, setIsMaintenanceCalculatedByFixed] =
+    useState(watch("is_maintenance_calculated_by_fixed"));
 
   // Sync local state with form state
   useEffect(() => {
@@ -79,130 +82,160 @@ const Maintenance: React.FC<{
             </div>
           </div>
         </div>
+        <div className="flex items-center gap-3 mb-6">
+          <p className="font-medium">Calculate Maintenance Amount By : </p>
+          <div className="flex items-center gap-2">
+            <span>Monthly Per SQFT</span>
+            <Switch
+              checked={isMaintenanceCalculatedByFixed}
+              onChange={(value) => {
+                setValue(
+                  "calculate_maintenance_by",
+                  value ? "fixed" : "perSQFT",
+                  { shouldDirty: true }
+                );
+                setValue("is_maintenance_calculated_by_fixed", value, {
+                  shouldDirty: true,
+                });
+                setIsMaintenanceCalculatedByFixed((prev) => !prev);
+              }}
+            />
+            <span>Monthly Fixed</span>
+          </div>
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Maintenance Rate (₹ per sq ft)
-            </label>
-            <input
-              type="number"
-              min="0"
-              step="0.01"
-              {...register("maintenance_rate", {
-                min: {
-                  value: 0,
-                  message: "Rate cannot be negative",
-                },
-                valueAsNumber: true,
-              })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-            />
-            <p className="text-[10px] text-gray-500 mt-1">
-              Example: If rate is ₹2.50, a 1000 sq ft unit will pay ₹2,500/month
-            </p>
-          </div>
+          {!isMaintenanceCalculatedByFixed ? (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Maintenance Rate (₹ per sq ft)
+              </label>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                {...register("maintenance_rate", {
+                  min: {
+                    value: 0,
+                    message: "Rate cannot be negative",
+                  },
+                  valueAsNumber: true,
+                })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              />
+              <p className="text-[10px] text-gray-500 mt-1">
+                Example: If rate is ₹2.50, a 1000 sq ft unit will pay
+                ₹2,500/month
+              </p>
+            </div>
+          ) : (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Maintenance Fixed Amount (₹ per month)
+              </label>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                {...register("maintenance_amount", {
+                  min: {
+                    value: 0,
+                    message: "Rate cannot be negative",
+                  },
+                  valueAsNumber: true,
+                })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              />
+            </div>
+          )}
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Maintenance Fixed Amount (₹ per month)
-            </label>
-            <input
-              type="number"
-              min="0"
-              step="0.01"
-              {...register("maintenance_amount", {
-                min: {
-                  value: 0,
-                  message: "Rate cannot be negative",
-                },
-                valueAsNumber: true,
-              })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-            />
-          </div>
+          {!isMaintenanceCalculatedByFixed ? (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Tenant Maintenance Rate (₹ per sq ft)
+              </label>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                {...register("tenant_maintenance_rate", {
+                  min: {
+                    value: 0,
+                    message: "Rate cannot be negative",
+                  },
+                  valueAsNumber: true,
+                })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              />
+              <p className="text-[10px] text-gray-500 mt-1">
+                Example: If rate is ₹2.50, a 1000 sq ft unit will pay
+                ₹2,500/month
+              </p>
+            </div>
+          ) : (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Tenant Maintenance Fixed Amount (₹ per month)
+              </label>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                {...register("tenant_maintenance_amount", {
+                  min: {
+                    value: 0,
+                    message: "Maintenance amount cannot be negative",
+                  },
+                  valueAsNumber: true,
+                })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              />
+            </div>
+          )}
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Tenant Maintenance Rate (₹ per sq ft)
-            </label>
-            <input
-              type="number"
-              min="0"
-              step="0.01"
-              {...register("tenant_maintenance_rate", {
-                min: {
-                  value: 0,
-                  message: "Rate cannot be negative",
-                },
-                valueAsNumber: true,
-              })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-            />
-            <p className="text-[10px] text-gray-500 mt-1">
-              Example: If rate is ₹2.50, a 1000 sq ft unit will pay ₹2,500/month
-            </p>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Tenant Maintenance Fixed Amount (₹ per month)
-            </label>
-            <input
-              type="number"
-              min="0"
-              step="0.01"
-              {...register("tenant_maintenance_amount", {
-                min: {
-                  value: 0,
-                  message: "Maintenance amount cannot be negative",
-                },
-                valueAsNumber: true,
-              })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Penalty Rate (₹ per sq ft)
-            </label>
-            <input
-              type="number"
-              min="0"
-              step="0.01"
-              {...register("penalty_rate", {
-                min: {
-                  value: 0,
-                  message: "Penalty rate cannot be negative",
-                },
-                valueAsNumber: true,
-              })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-            />
-            <p className="text-[10px] text-gray-500 mt-1">
-              Example: If rate is ₹2.50, a 1000 sq ft unit will pay ₹2,500/month
-            </p>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Penalty Fixed Amount (₹ per month)
-            </label>
-            <input
-              type="number"
-              min="0"
-              step="0.01"
-              {...register("penalty_amount", {
-                min: {
-                  value: 0,
-                  message: "Penalty amount cannot be negative",
-                },
-                valueAsNumber: true,
-              })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-            />
-          </div>
+          {!isMaintenanceCalculatedByFixed ? (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Penalty Rate (₹ per sq ft)
+              </label>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                {...register("penalty_rate", {
+                  min: {
+                    value: 0,
+                    message: "Penalty rate cannot be negative",
+                  },
+                  valueAsNumber: true,
+                })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              />
+              <p className="text-[10px] text-gray-500 mt-1">
+                Example: If rate is ₹2.50, a 1000 sq ft unit will pay
+                ₹2,500/month
+              </p>
+            </div>
+          ) : (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Penalty Fixed Amount (₹ per month)
+              </label>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                {...register("penalty_amount", {
+                  min: {
+                    value: 0,
+                    message: "Penalty amount cannot be negative",
+                  },
+                  valueAsNumber: true,
+                })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              />
+            </div>
+          )}
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">

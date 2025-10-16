@@ -148,6 +148,7 @@ const SocietyConfigurationPage: React.FC = () => {
       tenant_maintenance_rate: 0,
       tenant_maintenance_amount: 0,
       penalty_amount: 0,
+      penalty_rate: 0,
       extras: [],
       due_date: "",
     },
@@ -179,7 +180,9 @@ const SocietyConfigurationPage: React.FC = () => {
         due_date: data.due_date,
         penalty_rate: data?.penalty_rate,
         penalty_amount: data?.penalty_amount,
+        calculate_maintenance_by: data?.calculate_maintenance_by
       };
+
 
       const { error } = await supabase
         .from("organizations")
@@ -286,6 +289,14 @@ const SocietyConfigurationPage: React.FC = () => {
             data?.[0].tenant_maintenance_amount || 0
           );
           setValue("extras", data?.[0].extras || []);
+          setValue(
+            "calculate_maintenance_by",
+            data?.[0].calculate_maintenance_by
+          );
+          setValue(
+            "is_maintenance_calculated_by_fixed",
+            data?.[0].calculate_maintenance_by == "fixed" ? true : false
+          );
         }
       } catch (error) {
         console.error("Unexpected error:", error);

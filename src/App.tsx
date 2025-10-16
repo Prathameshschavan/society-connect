@@ -9,6 +9,9 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import SignUp from "./Views/SignUp";
 import UnauthorizedPage from "./Views/Unauthorized";
 import SocietyConfigurationPage from "./Views/ConfigureSettings";
+import Expenses from "./components/Expenses";
+import Income from "./components/Income";
+import Reports from "./components/Reports";
 
 function App() {
   return (
@@ -18,6 +21,30 @@ function App() {
         element={
           <ProtectedRoute allowedRoles={["admin"]}>
             <AdminDashboard />
+          </ProtectedRoute>
+        }
+      ></Route>
+      <Route
+        path="/expenses"
+        element={
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <Expenses />
+          </ProtectedRoute>
+        }
+      ></Route>
+      <Route
+        path="/income"
+        element={
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <Income />
+          </ProtectedRoute>
+        }
+      ></Route>
+      <Route
+        path="/reports"
+        element={
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <Reports />
           </ProtectedRoute>
         }
       ></Route>

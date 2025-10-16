@@ -183,7 +183,7 @@ const RoomOwnerDashboard = () => {
           {/* Payment History */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200">
             <GenericTable
-              title="Payment History"
+              title="Maintenance"
               columns={columns}
               data={bills}
               actions={actions}

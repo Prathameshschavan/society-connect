@@ -32,3 +32,13 @@ export const longMonth = [
   "November",
   "December",
 ];
+
+export function formatDate(inputDate: string) {
+  const date = new Date(inputDate);
+
+  const day = date.getDate();
+  const month = date.toLocaleString("en-US", { month: "short" }); // e.g. Oct
+  const year = date.getFullYear();
+
+  return `${day} ${month}, ${year}`;
+}

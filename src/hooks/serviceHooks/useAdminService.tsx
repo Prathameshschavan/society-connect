@@ -272,24 +272,20 @@ const useAdminService = () => {
     const numOrErr = (v: any, label: string) =>
       Number.isNaN(Number(v)) ? `${label} must be a number` : null;
 
-    
     for (const [v, label] of [
       [residentOrganization?.maintenance_amount, "maintenanceFixedAmount"],
+      [residentOrganization?.maintenance_rate, "maintenanceRate"],
       [residentOrganization?.penalty_amount, "penaltyFixedAmount"],
+      [residentOrganization?.penalty_rate, "penaltyRate"],
       [
         residentOrganization?.tenant_maintenance_amount,
         "tenantMaintenanceFixedAmount",
       ],
-      [
-        residentOrganization?.penalty_amount,
-        "tenantPenaltyFixedAmount",
-      ],
+      [residentOrganization?.tenant_maintenance_rate, "tenantMaintenanceRate"],
     ] as const) {
       const err = numOrErr(v, label);
-      console.log("object", err)
       if (err) return { error: err }; // [memory:12]
     }
-
 
     console.log("===> 2");
 
@@ -306,14 +302,14 @@ const useAdminService = () => {
       return { error: "Invalid extras: id, name and positive amount required" }; // [memory:12]
 
     console.log("===> 3");
-    
+
     // 1) resident scope
     const { data: residents, error: errRes } = await supabase
       .from("profiles")
-      .select("id, role")
+      .select("id, role, square_footage")
       .eq("organization_id", profile.organization_id);
 
-      console.log("===> 4");
+    console.log("===> 4");
 
     if (errRes || !residents?.length)
       return { error: errRes || "No residents found" }; // [memory:12]
@@ -423,9 +419,14 @@ const useAdminService = () => {
       .filter((r: any) => !already.has(r.id))
       .map((r: any) => {
         const base =
-          r.role == "tenant"
-            ? Number(residentOrganization?.tenant_maintenance_amount)
-            : Number(residentOrganization?.maintenance_amount);
+          residentOrganization?.calculate_maintenance_by === "fixed"
+            ? r.role == "tenant"
+              ? Number(residentOrganization?.tenant_maintenance_amount)
+              : Number(residentOrganization?.maintenance_amount)
+            : r.role == "tenant"
+            ? Number(residentOrganization?.tenant_maintenance_rate) *
+              r.square_footage
+            : Number(residentOrganization?.maintenance_rate) * r.square_footage;
 
         // current period extras (array)
         const currentExtras: ExtraItem[] = (
@@ -452,9 +453,9 @@ const useAdminService = () => {
         const dues: DuesLine[] = prior.map((p) => {
           console.log(p);
           const penalty =
-            r.role == "tenant"
+            residentOrganization?.calculate_maintenance_by === "fixed"
               ? Number(residentOrganization?.penalty_amount)
-              : Number(residentOrganization?.penalty_amount);
+              : Number(residentOrganization?.penalty_rate) * r.square_footage;
 
           // Carry prior extras as arrays; if none recorded previously, carry none
           const previousExtras: ExtraItem[] = Array.isArray(p.extras)
@@ -498,7 +499,9 @@ const useAdminService = () => {
           bill_year: currYearStr,
           status: "pending",
           penalty: dues.length
-            ? Number(residentOrganization?.penalty_amount)
+            ? residentOrganization?.calculate_maintenance_by === "fixed"
+              ? Number(residentOrganization?.penalty_amount)
+              : Number(residentOrganization?.penalty_rate) * r.square_footage
             : 0,
           breakdown,
         };

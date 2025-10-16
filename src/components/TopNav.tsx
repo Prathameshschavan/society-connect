@@ -1,43 +1,49 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-import {
-  Home,
-  Settings,
-  Users,
-  LogOut,
-  FileText,
-} from "lucide-react";
+import { Home, Settings, Users, LogOut, FileText, Menu } from "lucide-react";
 import React, { useState, useRef, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import ConfirmationAlert from "./Modals/ConfirmationAlert";
 import { supabase } from "../libs/supabase/supabaseClient";
 import { useProfileStore } from "../libs/stores/useProfileStore";
 import { useOrganizationStore } from "../libs/stores/useOrganizationStore";
+import Drawer from "./ui/Drawer";
+
+const linkBase = "flex items-center space-x-1 text-sm transition-colors";
+const active = "text-blue-600 font-medium";
+const inactive = "text-gray-600 font-light hover:text-[black]";
 
 const TopNav: React.FC<{ view: "admin" | "owner" }> = ({ view }) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const { profile } = useProfileStore();
+  const [open, setOpen] = React.useState(false);
   const [isLogoutConfirmationOpen, setIsLogoutConfirmationOpen] =
     useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const navigate = useNavigate();
-  const { reset: resetProfile } = useProfileStore();
+  const { profile, reset: resetProfile } = useProfileStore();
   const { residentOrganization } = useOrganizationStore();
+  const navigate = useNavigate();
 
-  // Close dropdown when clicking outside
+  // derive menu from array
+  const adminLinks = [
+    { to: "/admin", label: "Dashboard", icon: Home, end: true },
+    { to: "/income", label: "Income", icon: FileText },
+    { to: "/expenses", label: "Expenses", icon: FileText },
+    { to: "/reports", label: "Reports", icon: FileText },
+    {
+      to: `/configure-settings/${residentOrganization?.id ?? ""}`,
+      label: "Settings",
+      icon: Settings,
+    },
+  ];
+
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
+    const handleClickOutside = (e: MouseEvent) => {
       if (
         dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node)
-      ) {
+        !dropdownRef.current.contains(e.target as Node)
+      )
         setIsDropdownOpen(false);
-      }
     };
-
     document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   const handleLogout = async () => {
@@ -50,65 +56,58 @@ const TopNav: React.FC<{ view: "admin" | "owner" }> = ({ view }) => {
     }
   };
 
-
   return (
     <nav className="bg-white border-b border-gray-200 sticky top-0 z-40">
       <div className="max-w-7xl mx-auto py-2 px-4 sm:px-6 lg:px-8 flex flex-col gap-1">
-        <div className="flex justify-between items-center ">
-          <p>Society Connect</p>
+        <div className="flex justify-between items-center">
+          <div className="flex items-center gap-2">
+            {view === "admin" && (
+              <Menu
+                onClick={() => setOpen(!open)}
+                className="cursor-pointer md:hidden"
+              />
+            )}
+            <p>Society Connect</p>
+            <Drawer
+              open={open}
+              onClose={() => setOpen(false)}
+              title="Society Connect"
+            />
+          </div>
 
-          <div className="flex items-center justify-center ">
+          <div className="flex items-center justify-center">
             {view === "admin" && (
               <div className="hidden md:flex space-x-6">
-                <button className="flex items-center space-x-1 text-blue-600  font-medium text-sm">
-                  <Home className="w-4 h-4" />
-                  <span>Dashboard</span>
-                </button>
-                <button className="flex items-center space-x-1 text-gray-600 font-light text-sm hover:text-gray-900">
-                  <FileText className="w-4 h-4" />
-                  <span>Income</span>
-                </button>
-                <button className="flex items-center space-x-1 text-gray-600 font-light text-sm hover:text-gray-900">
-                  <FileText className="w-4 h-4" />
-                  <span>Expenses</span>
-                </button>
-                <button className="flex items-center space-x-1 text-gray-600 font-light text-sm hover:text-gray-900">
-                  <FileText className="w-4 h-4" />
-                  <span>Reports</span>
-                </button>
-                <button
-                  onClick={() =>
-                    navigate(`/configure-settings/${residentOrganization?.id}`)
-                  }
-                  className="flex items-center space-x-1 text-gray-600 hover:text-gray-900 font-light text-sm"
-                >
-                  <Settings className="w-4 h-4" />
-                  <span>Settings</span>
-                </button>
+                {adminLinks.map(({ to, label, icon: Icon, end }) => (
+                  <NavLink
+                    key={label}
+                    to={to}
+                    end={end}
+                    className={({ isActive }) =>
+                      `${linkBase} ${isActive ? active : inactive}`
+                    }
+                  >
+                    <Icon className="w-4 h-4" />
+                    <span>{label}</span>
+                  </NavLink>
+                ))}
               </div>
             )}
           </div>
+
           <div className="flex items-center text-sm font-extralight space-x-4">
-            {/* User Profile Dropdown */}
             <div className="relative" ref={dropdownRef}>
               <button
-                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                onClick={() => setIsDropdownOpen((s) => !s)}
                 className="cursor-pointer flex items-center space-x-2 text-gray-600 hover:text-gray-900 focus:outline-none"
               >
                 <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
                   <Users className="w-4 h-4 text-gray-600" />
                 </div>
-                {/* <ChevronDown
-                  className={`w-4 h-4 transition-transform duration-200 ${
-                    isDropdownOpen ? "rotate-180" : ""
-                  }`}
-                /> */}
               </button>
 
-              {/* Dropdown Menu */}
               {isDropdownOpen && (
                 <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200">
-                  {/* User Info */}
                   <div className="px-4 py-2 border-b border-gray-100">
                     <p className="text-sm font-medium text-gray-900">
                       {profile?.full_name || "User"}
@@ -131,6 +130,7 @@ const TopNav: React.FC<{ view: "admin" | "owner" }> = ({ view }) => {
           </div>
         </div>
       </div>
+
       <ConfirmationAlert
         message="Are you sure want to logout?"
         isOpen={isLogoutConfirmationOpen}

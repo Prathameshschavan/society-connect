@@ -1,10 +1,16 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { GenericSelect } from "./ui/GenericSelect";
 import { currMonth, currYear, shortMonth } from "../utility/dateTimeServices";
 import TopNav from "./TopNav";
 import usePaginationService from "../hooks/serviceHooks/usePaginationService";
 import { useOrganizationStore } from "../libs/stores/useOrganizationStore";
-import GenericTable from "./ui/GenericTable";
+import GenericTable, { type TableAction } from "./ui/GenericTable";
+import { ArrowDownWideNarrow, Edit, Eye, Trash2 } from "lucide-react";
+import { useReportStore, type Expense } from "../libs/stores/useReportStore";
+import { AddExpenseModal } from "./Modals/AddExpenseModal";
+import { columns } from "../config/tableConfig/expense";
+import useExpenseService from "../hooks/serviceHooks/useExpenseService";
+import { ViewExpenseModal } from "./Modals/ViewExpenseModal";
 
 const Expenses = () => {
   const [selectedMonth, setSelectedMonth] = useState({
@@ -12,8 +18,98 @@ const Expenses = () => {
     year: currYear,
   });
   const { residentOrganization } = useOrganizationStore();
-  const { setCurrentPage, pagination, handlePageChange, handlePageSizeChange } =
-    usePaginationService();
+  const {
+    setCurrentPage,
+    pagination,
+    handlePageChange,
+    handlePageSizeChange,
+    currentPage,
+    pageSize,
+    setPagination,
+  } = usePaginationService();
+  const { expenses } = useReportStore();
+  const { fetchExpenses } = useExpenseService();
+
+  const [loading, setLoading] = useState(false);
+  const [isAddExpenseModalOpen, setIsAddExpenseModalOpen] = useState(false);
+  const [selectedExpense, setSelectedExpense] = useState<Expense | null>(null);
+  const [isOpenViewExpenseModal, setIsOpenViewExpenseModal] =
+    useState<boolean>(false);
+  const [isOpenUpdateExpenseModal, setIsOpenUpdateExpenseModal] =
+    useState<boolean>(false);
+  const [isOpenDeleteExpenseModal, setIsOpenDeleteExpenseModal] =
+    useState<boolean>(false);
+
+    console.log(isOpenDeleteExpenseModal, isOpenUpdateExpenseModal)
+
+  const actions: TableAction<Expense>[] = [
+    {
+      icon: <Eye className="w-4 h-4" />,
+      onClick: (expense: Expense) => {
+        setSelectedExpense(expense);
+        setIsOpenViewExpenseModal(true);
+      },
+      className:
+        "cursor-pointer p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors",
+      label: "View",
+    },
+
+    {
+      icon: <Edit className="w-4 h-4" />,
+      onClick: (expense: Expense) => {
+        setSelectedExpense(expense);
+        setIsOpenUpdateExpenseModal(true);
+      },
+      className:
+        "cursor-pointer p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors",
+      label: "Edit",
+    },
+    {
+      icon: <Trash2 className="w-4 h-4" />,
+      onClick: (expense: Expense) => {
+        setSelectedExpense(expense);
+        setIsOpenDeleteExpenseModal(true);
+      },
+      className:
+        "cursor-pointer p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors",
+      label: "Edit",
+    },
+  ];
+
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      const result = await fetchExpenses({
+        page: currentPage,
+        pageSize,
+        filters: {
+          month: selectedMonth.month,
+          year: selectedMonth?.year,
+        },
+        orgId: residentOrganization?.id as string,
+      }); // Server-side pagination pattern [web:6]
+
+      if (result) {
+        setPagination(result.pagination); // Keep table pagination in sync [web:6]
+      }
+
+      console.log(result);
+    } catch (error) {
+      // Prefer user feedback in production; console for developer diagnostics
+      console.error("Error loading data:", error); // Debug-only logging [web:11]
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /**
+   * Effect: Fetch whenever pagination or filters change.
+   * Dependency array keeps data in sync with UI controls. [web:6]
+   */
+  useEffect(() => {
+    loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPage, pageSize, selectedMonth]);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -73,12 +169,20 @@ const Expenses = () => {
               />
             </div>
           </div>
+
+          <button
+            onClick={() => setIsAddExpenseModalOpen(true)}
+            className="w-full sm:w-fit flex items-center whitespace-nowrap justify-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg font-medium transition-colors disabled:opacity-70"
+          >
+            <ArrowDownWideNarrow className="w-5 h-5" />
+            Add Expense
+          </button>
           <GenericTable
             title="Expenses"
-            columns={[]}
-            data={[]}
-            actions={[]}
-            loading={false}
+            columns={columns}
+            data={expenses}
+            actions={actions}
+            loading={loading}
             emptyMessage="No expenses this month"
             searchPlaceholder="Search resident"
             showPagination
@@ -92,6 +196,15 @@ const Expenses = () => {
           />
         </div>
       </main>
+      <AddExpenseModal
+        isOpen={isAddExpenseModalOpen}
+        onClose={() => setIsAddExpenseModalOpen(false)}
+      />
+      <ViewExpenseModal
+        isOpen={isOpenViewExpenseModal}
+        onClose={() => setIsOpenViewExpenseModal(false)}
+        expense={selectedExpense}
+      />
     </div>
   );
 };

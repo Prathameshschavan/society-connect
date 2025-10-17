@@ -1,9 +1,15 @@
 import { useForm } from "react-hook-form";
+import { useEffect } from "react";
 import {
   currFullDate,
+  currMonth,
+  currYear,
 } from "../../utility/dateTimeServices";
+import { useOrganizationStore } from "../../libs/stores/useOrganizationStore";
 import Modal, { ModalBody, ModalFooter } from "./Modal";
-import useIncomeService from "../../hooks/serviceHooks/useIncomeService";
+import useIncomeService, {
+  type IncomeRow,
+} from "../../hooks/serviceHooks/useIncomeService";
 
 export type IncomeFormValues = {
   name: string;
@@ -15,30 +21,59 @@ export type IncomeFormValues = {
   date: string;
 };
 
-type IncomeModalProps = {
+type UpdateIncomeModalProps = {
   isOpen: boolean;
   onClose: () => void;
+  income: IncomeRow;
 };
 
-export function AddIncomeModal({ isOpen, onClose }: IncomeModalProps) {
-  const { addIncome, fetchIncomes } = useIncomeService();
+export function UpdateIncomeModal({
+  isOpen,
+  onClose,
+  income,
+}: UpdateIncomeModalProps) {
+  const { residentOrganization } = useOrganizationStore();
+  const { fetchIncomes, updateIncome } = useIncomeService();
 
   const {
     register,
     handleSubmit,
+    reset,
+    setValue,
     formState: { errors, isSubmitting, isDirty },
   } = useForm<IncomeFormValues>({
     defaultValues: {
       name: "",
       description: "",
       amount: undefined as unknown as number,
+      month: currMonth,
+      year: currYear,
+      organization_id: residentOrganization?.id,
       date: currFullDate,
     },
   });
 
+  // Populate form with existing data when modal opens or income changes
+  useEffect(() => {
+    if (isOpen && income) {
+      setValue("organization_id", residentOrganization?.id || "");
+      setValue("name", income?.name || "");
+      setValue("description", income?.description || "");
+      setValue("amount", income?.amount || 0);
+      setValue("date", income?.date || "");
+    }
+  }, [isOpen, income, setValue]);
+
+  // Reset form when modal closes
+  useEffect(() => {
+    if (!isOpen) {
+      reset();
+    }
+  }, [isOpen, reset]);
+
   const submit = async (data: IncomeFormValues) => {
     try {
-      await addIncome(data);
+      await updateIncome(income.id, data);
       await fetchIncomes();
       onClose();
     } catch (error) {
@@ -49,7 +84,7 @@ export function AddIncomeModal({ isOpen, onClose }: IncomeModalProps) {
   if (!isOpen) return null;
 
   return (
-    <Modal title={`Add Income`} isOpen={isOpen} onClose={onClose} size="lg">
+    <Modal title={`Update Income`} isOpen={isOpen} onClose={onClose} size="lg">
       <form onSubmit={handleSubmit(submit)}>
         <ModalBody className="space-y-2">
           <div>
@@ -134,11 +169,18 @@ export function AddIncomeModal({ isOpen, onClose }: IncomeModalProps) {
 
         <ModalFooter className="flex items-center justify-end gap-2">
           <button
+            type="button"
+            onClick={onClose}
+            className="rounded bg-gray-300 px-4 py-2 text-gray-700 hover:bg-gray-400"
+          >
+            Cancel
+          </button>
+          <button
             type="submit"
             disabled={isSubmitting || !isDirty}
             className="rounded bg-blue-600 px-4 py-2 text-white disabled:opacity-60"
           >
-            {isSubmitting ? "Saving..." : "Save Income"}
+            {isSubmitting ? "Updating..." : "Update Income"}
           </button>
         </ModalFooter>
       </form>

@@ -1,6 +1,6 @@
-import React, { useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
 import { NavLink } from "react-router-dom";
-import { X, Home, FileText, Settings } from "lucide-react";
+import { X, Home, Settings, BadgeIndianRupee, ArrowDownWideNarrow, FileChartColumn } from "lucide-react";
 import { useOrganizationStore } from "../../libs/stores/useOrganizationStore";
 
 type DrawerProps = {
@@ -19,11 +19,11 @@ export default function Drawer({ open, onClose, title = "Menu" }: DrawerProps) {
   const firstFocusRef = useRef<HTMLButtonElement>(null);
   const lastFocusRef = useRef<HTMLButtonElement>(null);
 
-  const links = [
+    const links = [
     { to: "/admin", label: "Dashboard", icon: Home, end: true },
-    { to: "/income", label: "Income", icon: FileText },
-    { to: "/expenses", label: "Expenses", icon: FileText },
-    { to: "/reports", label: "Reports", icon: FileText },
+    { to: "/income", label: "Income", icon: BadgeIndianRupee },
+    { to: "/expenses", label: "Expenses", icon: ArrowDownWideNarrow },
+    { to: "/reports", label: "Reports", icon: FileChartColumn },
     {
       to: `/configure-settings/${residentOrganization?.id ?? ""}`,
       label: "Settings",

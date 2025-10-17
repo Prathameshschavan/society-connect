@@ -133,7 +133,11 @@ const OnboardSocietyModal: React.FC<OnboardSocietyModalProps> = ({
 
       const organizationData: Omit<
         Organization,
-        "id" | "created_at" | "admin"
+        | "id"
+        | "created_at"
+        | "admin"
+        | "calculate_maintenance_by"
+        | "is_maintenance_calculated_by_fixed"
       > = {
         name: data.name,
         address: data.address || "",

@@ -12,6 +12,9 @@ import useIncomeService, {
 } from "../hooks/serviceHooks/useIncomeService";
 import { useReportStore } from "../libs/stores/useReportStore";
 import { columns } from "../config/tableConfig/income";
+import ViewIncomeModal from "./Modals/ViewIncomeModal";
+import { UpdateIncomeModal } from "./Modals/UpdateIncomeModal";
+import ConfirmationAlert from "./Modals/ConfirmationAlert";
 
 const Income = () => {
   const [selectedMonth, setSelectedMonth] = useState({
@@ -30,15 +33,15 @@ const Income = () => {
     setPagination,
   } = usePaginationService();
   const [isAddIncomeModalOpen, setIsAddIncomeModalOpen] = useState(false);
-  const { fetchIncomes } = useIncomeService();
+  const { fetchIncomes, deleteIncome } = useIncomeService();
   const [loading, setLoading] = useState(false);
   const [selectedIncome, setSelectedIncome] = useState<IncomeRow | null>(null);
   const [isOpenViewIncomeModal, setIsOpenViewIncomeModal] =
     useState<boolean>(false);
   const [isOpenUpdateIncomeModal, setIsOpenUpdateIncomeModal] =
     useState<boolean>(false);
-
-  console.log(incomes);
+  const [isOpenDeleteIncomeModal, setIsOpenDeleteIncomeModal] =
+    useState<boolean>(false);
 
   const loadData = async () => {
     setLoading(true);
@@ -101,7 +104,7 @@ const Income = () => {
       icon: <Trash2 className="w-4 h-4" />,
       onClick: (income: IncomeRow) => {
         setSelectedIncome(income);
-        setIsOpenUpdateIncomeModal(true);
+        setIsOpenDeleteIncomeModal(true);
       },
       className:
         "cursor-pointer p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors",
@@ -196,6 +199,26 @@ const Income = () => {
       <AddIncomeModal
         isOpen={isAddIncomeModalOpen}
         onClose={() => setIsAddIncomeModalOpen(false)}
+      />
+      <ViewIncomeModal
+        income={selectedIncome as IncomeRow}
+        isOpen={isOpenViewIncomeModal}
+        onClose={() => setIsOpenViewIncomeModal(false)}
+      />
+      <UpdateIncomeModal
+        income={selectedIncome as IncomeRow}
+        isOpen={isOpenUpdateIncomeModal}
+        onClose={() => setIsOpenUpdateIncomeModal(false)}
+      />
+      <ConfirmationAlert
+        isOpen={isOpenDeleteIncomeModal}
+        onClose={() => setIsOpenDeleteIncomeModal(false)}
+        message="Are you sure want to delete this income?"
+        onConfirm={async () => {
+          await deleteIncome(selectedIncome?.id as string);
+          await loadData();
+          setIsOpenDeleteIncomeModal(false);
+        }}
       />
     </div>
   );

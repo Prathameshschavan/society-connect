@@ -2,6 +2,8 @@ import toast from "react-hot-toast";
 import type { IncomeFormValues } from "../../components/Modals/AddIncomeModal";
 import { supabase } from "../../libs/supabase/supabaseClient";
 import { useReportStore } from "../../libs/stores/useReportStore";
+import { getMonthAndYearFromDate } from "../../utility/dateTimeServices";
+import { useOrganizationStore } from "../../libs/stores/useOrganizationStore";
 
 type FetchIncomesParams = {
   orgId?: string | null;
@@ -46,23 +48,44 @@ type FetchIncomesResponse = {
   totalIncomes: number;
 };
 
-
-
 const useIncomeService = () => {
   const { setIncomes } = useReportStore();
+  const { residentOrganization  } = useOrganizationStore();
 
   async function addIncome(data: IncomeFormValues) {
+    const { month, year } = getMonthAndYearFromDate(data.date);
     // Optional: coerce and guard values
     const payload = {
       name: data.name.trim(),
       description: data.description?.trim() || null,
       amount: Number(data.amount),
-      month: Number(data.month),
-      year: Number(data.year),
-      organization_id: data.organization_id,
+      month,
+      year,
+      organization_id: residentOrganization?.id,
       date: data?.date,
     };
     const { error } = await supabase.from("income").insert(payload);
+    if (error) throw error;
+  }
+
+  async function updateIncome(id: string, data: IncomeFormValues) {
+    const { month, year } = getMonthAndYearFromDate(data.date);
+    // Optional: coerce and guard values
+    const payload = {
+      name: data.name.trim(),
+      description: data.description?.trim() || null,
+      amount: Number(data.amount),
+      month,
+      year,
+      organization_id: residentOrganization?.id,
+      date: data?.date,
+    };
+
+    const { error } = await supabase
+      .from("income")
+      .update(payload)
+      .eq("id", id);
+
     if (error) throw error;
   }
 
@@ -179,7 +202,13 @@ const useIncomeService = () => {
     }
   };
 
-  return { addIncome, fetchIncomes };
+  async function deleteIncome(id: string) {
+    const { error } = await supabase.from("income").delete().eq("id", id);
+
+    if (error) throw error;
+  }
+
+  return { addIncome, fetchIncomes, updateIncome, deleteIncome };
 };
 
 export default useIncomeService;

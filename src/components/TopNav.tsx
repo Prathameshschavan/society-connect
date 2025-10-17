@@ -1,4 +1,4 @@
-import { Home, Settings, Users, LogOut, FileText, Menu } from "lucide-react";
+import { Home, Settings, Users, LogOut, Menu, ArrowDownWideNarrow, BadgeIndianRupee, FileChartColumn } from "lucide-react";
 import React, { useState, useRef, useEffect } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import ConfirmationAlert from "./Modals/ConfirmationAlert";
@@ -24,9 +24,9 @@ const TopNav: React.FC<{ view: "admin" | "owner" }> = ({ view }) => {
   // derive menu from array
   const adminLinks = [
     { to: "/admin", label: "Dashboard", icon: Home, end: true },
-    { to: "/income", label: "Income", icon: FileText },
-    { to: "/expenses", label: "Expenses", icon: FileText },
-    { to: "/reports", label: "Reports", icon: FileText },
+    { to: "/income", label: "Income", icon: BadgeIndianRupee },
+    { to: "/expenses", label: "Expenses", icon: ArrowDownWideNarrow },
+    { to: "/reports", label: "Reports", icon: FileChartColumn },
     {
       to: `/configure-settings/${residentOrganization?.id ?? ""}`,
       label: "Settings",

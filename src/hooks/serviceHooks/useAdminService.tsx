@@ -7,7 +7,7 @@ import {
 import { useProfileStore } from "../../libs/stores/useProfileStore";
 import { supabase } from "../../libs/supabase/supabaseClient";
 import toast from "react-hot-toast";
-import { currMonth, currYear } from "../../utility/dateTimeServices";
+import { currMonth, currYear, longMonth } from "../../utility/dateTimeServices";
 
 export type DuesLine = {
   month: string; // "01".."12"
@@ -97,29 +97,114 @@ const useAdminService = () => {
   const { residentOrganization } = useOrganizationStore();
 
   const updateMaintenanceStatus = async (input: UpdateStatusInput) => {
-    // Build partial payload, only include payment fields when paid
     const payload: Record<string, any> = {
       status: input.status,
     };
 
-    if (input.status === "paid") {
-      // payload.transaction_id = input.transaction_id ?? null;
-      // payload.payment_date = input.payment_date ?? null; // e.g., "2025-08-30"
-    } else {
-      // Clear payment fields if not paid (optional; remove if you prefer to keep previous values)
-      // payload.transaction_id = null;
-      // payload.payment_date = null;
-    }
-
-    const { data, error } = await supabase
+    // Update the maintenance bill
+    const { data: updatedBill, error: billError } = await supabase
       .from("maintenance_bills")
       .update(payload)
-      .eq("id", input.id) // filter by primary key
-      .select("*") // return updated row
+      .eq("id", input.id)
+      .select("*")
       .single();
 
-    if (error) throw error;
-    return data;
+    if (billError) throw billError;
+
+    // Update the monthly maintenance income total
+    await updateMonthlyMaintenanceIncome(
+      updatedBill.organization_id,
+      updatedBill.bill_month,
+      updatedBill.bill_year
+    );
+
+    return updatedBill;
+  };
+
+  // Helper function to calculate and update monthly maintenance income
+  const updateMonthlyMaintenanceIncome = async (
+    organizationId: string,
+    month: number,
+    year: number
+  ) => {
+    console.log(month, year);
+    // Calculate total paid maintenance for this month/year
+    const { data: paidBills, error: billsError } = await supabase
+      .from("maintenance_bills")
+      .select("amount")
+      .eq("organization_id", organizationId)
+      .eq("bill_month", month)
+      .eq("bill_year", year)
+      .eq("status", "paid");
+
+    if (billsError) throw billsError;
+
+    console.log(paidBills)
+
+    const totalMaintenanceIncome =
+      paidBills?.reduce((sum, bill) => sum + Number(bill.amount), 0) || 0;
+
+      console.log(totalMaintenanceIncome)
+
+    const incomeName = `Maintenance Collection - ${
+      longMonth[month - 1]
+    } ${year}`;
+    const incomeDescription = `Total maintenance collection for ${
+      longMonth[month - 1]
+    } ${year}`;
+
+    // Check if monthly maintenance income record already exists
+    const { data: existingIncome } = await supabase
+      .from("income")
+      .select("id, amount")
+      .eq("organization_id", organizationId)
+      .eq("month", month)
+      .eq("year", year)
+      .eq("name", incomeName) // Or use a specific identifier field
+      .single();
+
+    console.log(existingIncome, totalMaintenanceIncome);
+
+    if (totalMaintenanceIncome > 0) {
+      if (existingIncome) {
+        // Update existing income record
+        const { error } = await supabase
+          .from("income")
+          .update({
+            amount: totalMaintenanceIncome,
+            description: incomeDescription,
+            date: new Date().toISOString().split("T")[0],
+          })
+          .eq("id", existingIncome.id);
+
+        if (error) throw error;
+      } else {
+        // Create new income record
+        const { error } = await supabase.from("income").insert({
+          name: incomeName,
+          description: incomeDescription,
+          amount: totalMaintenanceIncome,
+          month,
+          year,
+          organization_id: organizationId,
+          date: new Date().toISOString().split("T")[0],
+          created_by: (await supabase.auth.getUser()).data.user?.id,
+          is_maintenance_income: true, // Flag to identify maintenance income
+        });
+
+        if (error) throw error;
+      }
+    } else {
+      // If no paid bills, remove the income record if it exists
+      if (existingIncome) {
+        const { error } = await supabase
+          .from("income")
+          .delete()
+          .eq("id", existingIncome.id);
+
+        if (error) throw error;
+      }
+    }
   };
 
   const fetchResidents = async ({
@@ -262,6 +347,8 @@ const useAdminService = () => {
     }
     return { year: String(y - 1), month: "12" };
   };
+
+  const triggerMonth = "10";
 
   const createBillsWithPenaltyForAllResidents = async () => {
     if (!profile?.organization_id)
@@ -528,7 +615,7 @@ const useAdminService = () => {
     const { data, error } = await supabase
       .from("maintenance_bills")
       .update(payload) // applies to all rows without filters
-      .eq("bill_month", currMonth)
+      .eq("bill_month", triggerMonth)
       .select("id, status"); // return affected ids and status
 
     if (error) throw error;

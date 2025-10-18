@@ -2,11 +2,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { useEffect, useState } from "react";
-import {
-  Edit,
-  Eye,
-  ReceiptText,
-} from "lucide-react";
+import { Edit, Eye, ReceiptText } from "lucide-react";
 
 import TopNav from "./TopNav";
 import OnboardResidentModal from "./Modals/OnboardResidentModal";
@@ -47,8 +43,10 @@ import { GenericSelect } from "./ui/GenericSelect";
  */
 const AdminDashboard = () => {
   // Services: server actions for bills and pagination helpers [web:11]
-  const { createBillsWithPenaltyForAllResidents, fetchMaintenanceBills } =
-    useAdminService(); // Data IO: generate and fetch [web:11]
+  const {
+    createBillsWithPenaltyForAllResidents,
+    fetchMaintenanceBills,
+  } = useAdminService(); // Data IO: generate and fetch [web:11]
   const {
     currentPage,
     pageSize,
@@ -178,6 +176,7 @@ const AdminDashboard = () => {
     <div className="min-h-screen bg-gray-50">
       {/* Top navigation fixed to admin view-context [web:11] */}
       <TopNav view="admin" />
+      {/* <button onClick={markAllMaintenancePaid}>MArk all as Paid</button> */}
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="space-y-6">
@@ -235,8 +234,8 @@ const AdminDashboard = () => {
 
           {/* Admin-only: bulk bill generation for current month period [web:11] */}
           {profile?.role === "admin" &&
-            selectedMonth.month === currMonth &&
-            selectedMonth.year === currYear &&
+            // selectedMonth.month === currMonth &&
+            // selectedMonth.year === currYear &&
             maintenanceBills?.length === 0 && (
               <button
                 disabled={generateBillLoading}

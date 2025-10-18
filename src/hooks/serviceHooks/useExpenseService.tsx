@@ -263,12 +263,19 @@ const useExpenseService = () => {
     }
   };
 
+  async function deleteExpense(id: string) {
+    const { error } = await supabase.from("expenses").delete().eq("id", id);
+
+    if (error) throw error;
+  }
+
   return {
     addExpense,
     uploadExpenseImage,
     getExpenseImageUrl,
     updateExpense,
     fetchExpenses,
+    deleteExpense,
   };
 };
 

@@ -11,6 +11,8 @@ import { AddExpenseModal } from "./Modals/AddExpenseModal";
 import { columns } from "../config/tableConfig/expense";
 import useExpenseService from "../hooks/serviceHooks/useExpenseService";
 import { ViewExpenseModal } from "./Modals/ViewExpenseModal";
+import { EditExpenseModal } from "./Modals/EditExpenseModal";
+import ConfirmationAlert from "./Modals/ConfirmationAlert";
 
 const Expenses = () => {
   const [selectedMonth, setSelectedMonth] = useState({
@@ -28,7 +30,7 @@ const Expenses = () => {
     setPagination,
   } = usePaginationService();
   const { expenses } = useReportStore();
-  const { fetchExpenses } = useExpenseService();
+  const { fetchExpenses, deleteExpense } = useExpenseService();
 
   const [loading, setLoading] = useState(false);
   const [isAddExpenseModalOpen, setIsAddExpenseModalOpen] = useState(false);
@@ -40,7 +42,6 @@ const Expenses = () => {
   const [isOpenDeleteExpenseModal, setIsOpenDeleteExpenseModal] =
     useState<boolean>(false);
 
-    console.log(isOpenDeleteExpenseModal, isOpenUpdateExpenseModal)
 
   const actions: TableAction<Expense>[] = [
     {
@@ -93,7 +94,6 @@ const Expenses = () => {
         setPagination(result.pagination); // Keep table pagination in sync [web:6]
       }
 
-      console.log(result);
     } catch (error) {
       // Prefer user feedback in production; console for developer diagnostics
       console.error("Error loading data:", error); // Debug-only logging [web:11]
@@ -204,6 +204,22 @@ const Expenses = () => {
         isOpen={isOpenViewExpenseModal}
         onClose={() => setIsOpenViewExpenseModal(false)}
         expense={selectedExpense}
+      />
+      <EditExpenseModal
+        isOpen={isOpenUpdateExpenseModal}
+        onClose={() => setIsOpenUpdateExpenseModal(false)}
+        expense={selectedExpense}
+      />
+
+      <ConfirmationAlert
+        isOpen={isOpenDeleteExpenseModal}
+        onClose={() => setIsOpenDeleteExpenseModal(false)}
+        message="Are you sure want to delete this expense?"
+        onConfirm={async () => {
+          await deleteExpense(selectedExpense?.id as string);
+          await loadData();
+          setIsOpenDeleteExpenseModal(false);
+        }}
       />
     </div>
   );

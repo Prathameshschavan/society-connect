@@ -1,6 +1,9 @@
 export const currMonth = `${(new Date().getMonth() + 1)
   .toString()
   .padStart(2, "0")}`;
+export const formatMonthNum = (num: string | number) => {
+  return num.toString().padStart(2, "0");
+};
 export const currYear = `${new Date().getFullYear()}`;
 export const currDate = `${new Date().getDate()}`;
 export const currFullDate = `${currYear}-${currDate}-${currYear}`;

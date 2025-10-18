@@ -1,1 +1,3 @@
-Getting Due Date from Orgnization and using it for further calculation
+1 .After the Due Date that MOnth page should have the option to re evaluate which will make all pending as overdue
+2 .Every new added user should need to be asked for reset password
+3 .Add one more role of sub admin/ body member/ 

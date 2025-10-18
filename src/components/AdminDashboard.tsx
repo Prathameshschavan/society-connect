@@ -234,8 +234,8 @@ const AdminDashboard = () => {
 
           {/* Admin-only: bulk bill generation for current month period [web:11] */}
           {profile?.role === "admin" &&
-            // selectedMonth.month === currMonth &&
-            // selectedMonth.year === currYear &&
+            selectedMonth.month === currMonth &&
+            selectedMonth.year === currYear &&
             maintenanceBills?.length === 0 && (
               <button
                 disabled={generateBillLoading}

@@ -52,6 +52,7 @@ export const useProfileStore = create<ProfileState>()(
       partialize: (state) => ({
         user: state.user,
         profile: state.profile,
+        residents: state.residents
       }), // Only persist user and profile, not loading/error states
     }
   )

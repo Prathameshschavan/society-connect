@@ -1,7 +1,7 @@
 import { ChevronDownIcon } from "lucide-react";
 import * as React from "react";
 
-type OptionValue = string | number;
+export type OptionValue = string | number;
 type Option<T extends OptionValue = OptionValue> = {
   value: T;
   label: React.ReactNode;

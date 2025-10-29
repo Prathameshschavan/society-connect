@@ -8,11 +8,13 @@ import {
   useOrganizationStore,
   type Organization,
 } from "../../libs/stores/useOrganizationStore";
+import useAdminService from "./useAdminService";
 
 const useAuthService = () => {
   const { setProfile, setUser } = useProfileStore();
   const { fetchOrganization } = useOrganizationService();
   const { setResidentOrganization } = useOrganizationStore();
+  const { fetchResidents } = useAdminService();
 
   const signIn = async (data: TSignIn) => {
     try {
@@ -51,6 +53,16 @@ const useAuthService = () => {
       const orgData = await fetchOrganization({
         orgId: userData?.user?.user_metadata?.organization_id,
       });
+
+      const residents = fetchResidents({
+        sortOrder: "asc",
+        sortBy: "unit_number",
+        page: 1,
+        pageSize: 999,
+        orgId: userData?.user?.user_metadata?.organization_id,
+      });
+
+      console.log("Residents", residents);
 
       setProfile(profileData);
       setUser(userData?.user);

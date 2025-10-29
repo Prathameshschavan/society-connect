@@ -53,13 +53,14 @@ export interface FetchMaintenanceBillsParams {
   sortOrder?: "asc" | "desc";
   filters?: {
     status?: string;
-    billMonth?: string;
-    billYear?: string;
+    billMonth?: number;
+    billYear?: number;
     residentId?: string;
     minAmount?: number;
     maxAmount?: number;
     dueDateFrom?: string;
     dueDateTo?: string;
+    unitNumber?: string;
   };
 }
 
@@ -139,12 +140,12 @@ const useAdminService = () => {
 
     if (billsError) throw billsError;
 
-    console.log(paidBills)
+    console.log(paidBills);
 
     const totalMaintenanceIncome =
       paidBills?.reduce((sum, bill) => sum + Number(bill.amount), 0) || 0;
 
-      console.log(totalMaintenanceIncome)
+    console.log(totalMaintenanceIncome);
 
     const incomeName = `Maintenance Collection - ${
       longMonth[month - 1]
@@ -627,8 +628,8 @@ const useAdminService = () => {
     page = 1,
     pageSize = 10,
     searchQuery = "",
-    // sortBy = "created_at",
-    // sortOrder = "desc",
+    sortBy = "unit_number", // Default sort by unit number
+    sortOrder = "asc", // Default ascending order
     filters = {},
   }: FetchMaintenanceBillsParams = {}): Promise<FetchMaintenanceBillsResponse | null> => {
     try {
@@ -637,10 +638,11 @@ const useAdminService = () => {
       const to = from + pageSize - 1;
 
       // Build base query with join to get resident details
+      // Use !inner to ensure we only get bills with valid residents
       let query = supabase.from("maintenance_bills").select(
         `
         *, 
-        resident:profiles(
+        resident:profiles!inner(
           full_name,
           id,
           unit_number,
@@ -655,11 +657,10 @@ const useAdminService = () => {
         query = query.eq("organization_id", orgId);
       }
 
-      // Apply search filter (search in resident details)
+      // Apply search filter (search in resident name only)
       if (searchQuery.trim()) {
-        query = query.or(
-          `resident.full_name.ilike.%${searchQuery}%,resident.email.ilike.%${searchQuery}%,resident.phone.ilike.%${searchQuery}%,resident.unit_number.ilike.%${searchQuery}%,razorpay_payment_id.ilike.%${searchQuery}%`
-        );
+        // Search in the foreign table using the correct syntax
+        query = query.ilike("resident.full_name", `%${searchQuery}%`);
       }
 
       // Apply filters
@@ -673,6 +674,11 @@ const useAdminService = () => {
 
       if (filters.billYear) {
         query = query.eq("bill_year", filters.billYear);
+      }
+
+      // Filter by unit number (foreign table)
+      if (filters.unitNumber) {
+        query = query.eq("resident.unit_number", filters.unitNumber);
       }
 
       if (filters.residentId) {
@@ -695,15 +701,60 @@ const useAdminService = () => {
         query = query.lte("due_date", filters.dueDateTo);
       }
 
-      // Apply sorting
-      // query = query.order(sortBy, { ascending: sortOrder === "asc" });
+      console.log(sortBy, sortOrder);
+
+      // Apply sorting based on sortBy parameter
+      switch (sortBy) {
+        case "unit_number":
+          // Sort by foreign table column using embedded syntax
+          query = query.order("resident(unit_number)", {
+            ascending: sortOrder === "asc",
+          });
+          break;
+
+        case "resident_name":
+          // Sort by foreign table column using embedded syntax
+          query = query.order("resident(full_name)", {
+            ascending: sortOrder === "asc",
+          });
+          break;
+
+        case "year":
+          // Sort by bill year, then month
+          query = query
+            .order("bill_year", { ascending: sortOrder === "asc" })
+            .order("bill_month", { ascending: sortOrder === "asc" });
+          break;
+
+        case "month":
+          // Sort by month, then year
+          query = query
+            .order("bill_month", { ascending: sortOrder === "asc" })
+            .order("bill_year", { ascending: sortOrder === "asc" });
+          break;
+
+        case "amount":
+          query = query.order("amount", { ascending: sortOrder === "asc" });
+          break;
+
+        case "due_date":
+          query = query.order("due_date", { ascending: sortOrder === "asc" });
+          break;
+
+        case "created_at":
+          query = query.order("created_at", { ascending: sortOrder === "asc" });
+          break;
+
+        default:
+          // Default fallback to unit number
+          query = query.order("resident(unit_number)", {
+            ascending: true,
+          });
+      }
 
       // Apply pagination
       query = query.range(from, to);
 
-      query = query.order("resident(unit_number)", {
-        ascending: true,
-      });
       // Execute query
       const { data, error, count } = await query;
 

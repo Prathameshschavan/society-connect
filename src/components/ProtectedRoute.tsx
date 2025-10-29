@@ -31,7 +31,6 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     } else if (profile?.role === "resident" || profile?.role === "tenant") {
       return <Navigate to="/owner" replace />;
     }
-    console.log("none of the above", profile);
     return <Navigate to={redirectTo} replace />;
   }
 

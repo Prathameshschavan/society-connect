@@ -58,7 +58,6 @@ export function AddExpenseModal({ isOpen, onClose }: ExpenseModalProps) {
       
       // If there's a file, upload it and update the expense
       if (selectedFile && expenseId) {
-          console.log("Image Path")
         const imagePath = await uploadExpenseImage(selectedFile, expenseId);
         // Update expense with image URL
         await updateExpense(expenseId, { ...data, image_url: imagePath });

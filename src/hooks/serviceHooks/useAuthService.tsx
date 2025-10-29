@@ -54,15 +54,13 @@ const useAuthService = () => {
         orgId: userData?.user?.user_metadata?.organization_id,
       });
 
-      const residents = fetchResidents({
+      fetchResidents({
         sortOrder: "asc",
         sortBy: "unit_number",
         page: 1,
         pageSize: 999,
         orgId: userData?.user?.user_metadata?.organization_id,
       });
-
-      console.log("Residents", residents);
 
       setProfile(profileData);
       setUser(userData?.user);

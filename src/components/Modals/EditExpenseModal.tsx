@@ -120,8 +120,7 @@ export function EditExpenseModal({
     setSelectedFile(null);
     setImagePreview(null);
   };
-
-  console.log(currentImageUrl, selectedFile, imagePreview);
+  
   const submit = async (data: ExpenseFormValues) => {
     if (!expense) return;
 

@@ -10,24 +10,32 @@ import { supabase } from "../../libs/supabase/supabaseClient";
 import { getMonthAndYearFromDate } from "../../utility/dateTimeServices";
 import imageCompression from "browser-image-compression";
 
-export interface FetchExpensesParams {
+export type ExpenseSortByOptions =
+  | "date"
+  | "amount"
+  | "description"
+  | "receiver_name"
+  | "created_at"
+  | "name";
+
+interface FetchExpensesParams {
   orgId?: string;
   page?: number;
   pageSize?: number;
   searchQuery?: string;
-  // sortBy?: string;
-  // sortOrder?: "asc" | "desc";
+  sortBy?: ExpenseSortByOptions;
+  sortOrder?: "asc" | "desc";
   filters?: {
     month?: string;
     year?: string;
     minAmount?: number;
     maxAmount?: number;
-    status?: "paid" | "unpaid" | "overdue";
+    status?: string;
     receiver_name?: string;
   };
 }
 
-export interface FetchExpensesResponse {
+interface FetchExpensesResponse {
   data: Expense[];
   pagination: PaginationInfo;
   totalExpenses: number;
@@ -82,8 +90,6 @@ const useExpenseService = () => {
 
     const compressedFile = await imageCompression(file, defaultOptions); // Assume compression is done here if needed
 
-    console.log(compressedFile);
-
     const { error } = await supabase.storage
       .from("organization documents")
       .upload(fileName, compressedFile);
@@ -106,7 +112,6 @@ const useExpenseService = () => {
       return "";
     }
 
-    console.log(data);
     return data.signedUrl;
   }
 
@@ -144,116 +149,35 @@ const useExpenseService = () => {
     page = 1,
     pageSize = 10,
     searchQuery = "",
-    // sortBy = "created_at",
-    // sortOrder = "desc",
+    sortBy = "date",
+    sortOrder = "desc",
     filters = {},
   }: FetchExpensesParams = {}): Promise<FetchExpensesResponse | null> => {
     try {
-      // Calculate offset window
-      const from = (page - 1) * pageSize;
-      const to = from + pageSize - 1;
+      // Call the edge function
+      const { data, error } = await supabase.functions.invoke("fetchExpense", {
+        body: {
+          orgId,
+          page,
+          pageSize,
+          searchQuery,
+          sortBy,
+          sortOrder,
+          filters,
+        },
+      });
 
-      // Base select - including all expense fields
-      let query = supabase.from("expenses").select(
-        `
-      id,
-      organization_id,
-      name,
-      description,
-      image_url,
-      receiver_name,
-      amount,
-      month,
-      year,
-      date,
-      status,
-      created_at,
-      created_by
-    `,
-        { count: "exact" }
-      );
-
-      // Organization scope
-      if (orgId) {
-        query = query.eq("organization_id", orgId);
-      }
-
-      // Search by name/description/receiver_name
-      if (searchQuery.trim()) {
-        const s = `%${searchQuery.trim()}%`;
-        query = query.or(
-          `name.ilike.${s},description.ilike.${s},receiver_name.ilike.${s}`
-        );
-      }
-
-      // Filters
-      if (filters.month !== undefined) {
-        query = query.eq("month", filters.month);
-      }
-      if (filters.year !== undefined) {
-        query = query.eq("year", filters.year);
-      }
-      if (filters.minAmount !== undefined) {
-        query = query.gte("amount", filters.minAmount);
-      }
-      if (filters.maxAmount !== undefined) {
-        query = query.lte("amount", filters.maxAmount);
-      }
-      if (filters.status !== undefined) {
-        query = query.eq("status", filters.status);
-      }
-      if (filters.receiver_name !== undefined) {
-        query = query.ilike("receiver_name", `%${filters.receiver_name}%`);
-      }
-
-      // Sorting (uncomment if you want dynamic sort)
-      // query = query.order(sortBy, { ascending: sortOrder === "asc", nullsFirst: sortOrder === "asc" });
-
-      // Default stable sort: newest first, then id for tie-break
-      query = query
-        .order("created_at", { ascending: false })
-        .order("id", { ascending: false });
-
-      // Pagination window
-      query = query.range(from, to);
-
-      // Execute
-      const { data, error, count } = await query;
-
+      // Enhanced error handling
       if (error) {
-        console.error("Supabase error:", error);
+        console.error("Edge function error:", error);
         toast.error("Failed to fetch expenses");
         return null;
       }
 
-      if (!data) {
-        toast.error("No data received");
-        return null;
-      }
+      // Type the response and update store
+      const response = data as FetchExpensesResponse;
 
-      setExpenses(data as Expense[]);
-
-      // Pagination info
-      const totalItems = count || 0;
-      const totalPages = Math.ceil(totalItems / pageSize);
-      const currentPage = page;
-      const hasNextPage = currentPage < totalPages;
-      const hasPrevPage = currentPage > 1;
-
-      const paginationInfo: PaginationInfo = {
-        currentPage,
-        totalPages,
-        totalItems,
-        pageSize,
-        hasNextPage,
-        hasPrevPage,
-      };
-
-      const response: FetchExpensesResponse = {
-        data: data as Expense[],
-        pagination: paginationInfo,
-        totalExpenses: totalItems,
-      };
+      setExpenses(response.data);
 
       return response;
     } catch (error) {

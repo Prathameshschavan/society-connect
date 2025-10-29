@@ -5,29 +5,43 @@ import { useReportStore } from "../../libs/stores/useReportStore";
 import { getMonthAndYearFromDate } from "../../utility/dateTimeServices";
 import { useOrganizationStore } from "../../libs/stores/useOrganizationStore";
 
-type FetchIncomesParams = {
-  orgId?: string | null;
-  page?: number; // default 1
-  pageSize?: number; // default 10
-  searchQuery?: string; // matches name/description
+export type IncomeSortByOptions =
+  | "date"
+  | "amount"
+  | "description"
+  | "created_at"
+  | "name";
+
+interface FetchIncomesParams {
+  orgId?: string;
+  page?: number;
+  pageSize?: number;
+  searchQuery?: string;
+  sortBy?: IncomeSortByOptions;
+  sortOrder?: "asc" | "desc";
   filters?: {
-    month?: string; // 1-12
-    year?: string; // e.g., 2025
+    month?: string;
+    year?: string;
+    incomeType?: string;
     minAmount?: number;
     maxAmount?: number;
   };
-  // sortBy?: "created_at" | "amount" | "name" | "year" | "month";
-  // sortOrder?: "asc" | "desc";
-};
+}
 
-type PaginationInfo = {
+interface FetchIncomesResponse {
+  data: IncomeRow[];
+  pagination: PaginationInfo;
+  totalIncomes: number;
+}
+
+interface PaginationInfo {
   currentPage: number;
   totalPages: number;
   totalItems: number;
   pageSize: number;
   hasNextPage: boolean;
   hasPrevPage: boolean;
-};
+}
 
 export type IncomeRow = {
   id: string;
@@ -42,15 +56,9 @@ export type IncomeRow = {
   created_by: string | null;
 };
 
-type FetchIncomesResponse = {
-  data: IncomeRow[];
-  pagination: PaginationInfo;
-  totalIncomes: number;
-};
-
 const useIncomeService = () => {
   const { setIncomes } = useReportStore();
-  const { residentOrganization  } = useOrganizationStore();
+  const { residentOrganization } = useOrganizationStore();
 
   async function addIncome(data: IncomeFormValues) {
     const { month, year } = getMonthAndYearFromDate(data.date);
@@ -94,107 +102,36 @@ const useIncomeService = () => {
     page = 1,
     pageSize = 10,
     searchQuery = "",
-    // sortBy = "created_at",
-    // sortOrder = "desc",
+    sortBy = "date", // Default sort by date
+    sortOrder = "desc", // Default descending order
     filters = {},
   }: FetchIncomesParams = {}): Promise<FetchIncomesResponse | null> => {
     try {
-      // Calculate offset window
-      const from = (page - 1) * pageSize;
-      const to = from + pageSize - 1;
+      const { data, error } = await supabase.functions.invoke("fetchIncome", {
+        body: {
+          orgId,
+          page,
+          pageSize,
+          searchQuery,
+          sortBy,
+          sortOrder,
+          filters,
+        },
+      });
 
-      // Base select (expand if you decide to join created_by -> profiles)
-      let query = supabase.from("income").select(
-        `
-        id,
-        organization_id,
-        name,
-        description,
-        amount,
-        month,
-        year,
-        date,
-        created_at,
-        created_by
-      `,
-        { count: "exact" }
-      );
-
-      // Organization scope
-      if (orgId) {
-        query = query.eq("organization_id", orgId);
-      }
-
-      // Search by name/description
-      if (searchQuery.trim()) {
-        const s = `%${searchQuery.trim()}%`;
-        query = query.or(`name.ilike.${s},description.ilike.${s}`);
-      }
-
-      // Filters
-      if (filters.month !== undefined) {
-        query = query.eq("month", filters.month);
-      }
-      if (filters.year !== undefined) {
-        query = query.eq("year", filters.year);
-      }
-      if (filters.minAmount !== undefined) {
-        query = query.gte("amount", filters.minAmount);
-      }
-      if (filters.maxAmount !== undefined) {
-        query = query.lte("amount", filters.maxAmount);
-      }
-
-      // Sorting (uncomment if you want dynamic sort)
-      // query = query.order(sortBy, { ascending: sortOrder === "asc", nullsFirst: sortOrder === "asc" });
-
-      // Default stable sort: newest first, then id for tie-break
-      query = query
-        .order("created_at", { ascending: false })
-        .order("id", { ascending: false });
-
-      // Pagination window
-      query = query.range(from, to);
-
-      // Execute
-      const { data, error, count } = await query;
-
+      // Better error handling [web:117]
       if (error) {
-        console.error("Supabase error:", error);
+        console.error("Edge function error:", error);
         toast.error("Failed to fetch incomes");
         return null;
       }
 
-      if (!data) {
-        toast.error("No data received");
-        return null;
-      }
+      // Type the response and update store
+      const response = data as FetchIncomesResponse;
 
-      setIncomes(data);
+      setIncomes(response.data); // Don't forget to update the store!
 
-      // Pagination info
-      const totalItems = count || 0;
-      const totalPages = Math.ceil(totalItems / pageSize);
-      const currentPage = page;
-      const hasNextPage = currentPage < totalPages;
-      const hasPrevPage = currentPage > 1;
-
-      const paginationInfo: PaginationInfo = {
-        currentPage,
-        totalPages,
-        totalItems,
-        pageSize,
-        hasNextPage,
-        hasPrevPage,
-      };
-
-      const response: FetchIncomesResponse = {
-        data: data as IncomeRow[],
-        pagination: paginationInfo,
-        totalIncomes: totalItems,
-      };
-
-      return response;
+      return response; // Return the full response with pagination
     } catch (error) {
       console.error("Fetch incomes error:", error);
       toast.error("Something went wrong while fetching incomes");

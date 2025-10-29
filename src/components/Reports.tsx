@@ -1,6 +1,26 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect, useMemo } from "react";
-import { GenericSelect } from "./ui/GenericSelect";
+import {
+  TrendingUp,
+  TrendingDown,
+  BarChart3,
+  Calendar,
+  IndianRupeeIcon,
+  Search,
+  SortAsc,
+  SortDesc,
+} from "lucide-react";
+
+import { GenericSelect, type OptionValue } from "./ui/GenericSelect";
+import TopNav from "./TopNav";
+import GenericTable from "./ui/GenericTable";
+
+import usePaginationService from "../hooks/serviceHooks/usePaginationService";
+import useIncomeService from "../hooks/serviceHooks/useIncomeService";
+import useExpenseService from "../hooks/serviceHooks/useExpenseService";
+
+import { useOrganizationStore } from "../libs/stores/useOrganizationStore";
+
 import {
   currMonth,
   currYear,
@@ -8,20 +28,23 @@ import {
   longMonth,
   formatMonthNum,
 } from "../utility/dateTimeServices";
-import TopNav from "./TopNav";
-import usePaginationService from "../hooks/serviceHooks/usePaginationService";
-import { useOrganizationStore } from "../libs/stores/useOrganizationStore";
-import GenericTable from "./ui/GenericTable";
-import useIncomeService from "../hooks/serviceHooks/useIncomeService";
-import useExpenseService from "../hooks/serviceHooks/useExpenseService";
-import {
-  TrendingUp,
-  TrendingDown,
-  BarChart3,
-  Download,
-  Calendar,
-  IndianRupeeIcon,
-} from "lucide-react";
+
+// Custom hook for debounced search
+const useDebounce = (value: string, delay: number) => {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
+
+  return debouncedValue;
+};
 
 interface MonthlyData {
   month: number;
@@ -30,149 +53,269 @@ interface MonthlyData {
   expenses: number;
   difference: number;
   monthName: string;
+  runningBalance?: number; // Cumulative balance from start of year
 }
 
-interface YearlyData {
-  year: number;
-  totalIncome: number;
-  totalExpenses: number;
-  difference: number;
-  monthlyBreakdown: MonthlyData[];
+// Sort options
+const sortOptions = [
+  { label: "Month", value: "month" },
+  { label: "Income", value: "income" },
+  { label: "Expenses", value: "expenses" },
+  { label: "Difference", value: "difference" },
+  { label: "Running Balance", value: "runningBalance" },
+];
+
+// Filter options
+const filterOptions = [
+  { label: "All", value: "all" },
+  { label: "Surplus Only", value: "surplus" },
+  { label: "Deficit Only", value: "deficit" },
+  { label: "Balanced", value: "balanced" },
+];
+
+// Filter interface
+interface FilterState {
+  month?: string;
+  year?: string;
+}
+
+// Sort interface
+interface SortState {
+  sortBy: string;
+  sortOrder: "asc" | "desc";
 }
 
 const Reports = () => {
-  const [selectedMonth, setSelectedMonth] = useState({
+  // States
+  const [filters, setFilters] = useState<FilterState>({
     month: currMonth,
     year: currYear,
   });
+
+  const [searchQuery, setSearchQuery] = useState("");
+  const debouncedSearchQuery = useDebounce(searchQuery, 500);
+
+  const [sortState, setSortState] = useState<SortState>({
+    sortBy: "month",
+    sortOrder: "asc",
+  });
+
+  const [loading, setLoading] = useState(false);
+  const [filterType, setFilterType] = useState<string>("all");
+
+  // Stores & Services
   const { residentOrganization } = useOrganizationStore();
-  const { setCurrentPage, handlePageChange, handlePageSizeChange, pagination } =
-    usePaginationService();
+  const {
+    setCurrentPage,
+    handlePageChange,
+    handlePageSizeChange,
+    pagination,
+    currentPage,
+    pageSize,
+  } = usePaginationService();
   const { fetchIncomes } = useIncomeService();
   const { fetchExpenses } = useExpenseService();
 
-  const [loading, setLoading] = useState(false);
-  const [yearlyData, setYearlyData] = useState<YearlyData | null>(null);
+  // Processed data
+  const [monthlyData, setMonthlyData] = useState<MonthlyData[]>([]);
+  const [yearlyTotals, setYearlyTotals] = useState({
+    totalIncome: 0,
+    totalExpenses: 0,
+    difference: 0,
+  });
 
-  // Fetch and process data
-  useEffect(() => {
-    const fetchReportData = async () => {
-      if (!residentOrganization?.id) return;
+  // Load data function (similar to expense)
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      // Fetch both income and expenses
+      const [incomeResult, expenseResult] = await Promise.all([
+        fetchIncomes({
+          page: 1,
+          pageSize: 1000, // Get all records
+          searchQuery: "",
+          sortBy: "date",
+          sortOrder: "desc",
+          filters: {
+            year: filters.year,
+          },
+          orgId: residentOrganization?.id as string,
+        }),
+        fetchExpenses({
+          page: 1,
+          pageSize: 1000, // Get all records
+          searchQuery: "",
+          sortBy: "date",
+          sortOrder: "desc",
+          filters: {
+            year: filters.year,
+          },
+          orgId: residentOrganization?.id as string,
+        }),
+      ]);
 
-      setLoading(true);
-      try {
-        // Fetch all data for the selected year
-        const [incomeResponse, expenseResponse] = await Promise.all([
-          fetchIncomes({
-            orgId: residentOrganization.id,
-            pageSize: 1000, // Get all records
-            filters: { year: selectedMonth.year },
-          }),
-          fetchExpenses({
-            orgId: residentOrganization.id,
-            pageSize: 1000, // Get all records
-            filters: { year: selectedMonth.year },
-          }),
-        ]);
-
-        console.log(expenseResponse)
-
-        const incomes = incomeResponse?.data || [];
-        const expenses = expenseResponse?.data || [];
-
+      if (incomeResult && expenseResult) {
         // Process monthly data
         const monthlyBreakdown: MonthlyData[] = [];
         let totalIncome = 0;
         let totalExpenses = 0;
+        let runningBalance = 0; // Cumulative balance tracker
 
         for (let month = 1; month <= 12; month++) {
-          const monthIncome = incomes
+          const monthIncome = incomeResult.data
             .filter((income) => income.month === month)
             .reduce((sum, income) => sum + Number(income.amount), 0);
 
-          const monthExpenses = expenses
-            .filter((expense) => formatMonthNum(expense.month) === formatMonthNum(month))
+          const monthExpenses = expenseResult.data
+            .filter(
+              (expense) => parseInt(formatMonthNum(expense.month)) === month
+            )
             .reduce((sum, expense) => sum + Number(expense.amount), 0);
 
-            console.log(monthExpenses)
-
           const difference = monthIncome - monthExpenses;
+          
+          // Add to running balance
+          runningBalance += difference;
 
           monthlyBreakdown.push({
             month,
-            year: Number(selectedMonth.year),
+            year: parseInt(filters.year || currYear),
             income: monthIncome,
             expenses: monthExpenses,
             difference,
             monthName: longMonth[month - 1],
+            runningBalance, // Cumulative balance up to this month
           });
 
           totalIncome += monthIncome;
           totalExpenses += monthExpenses;
         }
 
-        setYearlyData({
-          year: Number(selectedMonth.year),
+        setMonthlyData(monthlyBreakdown);
+        setYearlyTotals({
           totalIncome,
           totalExpenses,
           difference: totalIncome - totalExpenses,
-          monthlyBreakdown,
         });
-      } catch (error) {
-        console.error("Error fetching report data:", error);
-      } finally {
-        setLoading(false);
       }
-    };
-
-    fetchReportData();
-  }, [selectedMonth.year, residentOrganization?.id]);
-
-  const selectedMonthData = useMemo(() => {
-    if (!yearlyData) return null;
-    return yearlyData.monthlyBreakdown.find(
-      (m) => m.month === Number(selectedMonth.month)
-    );
-  }, [selectedMonth.month, yearlyData]);
-
-  const exportToCSV = () => {
-    if (!yearlyData) return;
-
-    const csvData = [
-      ["Month", "Income (₹)", "Expenses (₹)", "Difference (₹)"],
-      ...yearlyData.monthlyBreakdown.map((month) => [
-        month.monthName,
-        month.income.toString(),
-        month.expenses.toString(),
-        month.difference.toString(),
-      ]),
-      ["", "", "", ""],
-      [
-        "Total",
-        yearlyData.totalIncome.toString(),
-        yearlyData.totalExpenses.toString(),
-        yearlyData.difference.toString(),
-      ],
-    ];
-
-    const csvContent = csvData.map((row) => row.join(",")).join("\n");
-    const blob = new Blob([csvContent], { type: "text/csv" });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `financial-report-${selectedMonth.year}.csv`;
-    a.click();
-    window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Error loading data:", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // Table data for monthly breakdown
+  // Load data when dependencies change
+  useEffect(() => {
+    loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPage, pageSize, filters, debouncedSearchQuery]);
+
+  // Selected month data
+  const selectedMonthData = useMemo(() => {
+    if (!monthlyData.length) return null;
+    return monthlyData.find((m) => m.month === Number(filters.month));
+  }, [filters.month, monthlyData]);
+
+  // Filtered and sorted data
+  const filteredAndSortedData = useMemo(() => {
+    let filtered = [...monthlyData];
+
+    // Apply search filter
+    if (debouncedSearchQuery.trim()) {
+      filtered = filtered.filter((month) =>
+        month.monthName
+          .toLowerCase()
+          .includes(debouncedSearchQuery.toLowerCase())
+      );
+    }
+
+    // Apply status filter
+    if (filterType !== "all") {
+      filtered = filtered.filter((month) => {
+        if (filterType === "surplus") return month.difference > 0;
+        if (filterType === "deficit") return month.difference < 0;
+        if (filterType === "balanced") return month.difference === 0;
+        return true;
+      });
+    }
+
+    // Apply sorting
+    const sorted = [...filtered].sort((a, b) => {
+      let compareValue = 0;
+
+      switch (sortState.sortBy) {
+        case "month":
+          compareValue = a.month - b.month;
+          break;
+        case "income":
+          compareValue = a.income - b.income;
+          break;
+        case "expenses":
+          compareValue = a.expenses - b.expenses;
+          break;
+        case "difference":
+          compareValue = a.difference - b.difference;
+          break;
+        case "runningBalance":
+          compareValue = (a.runningBalance || 0) - (b.runningBalance || 0);
+          break;
+        default:
+          compareValue = 0;
+      }
+
+      return sortState.sortOrder === "asc" ? compareValue : -compareValue;
+    });
+
+    return sorted;
+  }, [monthlyData, debouncedSearchQuery, filterType, sortState]);
+
+  // Handle filter changes
+  const handleFilterChange = (key: keyof FilterState, value: string) => {
+    setCurrentPage(1);
+    setFilters((prev) => ({
+      ...prev,
+      [key]: value || undefined,
+    }));
+  };
+
+  // Handle sort changes
+  const handleSortChange = (field: string) => {
+    setSortState((prev) => ({
+      sortBy: field,
+      sortOrder:
+        prev.sortBy === field && prev.sortOrder === "asc" ? "desc" : "asc",
+    }));
+    setCurrentPage(1);
+  };
+
+  // Reset filters
+  const resetFilters = () => {
+    setFilters({
+      month: currMonth,
+      year: currYear,
+    });
+    setSearchQuery("");
+    setFilterType("all");
+    setSortState({
+      sortBy: "month",
+      sortOrder: "asc",
+    });
+    setCurrentPage(1);
+  };
+
+  const hasActiveFilters = debouncedSearchQuery || filterType !== "all";
+
+  // Table data
   const tableData =
-    yearlyData?.monthlyBreakdown.map((month) => ({
+    filteredAndSortedData.map((month) => ({
       id: month.month.toString(),
       monthName: month.monthName,
+      year: month.year,
       income: month.income,
       expenses: month.expenses,
       difference: month.difference,
+      runningBalance: month.runningBalance || 0,
       status:
         month.difference > 0
           ? "Surplus"
@@ -184,10 +327,12 @@ const Reports = () => {
   const tableColumns = [
     {
       key: "monthName",
-      header: "Month",
+      header: "Month/Year",
       render: (row: MonthlyData) => (
         <div>
-          <p className="font-medium text-gray-900">{row.monthName}</p>
+          <p className="font-medium text-gray-900">
+            {row.monthName} {row.year}
+          </p>
         </div>
       ),
     },
@@ -230,6 +375,22 @@ const Reports = () => {
       ),
     },
     {
+      key: "runningBalance",
+      header: "Running Balance",
+      render: (row: MonthlyData & { runningBalance: number }) => (
+        <div>
+          <p
+            className={`font-bold ${
+              row.runningBalance >= 0 ? "text-purple-600" : "text-red-600"
+            }`}
+          >
+            {row.runningBalance >= 0 ? "+" : ""}₹
+            {row.runningBalance.toLocaleString("en-IN")}
+          </p>
+        </div>
+      ),
+    },
+    {
       key: "status",
       header: "Status",
       render: (row: MonthlyData & { status: string }) => (
@@ -250,8 +411,6 @@ const Reports = () => {
     },
   ];
 
-  console.log(tableData)
-
   return (
     <div className="min-h-screen bg-gray-50">
       <TopNav view="admin" />
@@ -268,59 +427,10 @@ const Reports = () => {
                 Income vs Expense analysis for your organization
               </p>
             </div>
-
-            {/* Filters */}
-            <div className="flex items-end gap-4 w-full sm:w-fit">
-              <GenericSelect
-                id="months"
-                onChange={(value) => {
-                  setCurrentPage(1);
-                  setSelectedMonth((prev) => ({
-                    ...prev,
-                    month: value,
-                  }));
-                }}
-                options={shortMonth.map((month, i) => ({
-                  label: month,
-                  value: (i + 1).toString().padStart(2, "0"),
-                }))}
-                value={selectedMonth.month}
-                label="Month"
-              />
-
-              <GenericSelect
-                id="years"
-                onChange={(value) => {
-                  setCurrentPage(1);
-                  setSelectedMonth((prev) => ({
-                    ...prev,
-                    year: value,
-                  }));
-                }}
-                options={Array.from(
-                  { length: new Date().getFullYear() - 2000 + 1 },
-                  (_, index) => {
-                    const year = new Date().getFullYear() - index;
-                    return { label: year, value: `${year}` };
-                  }
-                )}
-                value={selectedMonth.year}
-                label="Year"
-              />
-
-              <button
-                onClick={exportToCSV}
-                disabled={!yearlyData}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-600 max-h-[37px] text-white rounded hover:bg-blue-700 disabled:opacity-50 whitespace-nowrap"
-              >
-                <Download className="w-4 h-4" />
-                Export
-              </button>
-            </div>
           </div>
 
           {/* Summary Cards */}
-          {yearlyData && (
+          {monthlyData.length > 0 && (
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
               <div className="bg-green-50 border border-green-200 rounded-lg p-6">
                 <div className="flex items-center justify-between">
@@ -329,7 +439,7 @@ const Reports = () => {
                       Total Income
                     </p>
                     <p className="text-2xl font-bold text-green-800">
-                      ₹{yearlyData.totalIncome.toLocaleString("en-IN")}
+                      ₹{yearlyTotals.totalIncome.toLocaleString("en-IN")}
                     </p>
                   </div>
                   <TrendingUp className="w-8 h-8 text-green-600" />
@@ -343,7 +453,7 @@ const Reports = () => {
                       Total Expenses
                     </p>
                     <p className="text-2xl font-bold text-red-800">
-                      ₹{yearlyData.totalExpenses.toLocaleString("en-IN")}
+                      ₹{yearlyTotals.totalExpenses.toLocaleString("en-IN")}
                     </p>
                   </div>
                   <TrendingDown className="w-8 h-8 text-red-600" />
@@ -352,7 +462,7 @@ const Reports = () => {
 
               <div
                 className={`${
-                  yearlyData.difference >= 0
+                  yearlyTotals.difference >= 0
                     ? "bg-blue-50 border-blue-200"
                     : "bg-orange-50 border-orange-200"
                 } border rounded-lg p-6`}
@@ -361,26 +471,29 @@ const Reports = () => {
                   <div>
                     <p
                       className={`${
-                        yearlyData.difference >= 0
+                        yearlyTotals.difference >= 0
                           ? "text-blue-600"
                           : "text-orange-600"
                       } text-sm font-medium`}
                     >
-                      Net {yearlyData.difference >= 0 ? "Surplus" : "Deficit"}
+                      Net {yearlyTotals.difference >= 0 ? "Surplus" : "Deficit"}
                     </p>
                     <p
                       className={`text-2xl font-bold ${
-                        yearlyData.difference >= 0
+                        yearlyTotals.difference >= 0
                           ? "text-blue-800"
                           : "text-orange-800"
                       }`}
                     >
-                      ₹{Math.abs(yearlyData.difference).toLocaleString("en-IN")}
+                      ₹
+                      {Math.abs(yearlyTotals.difference).toLocaleString(
+                        "en-IN"
+                      )}
                     </p>
                   </div>
                   <IndianRupeeIcon
                     className={`w-8 h-8 ${
-                      yearlyData.difference >= 0
+                      yearlyTotals.difference >= 0
                         ? "text-blue-600"
                         : "text-orange-600"
                     }`}
@@ -393,7 +506,7 @@ const Reports = () => {
                   <div>
                     <p className="text-gray-600 text-sm font-medium">Year</p>
                     <p className="text-2xl font-bold text-gray-800">
-                      {selectedMonth.year}
+                      {filters.year}
                     </p>
                   </div>
                   <BarChart3 className="w-8 h-8 text-gray-600" />
@@ -403,13 +516,13 @@ const Reports = () => {
           )}
 
           {/* Selected Month Details */}
-          {selectedMonthData && (
+          {selectedMonthData && filters.month !== "" && (
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
               <h3 className="font-semibold text-blue-900 mb-4 flex items-center gap-2">
                 <Calendar className="w-5 h-5" />
-                {selectedMonthData.monthName} {selectedMonth.year} Details
+                {selectedMonthData.monthName} {filters.year} Details
               </h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div className="text-center">
                   <p className="text-sm text-blue-700">Income</p>
                   <p className="text-xl font-bold text-green-600">
@@ -439,61 +552,201 @@ const Reports = () => {
                     )}
                   </p>
                 </div>
+                <div className="text-center">
+                  <p className="text-sm text-blue-700">Running Balance</p>
+                  <p
+                    className={`text-xl font-bold ${
+                      (selectedMonthData.runningBalance || 0) >= 0
+                        ? "text-purple-600"
+                        : "text-red-600"
+                    }`}
+                  >
+                    ₹
+                    {Math.abs(selectedMonthData.runningBalance || 0).toLocaleString(
+                      "en-IN"
+                    )}
+                  </p>
+                </div>
               </div>
+            </div>
+          )}
+
+          {/* Enhanced Filters Section */}
+          <div className="bg-white p-6 rounded-lg shadow-sm">
+            <div className="flex flex-col lg:flex-row gap-4">
+              {/* Date Filters */}
+              <div className="flex gap-4">
+                <GenericSelect
+                  id="months"
+                  onChange={(value) => handleFilterChange("month", value)}
+                  options={[
+                    { label: "All Months", value: "" },
+                    ...shortMonth.map((month, i) => ({
+                      label: month,
+                      value: (i + 1).toString().padStart(2, "0"),
+                    })),
+                  ]}
+                  value={filters.month as OptionValue}
+                  label="Month"
+                />
+
+                <GenericSelect
+                  id="years"
+                  onChange={(value) => handleFilterChange("year", value)}
+                  options={[
+                    // { label: "All Years", value: "" },
+                    ...Array.from(
+                      { length: new Date().getFullYear() - 2000 + 1 },
+                      (_, index) => {
+                        const year = new Date().getFullYear() - index;
+                        return { label: year, value: `${year}` };
+                      }
+                    ),
+                  ]}
+                  value={filters.year as OptionValue}
+                  label="Year"
+                />
+              </div>
+
+              {/* Filter Type */}
+              <div className="flex gap-4">
+                <GenericSelect
+                  id="filterType"
+                  onChange={(value) => setFilterType(value)}
+                  options={filterOptions}
+                  value={filterType}
+                  label="Filter By Status"
+                />
+              </div>
+
+              {/* Sort Controls */}
+              <div className="flex items-end gap-4">
+                <GenericSelect
+                  id="sortBy"
+                  onChange={(value) => handleSortChange(value)}
+                  options={sortOptions}
+                  value={sortState.sortBy}
+                  label="Sort By"
+                />
+
+                <button
+                  onClick={() =>
+                    setSortState((prev) => ({
+                      ...prev,
+                      sortOrder: prev.sortOrder === "asc" ? "desc" : "asc",
+                    }))
+                  }
+                  className="flex self-end items-center gap-2 px-4 py-1.5 border border-gray-300 rounded hover:bg-gray-50 transition-colors"
+                  title={`Sort ${
+                    sortState.sortOrder === "asc" ? "Descending" : "Ascending"
+                  }`}
+                >
+                  {sortState.sortOrder === "asc" ? (
+                    <SortAsc className="w-4 h-4" />
+                  ) : (
+                    <SortDesc className="w-4 h-4" />
+                  )}
+                  {sortState.sortOrder === "asc" ? "Asc" : "Desc"}
+                </button>
+              </div>
+
+              {/* Reset Button */}
+              <button
+                onClick={resetFilters}
+                className="px-4 py-2.5 self-end text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded transition-colors"
+              >
+                Reset Filters
+              </button>
+            </div>
+
+            {/* Search Bar */}
+            <div className="mt-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <input
+                  type="text"
+                  placeholder="Search by month name..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery("")}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Results Summary */}
+          {!loading && (
+            <div className="text-sm text-gray-600">
+              {filteredAndSortedData.length} report records found
+              {debouncedSearchQuery && (
+                <span> for "{debouncedSearchQuery}"</span>
+              )}
             </div>
           )}
 
           {/* Monthly Breakdown Table */}
           <GenericTable
-            title={`Monthly Financial Report - ${selectedMonth.year}`}
-            columns={tableColumns}
+            title={`Monthly Financial Report - ${filters.year || "All Years"}`}
+            columns={tableColumns as any}
             data={tableData as any}
             actions={[]}
             loading={loading}
-            emptyMessage="No financial data available for this year"
-            searchPlaceholder="Search months"
-            showPagination={false} // Show all months
+            emptyMessage={
+              hasActiveFilters
+                ? "No months found matching your criteria"
+                : "No financial data available for this year"
+            }
+            searchPlaceholder=""
+            showPagination={false}
             pagination={pagination}
             onPageChange={handlePageChange}
             onPageSizeChange={handlePageSizeChange}
-            pageSizeOptions={[12]} // Show all 12 months
+            pageSizeOptions={[12]}
             onSearch={() => {}}
           />
 
           {/* Yearly Summary Footer */}
-          {yearlyData && (
+          {monthlyData.length > 0 && (
             <div className="bg-gray-50 border-2 border-gray-300 rounded-lg p-6">
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-center">
                 <div>
                   <p className="text-sm text-gray-600">Year</p>
                   <p className="text-lg font-bold text-gray-900">
-                    {yearlyData.year}
+                    {filters.year}
                   </p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-600">Total Income</p>
                   <p className="text-lg font-bold text-green-600">
-                    ₹{yearlyData.totalIncome.toLocaleString("en-IN")}
+                    ₹{yearlyTotals.totalIncome.toLocaleString("en-IN")}
                   </p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-600">Total Expenses</p>
                   <p className="text-lg font-bold text-red-600">
-                    ₹{yearlyData.totalExpenses.toLocaleString("en-IN")}
+                    ₹{yearlyTotals.totalExpenses.toLocaleString("en-IN")}
                   </p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-600">
-                    Net {yearlyData.difference >= 0 ? "Surplus" : "Deficit"}
+                    Net {yearlyTotals.difference >= 0 ? "Surplus" : "Deficit"}
                   </p>
                   <p
                     className={`text-lg font-bold ${
-                      yearlyData.difference >= 0
+                      yearlyTotals.difference >= 0
                         ? "text-blue-600"
                         : "text-orange-600"
                     }`}
                   >
-                    ₹{Math.abs(yearlyData.difference).toLocaleString("en-IN")}
+                    ₹{Math.abs(yearlyTotals.difference).toLocaleString("en-IN")}
                   </p>
                 </div>
               </div>

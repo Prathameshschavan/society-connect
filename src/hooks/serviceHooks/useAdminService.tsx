@@ -53,8 +53,8 @@ export interface FetchMaintenanceBillsParams {
   sortOrder?: "asc" | "desc";
   filters?: {
     status?: string;
-    billMonth?: number;
-    billYear?: number;
+    billMonth?: string;
+    billYear?: string;
     residentId?: string;
     minAmount?: number;
     maxAmount?: number;
@@ -128,7 +128,6 @@ const useAdminService = () => {
     month: number,
     year: number
   ) => {
-    console.log(month, year);
     // Calculate total paid maintenance for this month/year
     const { data: paidBills, error: billsError } = await supabase
       .from("maintenance_bills")
@@ -140,12 +139,8 @@ const useAdminService = () => {
 
     if (billsError) throw billsError;
 
-    console.log(paidBills);
-
     const totalMaintenanceIncome =
       paidBills?.reduce((sum, bill) => sum + Number(bill.amount), 0) || 0;
-
-    console.log(totalMaintenanceIncome);
 
     const incomeName = `Maintenance Collection - ${
       longMonth[month - 1]
@@ -163,8 +158,6 @@ const useAdminService = () => {
       .eq("year", year)
       .eq("name", incomeName) // Or use a specific identifier field
       .single();
-
-    console.log(existingIncome, totalMaintenanceIncome);
 
     if (totalMaintenanceIncome > 0) {
       if (existingIncome) {
@@ -355,8 +348,6 @@ const useAdminService = () => {
     if (!profile?.organization_id)
       return { error: "Missing organization context" };
 
-    console.log("===> 1", profile?.organization_id);
-
     const numOrErr = (v: any, label: string) =>
       Number.isNaN(Number(v)) ? `${label} must be a number` : null;
 
@@ -375,8 +366,6 @@ const useAdminService = () => {
       if (err) return { error: err }; // [memory:12]
     }
 
-    console.log("===> 2");
-
     // Validate extras shape: id, name non-empty, amount > 0
     const badExtra = (residentOrganization?.extras ?? []).find(
       (e) =>
@@ -389,15 +378,11 @@ const useAdminService = () => {
     if (badExtra)
       return { error: "Invalid extras: id, name and positive amount required" }; // [memory:12]
 
-    console.log("===> 3");
-
     // 1) resident scope
     const { data: residents, error: errRes } = await supabase
       .from("profiles")
       .select("id, role, square_footage")
       .eq("organization_id", profile.organization_id);
-
-    console.log("===> 4");
 
     if (errRes || !residents?.length)
       return { error: errRes || "No residents found" }; // [memory:12]
@@ -536,10 +521,7 @@ const useAdminService = () => {
         const shouldCarry = lastMonthStatus === "overdue"; // [memory:12]
         const prior = shouldCarry ? overdueByResident.get(r.id) ?? [] : [];
 
-        console.log(prior);
-
         const dues: DuesLine[] = prior.map((p) => {
-          console.log(p);
           const penalty =
             residentOrganization?.calculate_maintenance_by === "fixed"
               ? Number(residentOrganization?.penalty_amount)
@@ -628,170 +610,36 @@ const useAdminService = () => {
     page = 1,
     pageSize = 10,
     searchQuery = "",
-    sortBy = "unit_number", // Default sort by unit number
-    sortOrder = "asc", // Default ascending order
+    sortBy = "unit_number",
+    sortOrder = "asc",
     filters = {},
-  }: FetchMaintenanceBillsParams = {}): Promise<FetchMaintenanceBillsResponse | null> => {
+  }: FetchMaintenanceBillsParams = {}) => {
     try {
-      // Calculate offset for pagination
-      const from = (page - 1) * pageSize;
-      const to = from + pageSize - 1;
-
-      // Build base query with join to get resident details
-      // Use !inner to ensure we only get bills with valid residents
-      let query = supabase.from("maintenance_bills").select(
-        `
-        *, 
-        resident:profiles!inner(
-          full_name,
-          id,
-          unit_number,
-          phone
-        )        
-      `,
-        { count: "exact" }
+      const { data, error } = await supabase.functions.invoke(
+        "fetchMaintenceBill",
+        {
+          body: {
+            orgId,
+            page,
+            pageSize,
+            searchQuery,
+            sortBy,
+            sortOrder,
+            filters,
+          },
+        }
       );
 
-      // Apply organization filter
-      if (orgId) {
-        query = query.eq("organization_id", orgId);
-      }
-
-      // Apply search filter (search in resident name only)
-      if (searchQuery.trim()) {
-        // Search in the foreign table using the correct syntax
-        query = query.ilike("resident.full_name", `%${searchQuery}%`);
-      }
-
-      // Apply filters
-      if (filters.status) {
-        query = query.eq("status", filters.status);
-      }
-
-      if (filters.billMonth) {
-        query = query.eq("bill_month", filters.billMonth);
-      }
-
-      if (filters.billYear) {
-        query = query.eq("bill_year", filters.billYear);
-      }
-
-      // Filter by unit number (foreign table)
-      if (filters.unitNumber) {
-        query = query.eq("resident.unit_number", filters.unitNumber);
-      }
-
-      if (filters.residentId) {
-        query = query.eq("resident_id", filters.residentId);
-      }
-
-      if (filters.minAmount !== undefined) {
-        query = query.gte("amount", filters.minAmount);
-      }
-
-      if (filters.maxAmount !== undefined) {
-        query = query.lte("amount", filters.maxAmount);
-      }
-
-      if (filters.dueDateFrom) {
-        query = query.gte("due_date", filters.dueDateFrom);
-      }
-
-      if (filters.dueDateTo) {
-        query = query.lte("due_date", filters.dueDateTo);
-      }
-
-      console.log(sortBy, sortOrder);
-
-      // Apply sorting based on sortBy parameter
-      switch (sortBy) {
-        case "unit_number":
-          // Sort by foreign table column using embedded syntax
-          query = query.order("resident(unit_number)", {
-            ascending: sortOrder === "asc",
-          });
-          break;
-
-        case "resident_name":
-          // Sort by foreign table column using embedded syntax
-          query = query.order("resident(full_name)", {
-            ascending: sortOrder === "asc",
-          });
-          break;
-
-        case "year":
-          // Sort by bill year, then month
-          query = query
-            .order("bill_year", { ascending: sortOrder === "asc" })
-            .order("bill_month", { ascending: sortOrder === "asc" });
-          break;
-
-        case "month":
-          // Sort by month, then year
-          query = query
-            .order("bill_month", { ascending: sortOrder === "asc" })
-            .order("bill_year", { ascending: sortOrder === "asc" });
-          break;
-
-        case "amount":
-          query = query.order("amount", { ascending: sortOrder === "asc" });
-          break;
-
-        case "due_date":
-          query = query.order("due_date", { ascending: sortOrder === "asc" });
-          break;
-
-        case "created_at":
-          query = query.order("created_at", { ascending: sortOrder === "asc" });
-          break;
-
-        default:
-          // Default fallback to unit number
-          query = query.order("resident(unit_number)", {
-            ascending: true,
-          });
-      }
-
-      // Apply pagination
-      query = query.range(from, to);
-
-      // Execute query
-      const { data, error, count } = await query;
-
+      // Check for errors
       if (error) {
-        console.error("Supabase error:", error);
-        toast.error("Failed to fetch maintenance bills");
-        return null;
+        console.error("Edge function error:", error);
+        throw new Error(error.message || "Failed to fetch maintenance bills");
       }
 
-      if (!data) {
-        toast.error("No data received");
-        return null;
-      }
+      // Extract the response data
+      const response = data as FetchMaintenanceBillsResponse;
 
-      // Calculate pagination info
-      const totalItems = count || 0;
-      const totalPages = Math.ceil(totalItems / pageSize);
-      const currentPage = page;
-      const hasNextPage = currentPage < totalPages;
-      const hasPrevPage = currentPage > 1;
-
-      const paginationInfo: PaginationInfo = {
-        currentPage,
-        totalPages,
-        totalItems,
-        pageSize,
-        hasNextPage,
-        hasPrevPage,
-      };
-
-      setMaintenanceBills(data);
-
-      const response: FetchMaintenanceBillsResponse = {
-        data,
-        pagination: paginationInfo,
-        totalBills: totalItems,
-      };
+      setMaintenanceBills(response.data);
 
       return response;
     } catch (error) {

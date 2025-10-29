@@ -74,16 +74,7 @@ interface SortState {
   sortOrder: "asc" | "desc";
 }
 
-/**
- * AdminDashboard with Advanced Filtering, Searching, and Sorting
- *
- * New Features:
- * - Debounced search by resident name
- * - Filter by unit number and status
- * - Sort by multiple columns with direction control
- * - Reset filters functionality
- * - Real-time search with loading states
- */
+
 const AdminDashboard = () => {
   // Services
   const { createBillsWithPenaltyForAllResidents, fetchMaintenanceBills } =
@@ -102,8 +93,6 @@ const AdminDashboard = () => {
   const { profile, residents } = useProfileStore();
   const { residentOrganization } = useOrganizationStore();
   const { maintenanceBills } = useMaintenanceStore();
-
-  console.log("residents", residents);
 
   // Modal states
   const [isOnboardModalOpen, setIsOnboardModalOpen] = useState(false);
@@ -151,8 +140,8 @@ const AdminDashboard = () => {
         sortOrder: sortState.sortOrder,
         filters: {
           ...filters,
-          billMonth: parseInt(filters.billMonth || currMonth),
-          billYear: parseInt(filters.billYear || currYear),
+          billMonth: filters.billMonth as string,
+          billYear: filters.billYear as string,
         },
       });
 
@@ -280,7 +269,7 @@ const AdminDashboard = () => {
           </div>
 
           {/* Enhanced Filters Section */}
-          <div className="bg-white p-6 rounded-lg shadow-sm border">
+          <div className="bg-white p-6 rounded-lg shadow-sm ">
             <div className="flex flex-col lg:flex-row gap-4">
               {/* Date Filters */}
               <div className="flex gap-4">
@@ -294,7 +283,7 @@ const AdminDashboard = () => {
                       value: (i + 1).toString().padStart(2, "0"),
                     })),
                   ]}
-                  value={filters.billMonth || currMonth}
+                  value={filters.billMonth as OptionValue}
                   label="Month"
                 />
 
@@ -311,7 +300,7 @@ const AdminDashboard = () => {
                       }
                     ),
                   ]}
-                  value={filters.billYear || currYear}
+                  value={filters.billYear as OptionValue}
                   label="Year"
                 />
               </div>

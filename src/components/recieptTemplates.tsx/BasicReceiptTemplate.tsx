@@ -320,6 +320,8 @@ function BillPdfDownload({
   bill: MaintenanceBill;
   extras: ExtraItem[];
 }) {
+  console.log(bill);
+  console.log(extras);
   return (
     <PDFDownloadLink
       document={<BasicReceiptTemplate bill={bill} extras={extras} />}

@@ -17,8 +17,8 @@ import { useOrganizationStore } from "../libs/stores/useOrganizationStore";
 import Drawer from "./ui/Drawer";
 
 const linkBase = "flex items-center space-x-1 text-sm transition-colors";
-const active = "text-blue-600 font-medium";
-const inactive = "text-gray-600 font-light hover:text-[black]";
+const active = "text-white font-medium";
+const inactive = "text-white font-light hover:text-[white]";
 
 const TopNav: React.FC<{ view: "admin" | "owner" }> = ({ view }) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -38,12 +38,12 @@ const TopNav: React.FC<{ view: "admin" | "owner" }> = ({ view }) => {
     { to: "/reports", label: "Reports", icon: FileChartColumn },
     ...(profile?.role === "admin"
       ? [
-          {
-            to: `/configure-settings/${residentOrganization?.id ?? ""}`,
-            label: "Settings",
-            icon: Settings,
-          },
-        ]
+        {
+          to: `/configure-settings/${residentOrganization?.id ?? ""}`,
+          label: "Settings",
+          icon: Settings,
+        },
+      ]
       : []),
   ];
 
@@ -70,21 +70,22 @@ const TopNav: React.FC<{ view: "admin" | "owner" }> = ({ view }) => {
   };
 
   return (
-    <nav className="bg-white border-b border-gray-200 sticky top-0 z-40">
-      <div className="max-w-7xl mx-auto py-2 px-4 sm:px-6 lg:px-8 flex flex-col gap-1">
+    <nav className="bg-indigo-600 border-b border-gray-200 sticky top-0 z-40 ">
+      <div className="max-w-7xl mx-auto py-2 px-4 sm:px-6 lg:px-8 flex flex-col gap-1 ">
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-2">
             {view === "admin" && (
               <Menu
                 onClick={() => setOpen(!open)}
-                className="cursor-pointer md:hidden"
+                className="cursor-pointer md:hidden text-white"
               />
             )}
-            <p>MaintainEase</p>
+            {/* <img src="/logo.png" className="h-8 w-8 min-h-8 min-w-8 max-h-8 max-w-8" alt="logo" /> */}
+            <p className="text-lg font-semibold text-white">MaintainEase</p>
             <Drawer
               open={open}
               onClose={() => setOpen(false)}
-              title="Society Connect"
+              title="MaintainEase"
             />
           </div>
 
@@ -114,8 +115,8 @@ const TopNav: React.FC<{ view: "admin" | "owner" }> = ({ view }) => {
                 onClick={() => setIsDropdownOpen((s) => !s)}
                 className="cursor-pointer flex items-center space-x-2 text-gray-600 hover:text-gray-900 focus:outline-none"
               >
-                <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
-                  <Users className="w-4 h-4 text-gray-600" />
+                <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center">
+                  <Users className="w-4 h-4 text-indigo-600" />
                 </div>
               </button>
 

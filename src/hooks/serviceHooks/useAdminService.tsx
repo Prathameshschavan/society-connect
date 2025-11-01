@@ -639,6 +639,8 @@ const useAdminService = () => {
       // Extract the response data
       const response = data as FetchMaintenanceBillsResponse;
 
+      console.log(response);
+
       setMaintenanceBills(response.data);
 
       return response;

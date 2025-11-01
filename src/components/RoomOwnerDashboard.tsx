@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import useCommonService from "../hooks/serviceHooks/useCommonService";
 import PaymentModal from "./Modals/PaymentModal";
 import TopNav from "./TopNav";
@@ -8,19 +8,22 @@ import type {
   TableAction,
   TableColumn,
 } from "./ui/GenericTable";
-import type { MaintenanceBill } from "../libs/stores/useMaintenanceStore";
+import { useMaintenanceStore, type MaintenanceBill } from "../libs/stores/useMaintenanceStore";
 import { Eye } from "lucide-react";
 import GenericTable from "./ui/GenericTable";
 import useResidentService from "../hooks/serviceHooks/useResidentService";
 import { useResidentStore } from "../libs/stores/useResidentStore";
 import ViewMaintananceDetailsModal from "./Modals/ViewMaintananceDetailsModal";
+import usePaginationService from "../hooks/serviceHooks/usePaginationService";
+import useAdminService from "../hooks/serviceHooks/useAdminService";
 
 const RoomOwnerDashboard = () => {
   const { getStatusIcon, getStatusColor, longMonth, shortMonth } =
     useCommonService();
   const { profile } = useProfileStore();
-  const { bills } = useResidentStore();
-  const { fetchMaintenanceBills } = useResidentService();
+  const { maintenanceBills } = useMaintenanceStore();
+  const { fetchMaintenanceBills } =
+    useAdminService();
 
   const [loading, setLoading] = useState(false);
 
@@ -32,23 +35,19 @@ const RoomOwnerDashboard = () => {
     useState(false);
 
   // Pagination state
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
-  const [pagination, setPagination] = useState<PaginationInfo>({
-    currentPage: 1,
-    totalPages: 1,
-    totalItems: 0,
-    pageSize: 10,
-    hasNextPage: false,
-    hasPrevPage: false,
-  });
 
-  const loadData = async () => {
+  const { pagination, setPagination, handlePageChange, handlePageSizeChange, currentPage, pageSize } = usePaginationService();
+
+
+  const loadData = useCallback(async () => {
     setLoading(true);
     try {
       const result = await fetchMaintenanceBills({
         page: currentPage,
         pageSize: pageSize,
+        filters: {
+          unitNumber: profile?.unit_number,
+        },
       });
 
       if (result) {
@@ -59,20 +58,16 @@ const RoomOwnerDashboard = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [
+    currentPage,
+    pageSize,
+    setPagination,
+  ]);
 
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-  };
-
-  const handlePageSizeChange = (newPageSize: number) => {
-    setPageSize(newPageSize);
-    setCurrentPage(1); // Reset to first page when page size changes
-  };
 
   useEffect(() => {
     loadData();
-  }, [currentPage, pageSize]);
+  }, [currentPage, pageSize,]);
 
   const columns: TableColumn<MaintenanceBill>[] = [
     {
@@ -185,7 +180,7 @@ const RoomOwnerDashboard = () => {
             <GenericTable
               title="Maintenance"
               columns={columns}
-              data={bills}
+              data={maintenanceBills}
               actions={actions}
               loading={loading}
               emptyMessage="No maintenence bill is generated this month"
@@ -195,7 +190,7 @@ const RoomOwnerDashboard = () => {
               onPageChange={handlePageChange}
               onPageSizeChange={handlePageSizeChange}
               pageSizeOptions={[5, 10, 20, 50]}
-              onSearch={() => {}}
+              onSearch={() => { }}
             />
           </div>
           {showPaymentModal && <PaymentModal setOpen={setShowPaymentModal} />}

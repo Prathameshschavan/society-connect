@@ -28,6 +28,7 @@ const ViewMaintenanceDetailsModal: React.FC<ViewMaintenanceModalProps> = ({
   bill,
   residentInfo = true,
 }) => {
+  console.log("Selected Bill:", bill);
   const { getStatusIcon, longMonth } = useCommonService();
 
   const extrasList = useMemo(() => {

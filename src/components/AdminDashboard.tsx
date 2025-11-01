@@ -144,6 +144,8 @@ const AdminDashboard = () => {
         },
       });
 
+      console.log(result);
+
       if (result) {
         setPagination(result.pagination);
       }

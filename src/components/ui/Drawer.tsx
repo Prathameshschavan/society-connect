@@ -86,14 +86,14 @@ export default function Drawer({ open, onClose, title = "Menu" }: DrawerProps) {
         className={`fixed top-0 left-0 h-full w-80 max-w-[85%] bg-white shadow-xl transform transition-transform duration-200
         ${open ? "translate-x-0" : "-translate-x-full"}`}
       >
-        <div className="flex items-center justify-between px-4 py-3 border-b">
-          <span className="text-base font-semibold">{title}</span>
+        <div className="flex items-center justify-between px-4 py-3 bg-indigo-600">
+          <span className="text-base font-semibold text-white">{title}</span>
           <button
             ref={firstFocusRef}
             onClick={onClose}
-            className="p-2 rounded-md text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="p-2 rounded-md "
           >
-            <X className="h-5 w-5" />
+            <X className="h-5 w-5 text-white" />
             <span className="sr-only">Close menu</span>
           </button>
         </div>

@@ -74,7 +74,6 @@ interface SortState {
   sortOrder: "asc" | "desc";
 }
 
-
 const AdminDashboard = () => {
   // Services
   const { createBillsWithPenaltyForAllResidents, fetchMaintenanceBills } =
@@ -234,7 +233,9 @@ const AdminDashboard = () => {
         "cursor-pointer p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors",
       label: "View",
     },
-    ...(filters.billMonth === currMonth && filters.billYear === currYear
+    ...(filters.billMonth === currMonth &&
+    filters.billYear === currYear &&
+    profile?.role === "admin"
       ? [
           {
             icon: <Edit className="w-4 h-4" />,
@@ -429,7 +430,7 @@ const AdminDashboard = () => {
             title="Maintenance Bills"
             columns={columns}
             data={maintenanceBills}
-            actions={profile?.role === "admin" ? actions : []}
+            actions={actions}
             loading={loading}
             emptyMessage={
               debouncedSearchQuery || filters.unitNumber || filters.status

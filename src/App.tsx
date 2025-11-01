@@ -12,6 +12,8 @@ import SocietyConfigurationPage from "./Views/ConfigureSettings";
 import Expenses from "./components/Expenses";
 import Income from "./components/Income";
 import Reports from "./components/Reports";
+import MonthlyReportDetails from "./Views/MonthlyReportDetails";
+import ChangePassword from "./Views/ChangePassword";
 
 function App() {
   return (
@@ -19,15 +21,23 @@ function App() {
       <Route
         path="/admin"
         element={
-          <ProtectedRoute allowedRoles={["admin"]}>
+          <ProtectedRoute allowedRoles={["admin", "committee_member"]}>
             <AdminDashboard />
+          </ProtectedRoute>
+        }
+      ></Route>
+      <Route
+        path="/monthly-report"
+        element={
+          <ProtectedRoute allowedRoles={["admin", "committee_member"]}>
+            <MonthlyReportDetails />
           </ProtectedRoute>
         }
       ></Route>
       <Route
         path="/expenses"
         element={
-          <ProtectedRoute allowedRoles={["admin"]}>
+          <ProtectedRoute allowedRoles={["admin", "committee_member"]}>
             <Expenses />
           </ProtectedRoute>
         }
@@ -35,7 +45,7 @@ function App() {
       <Route
         path="/income"
         element={
-          <ProtectedRoute allowedRoles={["admin"]}>
+          <ProtectedRoute allowedRoles={["admin", "committee_member"]}>
             <Income />
           </ProtectedRoute>
         }
@@ -43,8 +53,16 @@ function App() {
       <Route
         path="/reports"
         element={
-          <ProtectedRoute allowedRoles={["admin"]}>
+          <ProtectedRoute allowedRoles={["admin", "committee_member"]}>
             <Reports />
+          </ProtectedRoute>
+        }
+      ></Route>
+      <Route
+        path="/report"
+        element={
+          <ProtectedRoute allowedRoles={["admin", "committee_member"]}>
+            <MonthlyReportDetails />
           </ProtectedRoute>
         }
       ></Route>
@@ -83,6 +101,10 @@ function App() {
       />
       <Route path="/sign-up" element={<SignUp />}></Route>
       <Route path="/unauthorized" element={<UnauthorizedPage />}></Route>
+      <Route
+        path="/change-password"
+        element={<ChangePassword />}
+      ></Route>
       <Route
         path="/configure-settings/:orgId"
         element={

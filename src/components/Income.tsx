@@ -28,6 +28,7 @@ import { useReportStore } from "../libs/stores/useReportStore";
 
 import { currMonth, currYear, shortMonth } from "../utility/dateTimeServices";
 import { columns } from "../config/tableConfig/income";
+import { useProfileStore } from "../libs/stores/useProfileStore";
 
 // Custom hook for debounced search [web:149]
 const useDebounce = (value: string | number | undefined, delay: number) => {
@@ -110,6 +111,7 @@ const Income = () => {
   // Stores & Services
   const { residentOrganization } = useOrganizationStore();
   const { incomes } = useReportStore();
+  const { profile } = useProfileStore();
   const {
     setCurrentPage,
     handlePageChange,
@@ -214,26 +216,30 @@ const Income = () => {
         "cursor-pointer p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors",
       label: "View",
     },
-    {
-      icon: <Edit className="w-4 h-4" />,
-      onClick: (income: IncomeRow) => {
-        setSelectedIncome(income);
-        setIsOpenUpdateIncomeModal(true);
-      },
-      className:
-        "cursor-pointer p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors",
-      label: "Edit",
-    },
-    {
-      icon: <Trash2 className="w-4 h-4" />,
-      onClick: (income: IncomeRow) => {
-        setSelectedIncome(income);
-        setIsOpenDeleteIncomeModal(true);
-      },
-      className:
-        "cursor-pointer p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors",
-      label: "Delete",
-    },
+    ...(profile?.role === "admin"
+      ? [
+          {
+            icon: <Edit className="w-4 h-4" />,
+            onClick: (income: IncomeRow) => {
+              setSelectedIncome(income);
+              setIsOpenUpdateIncomeModal(true);
+            },
+            className:
+              "cursor-pointer p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors",
+            label: "Edit",
+          },
+          {
+            icon: <Trash2 className="w-4 h-4" />,
+            onClick: (income: IncomeRow) => {
+              setSelectedIncome(income);
+              setIsOpenDeleteIncomeModal(true);
+            },
+            className:
+              "cursor-pointer p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors",
+            label: "Delete",
+          },
+        ]
+      : []),
   ];
 
   const hasActiveFilters =

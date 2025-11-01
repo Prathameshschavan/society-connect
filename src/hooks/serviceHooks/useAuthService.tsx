@@ -9,12 +9,14 @@ import {
   type Organization,
 } from "../../libs/stores/useOrganizationStore";
 import useAdminService from "./useAdminService";
+import { useNavigate } from "react-router-dom";
 
 const useAuthService = () => {
   const { setProfile, setUser } = useProfileStore();
   const { fetchOrganization } = useOrganizationService();
   const { setResidentOrganization } = useOrganizationStore();
   const { fetchResidents } = useAdminService();
+  const navigate = useNavigate();
 
   const signIn = async (data: TSignIn) => {
     try {
@@ -73,8 +75,62 @@ const useAuthService = () => {
     }
   };
 
+  const updatePassword = async (newPassword: string) => {
+    try {
+      const { profile, user } = useProfileStore.getState();
+
+      if (!user) {
+        toast.error("User not found. Please sign in again.");
+        return;
+      }
+
+      // Update password in Supabase Auth
+      const { error: updateError } = await supabase.auth.updateUser({
+        password: newPassword,
+      });
+
+      if (updateError) {
+        console.error("Password update error:", updateError);
+        toast.error(
+          typeof updateError === "string"
+            ? updateError
+            : updateError?.message || "Failed to update password"
+        );
+        return;
+      }
+
+      // Update must_change_password flag in profiles table
+      const { error: profileUpdateError } = await supabase
+        .from('profiles')
+        .update({ must_change_password: false })
+        .eq('id', profile?.id);
+
+      if (profileUpdateError) {
+        console.error("Profile update error:", profileUpdateError);
+        toast.error("Password updated but profile update failed. Please contact support.");
+        return;
+      }
+
+      // Update local profile state
+      if (profile) {
+        setProfile({
+          ...profile,
+          must_change_password: false,
+        });
+      }
+
+      toast.success("Password changed successfully!");
+      navigate("/");
+    } catch (error: unknown) {
+      console.error("Unexpected error:", error);
+      toast.error("An unexpected error occurred. Please try again.");
+    }
+  };
+
+
   return {
     signIn,
+    updatePassword,
   };
 };
 

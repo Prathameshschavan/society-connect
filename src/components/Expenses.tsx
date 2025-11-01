@@ -18,13 +18,16 @@ import { EditExpenseModal } from "./Modals/EditExpenseModal";
 import ConfirmationAlert from "./Modals/ConfirmationAlert";
 
 import usePaginationService from "../hooks/serviceHooks/usePaginationService";
-import useExpenseService, { type ExpenseSortByOptions } from "../hooks/serviceHooks/useExpenseService";
+import useExpenseService, {
+  type ExpenseSortByOptions,
+} from "../hooks/serviceHooks/useExpenseService";
 
 import { useOrganizationStore } from "../libs/stores/useOrganizationStore";
 import { useReportStore, type Expense } from "../libs/stores/useReportStore";
 
 import { currMonth, currYear, shortMonth } from "../utility/dateTimeServices";
 import { columns } from "../config/tableConfig/expense";
+import { useProfileStore } from "../libs/stores/useProfileStore";
 
 // Custom hook for debounced search
 const useDebounce = (value: string | number | undefined, delay: number) => {
@@ -109,6 +112,7 @@ const Expenses = () => {
   // Stores & Services
   const { residentOrganization } = useOrganizationStore();
   const { expenses } = useReportStore();
+  const { profile } = useProfileStore();
   const {
     setCurrentPage,
     pagination,
@@ -213,26 +217,30 @@ const Expenses = () => {
         "cursor-pointer p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors",
       label: "View",
     },
-    {
-      icon: <Edit className="w-4 h-4" />,
-      onClick: (expense: Expense) => {
-        setSelectedExpense(expense);
-        setIsOpenUpdateExpenseModal(true);
-      },
-      className:
-        "cursor-pointer p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors",
-      label: "Edit",
-    },
-    {
-      icon: <Trash2 className="w-4 h-4" />,
-      onClick: (expense: Expense) => {
-        setSelectedExpense(expense);
-        setIsOpenDeleteExpenseModal(true);
-      },
-      className:
-        "cursor-pointer p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors",
-      label: "Delete",
-    },
+    ...(profile?.role === "admin"
+      ? [
+          {
+            icon: <Edit className="w-4 h-4" />,
+            onClick: (expense: Expense) => {
+              setSelectedExpense(expense);
+              setIsOpenUpdateExpenseModal(true);
+            },
+            className:
+              "cursor-pointer p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors",
+            label: "Edit",
+          },
+          {
+            icon: <Trash2 className="w-4 h-4" />,
+            onClick: (expense: Expense) => {
+              setSelectedExpense(expense);
+              setIsOpenDeleteExpenseModal(true);
+            },
+            className:
+              "cursor-pointer p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors",
+            label: "Delete",
+          },
+        ]
+      : []),
   ];
 
   const hasActiveFilters =

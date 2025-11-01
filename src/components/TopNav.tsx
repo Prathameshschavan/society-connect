@@ -1,4 +1,13 @@
-import { Home, Settings, Users, LogOut, Menu, ArrowDownWideNarrow, BadgeIndianRupee, FileChartColumn } from "lucide-react";
+import {
+  Home,
+  Settings,
+  Users,
+  LogOut,
+  Menu,
+  ArrowDownWideNarrow,
+  BadgeIndianRupee,
+  FileChartColumn,
+} from "lucide-react";
 import React, { useState, useRef, useEffect } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import ConfirmationAlert from "./Modals/ConfirmationAlert";
@@ -27,11 +36,15 @@ const TopNav: React.FC<{ view: "admin" | "owner" }> = ({ view }) => {
     { to: "/income", label: "Income", icon: BadgeIndianRupee },
     { to: "/expenses", label: "Expenses", icon: ArrowDownWideNarrow },
     { to: "/reports", label: "Reports", icon: FileChartColumn },
-    {
-      to: `/configure-settings/${residentOrganization?.id ?? ""}`,
-      label: "Settings",
-      icon: Settings,
-    },
+    ...(profile?.role === "admin"
+      ? [
+          {
+            to: `/configure-settings/${residentOrganization?.id ?? ""}`,
+            label: "Settings",
+            icon: Settings,
+          },
+        ]
+      : []),
   ];
 
   useEffect(() => {
@@ -67,7 +80,7 @@ const TopNav: React.FC<{ view: "admin" | "owner" }> = ({ view }) => {
                 className="cursor-pointer md:hidden"
               />
             )}
-            <p>Society Connect</p>
+            <p>MaintainEase</p>
             <Drawer
               open={open}
               onClose={() => setOpen(false)}

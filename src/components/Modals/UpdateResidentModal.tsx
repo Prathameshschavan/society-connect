@@ -319,6 +319,7 @@ const UpdateResidentModal: React.FC<UpdateResidentModalProps> = ({
                 }`}
               >
                 <option value="admin">Admin</option>
+                <option value="committee_member">committee_member</option>
                 <option value="resident">Resident</option>
                 <option value="tenant">Tenant</option>
               </select>
@@ -433,6 +434,7 @@ const UpdateResidentModal: React.FC<UpdateResidentModalProps> = ({
                 }`}
               >
                 <option value="Studio">Studio</option>
+                <option value="1RK">1 RK</option>
                 <option value="1BHK">1 BHK</option>
                 <option value="2BHK">2 BHK</option>
                 <option value="3BHK">3 BHK</option>

@@ -13,7 +13,7 @@ import {
   PDFDownloadLink,
 } from "@react-pdf/renderer";
 import { longMonth } from "../../utility/dateTimeServices";
-import { Download } from "lucide-react";
+import { Download, Loader2 } from "lucide-react";
 
 const styles = StyleSheet.create({
   page: { padding: 28, fontSize: 11, color: "#1f2937" },
@@ -109,11 +109,11 @@ const BasicReceiptTemplate: React.FC<{
 }> = ({ bill, extras }) => {
   const { residentOrganization } = useOrganizationStore();
 
-  // Prefer array-based extras from breakdown; ignore legacy numeric fields
-
   const extrasTotal = extras.reduce((s, e) => s + (Number(e.amount) || 0), 0);
 
-  const monthLabel = `${longMonth[Number(bill.bill_month)]} ${bill.bill_year}`;
+  const monthLabel = `${longMonth[Number(bill.bill_month) - 1]} ${
+    bill.bill_year
+  }`;
   const dueDate = bill.due_date
     ? new Date(bill.due_date).toLocaleDateString("en-IN")
     : "-";
@@ -142,7 +142,7 @@ const BasicReceiptTemplate: React.FC<{
     amount: bill.breakdown?.base ?? 0,
   });
 
-  // Previous dues (unchanged)
+  // Previous dues
   (bill.breakdown?.dues || []).forEach((d) => {
     const label = `Due ${longMonth[Number(d.month)]} ${d.year}`;
     rows.push({
@@ -325,9 +325,20 @@ function BillPdfDownload({
       document={<BasicReceiptTemplate bill={bill} extras={extras} />}
       fileName={`bill-${bill.id}.pdf`}
     >
-      <div className="cursor-pointer border border-gray-100 p-2 rounded-full w-[40px] h-[40px] flex items-center justify-center hover:bg-gray-100">
-        <Download className="w-[20px] h-[20px]" />
-      </div>
+      {({ loading }) => (
+        <div
+          className={`cursor-pointer border border-gray-100 p-2 rounded-full w-[40px] h-[40px] flex items-center justify-center hover:bg-gray-100 transition-colors ${
+            loading ? "opacity-70 cursor-wait" : ""
+          }`}
+          title={loading ? "Generating PDF..." : "Download PDF"}
+        >
+          {loading ? (
+            <Loader2 className="w-[20px] h-[20px] animate-spin text-blue-600" />
+          ) : (
+            <Download className="w-[20px] h-[20px]" />
+          )}
+        </div>
+      )}
     </PDFDownloadLink>
   );
 }

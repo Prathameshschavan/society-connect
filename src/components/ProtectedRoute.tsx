@@ -5,7 +5,7 @@ import { useProfileStore } from "../libs/stores/useProfileStore";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  allowedRoles?: Array<"super_admin" | "admin" | "resident" | "tenant">;
+  allowedRoles?: Array<"super_admin" | "admin" | "resident" | "tenant" | "committee_member">;
   requireAuth?: boolean;
   redirectIfAuthenticated?: boolean; // New prop
   redirectTo?: string; // Where to redirect authenticated users
@@ -21,12 +21,21 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   const location = useLocation();
   const { user, profile } = useProfileStore();
 
+  // Check if user must change password first
+  if (
+    user &&
+    profile?.must_change_password &&
+    location.pathname !== "/change-password"
+  ) {
+    return <Navigate to="/change-password" replace />;
+  }
+
   // Redirect authenticated users away from auth pages
-  if (redirectIfAuthenticated && user) {
+  if (redirectIfAuthenticated && user && !profile?.must_change_password) {
     // Redirect based on user role
     if (profile?.role === "super_admin") {
       return <Navigate to="/super-admin" replace />;
-    } else if (profile?.role === "admin") {
+    } else if (profile?.role === "admin" || profile?.role === "committee_member") {
       return <Navigate to="/admin" replace />;
     } else if (profile?.role === "resident" || profile?.role === "tenant") {
       return <Navigate to="/owner" replace />;
@@ -45,14 +54,6 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     (!profile || !allowedRoles.includes(profile.role))
   ) {
     return <Navigate to="/unauthorized" replace />;
-  }
-
-  // Check if user must change password
-  if (
-    profile?.must_change_password &&
-    location.pathname !== "/change-password"
-  ) {
-    return <Navigate to="/change-password" replace />;
   }
 
   return <>{children}</>;

@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   TrendingUp,
   TrendingDown,
@@ -9,6 +10,7 @@ import {
   Search,
   SortAsc,
   SortDesc,
+  Eye,
 } from "lucide-react";
 
 import { GenericSelect, type OptionValue } from "./ui/GenericSelect";
@@ -86,6 +88,8 @@ interface SortState {
 }
 
 const Reports = () => {
+  const navigate = useNavigate();
+  
   // States
   const [filters, setFilters] = useState<FilterState>({
     month: currMonth,
@@ -305,6 +309,12 @@ const Reports = () => {
   };
 
   const hasActiveFilters = debouncedSearchQuery || filterType !== "all";
+
+  // Handle view details
+  const handleViewDetails = (monthData: any) => {
+    const monthNum = String(monthData.id).padStart(2, "0");
+    navigate(`/report?month=${monthNum}&year=${monthData.year}`);
+  };
 
   // Table data
   const tableData =
@@ -697,7 +707,13 @@ const Reports = () => {
             title={`Monthly Financial Report - ${filters.year || "All Years"}`}
             columns={tableColumns as any}
             data={tableData as any}
-            actions={[]}
+            actions={[
+              {
+                label: "View Details",
+                icon: <Eye className="w-4 h-4" />,
+                onClick: handleViewDetails,
+              },
+            ]}
             loading={loading}
             emptyMessage={
               hasActiveFilters

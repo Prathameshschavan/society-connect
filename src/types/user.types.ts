@@ -26,7 +26,7 @@ export interface Organization {
 export interface Profile {
   id: string;
   organization_id?: string;
-  role: "super_admin" | "admin" | "resident" | "tenant";
+  role: "super_admin" | "admin" | "resident" | "tenant" | "committee_member";
   full_name: string;
   phone: string;
   unit_number?: string;

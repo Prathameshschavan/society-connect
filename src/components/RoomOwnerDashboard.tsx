@@ -4,15 +4,12 @@ import PaymentModal from "./Modals/PaymentModal";
 import TopNav from "./TopNav";
 import { useProfileStore } from "../libs/stores/useProfileStore";
 import type {
-  PaginationInfo,
   TableAction,
   TableColumn,
 } from "./ui/GenericTable";
 import { useMaintenanceStore, type MaintenanceBill } from "../libs/stores/useMaintenanceStore";
 import { Eye } from "lucide-react";
 import GenericTable from "./ui/GenericTable";
-import useResidentService from "../hooks/serviceHooks/useResidentService";
-import { useResidentStore } from "../libs/stores/useResidentStore";
 import ViewMaintananceDetailsModal from "./Modals/ViewMaintananceDetailsModal";
 import usePaginationService from "../hooks/serviceHooks/usePaginationService";
 import useAdminService from "../hooks/serviceHooks/useAdminService";

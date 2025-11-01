@@ -1,9 +1,13 @@
 import React, { useState } from "react";
-import { Building, Lock } from "lucide-react";
+import { Building, Lock, LogOut } from "lucide-react";
 import { useForm } from "react-hook-form";
+import { useNavigate } from "react-router-dom";
 import CustomInput from "../components/ui/CustomInput";
 import toast from "react-hot-toast";
 import useAuthService from "../hooks/serviceHooks/useAuthService";
+import ConfirmationAlert from "../components/Modals/ConfirmationAlert";
+import { supabase } from "../libs/supabase/supabaseClient";
+import { useProfileStore } from "../libs/stores/useProfileStore";
 
 type TChangePassword = {
   newPassword: string;
@@ -12,7 +16,10 @@ type TChangePassword = {
 
 const ChangePassword: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
+  const [isLogoutConfirmationOpen, setIsLogoutConfirmationOpen] = useState(false);
   const { updatePassword } = useAuthService();
+  const { reset: resetProfile } = useProfileStore();
+  const navigate = useNavigate();
 
   const {
     handleSubmit,
@@ -36,8 +43,19 @@ const ChangePassword: React.FC = () => {
     }
   };
 
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+      resetProfile();
+      navigate("/sign-in");
+    } catch (error) {
+      console.error("Logout error:", error);
+      toast.error("Failed to logout. Please try again.");
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4 pt-12">
       <div className="max-w-md w-full">
         <div className="bg-white rounded-xl shadow-xl p-8">
           <div className="text-center -mt-[60px] mb-8">
@@ -80,10 +98,6 @@ const ChangePassword: React.FC = () => {
                     value: 6,
                     message: "Password must be at least 6 characters long",
                   },
-                  pattern: {
-                    value: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
-                    message: "Password must contain at least one uppercase letter, one lowercase letter, and one number",
-                  },
                 })}
               />
 
@@ -118,11 +132,30 @@ const ChangePassword: React.FC = () => {
 
           <div className="mt-4 text-center">
             <p className="text-xs text-gray-500">
-              Your password must be at least 6 characters long and contain uppercase, lowercase, and numeric characters.
+              Your password must be at least 6 characters long.
             </p>
+          </div>
+
+          <div className="mt-4">
+            <button
+              type="button"
+              onClick={() => setIsLogoutConfirmationOpen(true)}
+              className="w-full flex items-center justify-center space-x-2 text-red-600 hover:text-red-700 py-2 px-4 rounded-lg hover:bg-red-50 transition-colors font-medium"
+            >
+              <LogOut className="w-4 h-4" />
+              <span>Logout</span>
+            </button>
           </div>
         </div>
       </div>
+
+      <ConfirmationAlert
+        message="Are you sure you want to logout?"
+        isOpen={isLogoutConfirmationOpen}
+        onClose={() => setIsLogoutConfirmationOpen(false)}
+        onConfirm={handleLogout}
+        title="Logout Confirmation"
+      />
     </div>
   );
 };

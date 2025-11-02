@@ -121,7 +121,7 @@ const SignUp: React.FC = () => {
           <div className="inline-flex items-center justify-center w-16 h-16 bg-indigo-600 rounded-full mb-4">
             <Building className="w-8 h-8 text-white" />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">Society Connect</h1>
+          <h1 className="text-2xl font-bold text-gray-900">MaintainEase</h1>
           <p className="text-gray-600 mt-2">
             Join your society's digital community
           </p>
@@ -335,7 +335,7 @@ const SignUp: React.FC = () => {
         {/* Features section */}
         <div className="mt-8 bg-white rounded-xl shadow-lg p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4 text-center">
-            Why Choose Society Connect?
+            Why Choose MaintainEase?
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="text-center">

@@ -468,6 +468,8 @@ const AdminDashboard = () => {
         onClose={() => setIsOpenUpdateMaintananceDetailsModal(false)}
         onSuccess={loadData}
       />
+
+      {/* <ReceiptTemplate bill={selectedBill} /> */}
     </div>
   );
 };

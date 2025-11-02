@@ -63,7 +63,7 @@ const ChangePassword: React.FC = () => {
               <Building className="w-8 h-8 text-white" />
             </div>
             <h1 className="text-xl font-bold text-gray-900">
-              Society Connect
+              MaintainEase
             </h1>
             <p className="text-gray-600 mt-1">
               Manage your society maintenance effortlessly

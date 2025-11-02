@@ -1,121 +1,25 @@
-import React, { useMemo } from "react";
+import React, { useRef, useState } from "react";
 import type { MaintenanceBill } from "../../libs/stores/useMaintenanceStore";
 import {
   useOrganizationStore,
   type ExtraItem,
 } from "../../libs/stores/useOrganizationStore";
-import {
-  Document,
-  Page,
-  Text,
-  View,
-  StyleSheet,
-  PDFDownloadLink,
-} from "@react-pdf/renderer";
 import { longMonth } from "../../utility/dateTimeServices";
 import { Download, Loader2 } from "lucide-react";
+import html2pdf from "html2pdf.js";
 
-const styles = StyleSheet.create({
-  page: { padding: 28, fontSize: 11, color: "#1f2937" },
-  orgHeader: { alignItems: "center", marginBottom: 12 },
-  orgName: { fontSize: 18, fontFamily: "Helvetica-Bold" },
-  orgAddress: {
-    fontSize: 10,
-    color: "#6b7280",
-    marginTop: 3,
-    textAlign: "center",
-  },
-  headerRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  title: { fontSize: 10, marginTop: 5 },
-  chipBase: {
-    paddingVertical: 3,
-    paddingHorizontal: 8,
-    borderRadius: 999,
-    fontSize: 10,
-    alignSelf: "flex-start",
-  },
-  chipGreen: { backgroundColor: "#dcfce7", color: "#166534" },
-  chipYellow: { backgroundColor: "#fef9c3", color: "#854d0e" },
-  chipRed: { backgroundColor: "#fee2e2", color: "#b91c1c" },
-  chipGray: { backgroundColor: "#e5e7eb", color: "#374151" },
-  section: { marginTop: 8, marginBottom: 10 },
-  twoCol: { flexDirection: "row", gap: 12 },
-  col: { flex: 1 },
-  label: { color: "#6b7280" },
-  value: { marginTop: 2 },
-  divider: { height: 1, backgroundColor: "#e5e7eb", marginVertical: 12 },
-  table: {
-    marginTop: 6,
-    borderWidth: 1,
-    borderColor: "#e5e7eb",
-    borderRadius: 4,
-    overflow: "hidden",
-  },
-  thead: { backgroundColor: "#f3f4f6", flexDirection: "row" },
-  th: { flex: 1, paddingVertical: 6, paddingHorizontal: 8, fontSize: 10 },
-  tr: { flexDirection: "row", borderTopWidth: 1, borderTopColor: "#e5e7eb" },
-  td: { flex: 1, paddingVertical: 6, paddingHorizontal: 8 },
-  right: { textAlign: "right" },
-  totalsBox: {
-    marginTop: 10,
-    width: "100%",
-    borderWidth: 1,
-    borderColor: "#e5e7eb",
-    borderRadius: 4,
-  },
-  totalsRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingVertical: 6,
-    paddingHorizontal: 8,
-    borderTopWidth: 1,
-    borderTopColor: "#e5e7eb",
-  },
-  totalsHead: { backgroundColor: "#f9fafb", borderTopWidth: 0 },
-  totalsLabel: { color: "#374151" },
-  totalsValue: { fontFamily: "Helvetica-Bold" },
-  footer: {
-    position: "absolute",
-    bottom: 20,
-    left: 0,
-    right: 0,
-    textAlign: "center",
-    color: "#6b7280",
-    fontSize: 10,
-  },
-});
 
-const chipStyleFor = (status: string) => {
-  switch ((status || "").toLowerCase()) {
-    case "paid":
-      return [styles.chipBase, styles.chipGreen];
-    case "pending":
-      return [styles.chipBase, styles.chipYellow];
-    case "overdue":
-      return [styles.chipBase, styles.chipRed];
-    default:
-      return [styles.chipBase, styles.chipGray];
-  }
-};
-
-const BasicReceiptTemplate: React.FC<{
+// Receipt Template Component (Hidden, used for PDF generation)
+export const ReceiptTemplate: React.FC<{
   bill: MaintenanceBill;
   extras: ExtraItem[];
-}> = ({ bill, extras }) => {
-  const { residentOrganization } = useOrganizationStore();
-
-  const extrasTotal = extras.reduce((s, e) => s + (Number(e.amount) || 0), 0);
-
-  const monthLabel = `${longMonth[Number(bill.bill_month) - 1]} ${
-    bill.bill_year
-  }`;
-  const dueDate = bill.due_date
-    ? new Date(bill.due_date).toLocaleDateString("en-IN")
+  organizationName: string;
+  organizationAddress: string;
+}> = ({ bill, extras, organizationName, organizationAddress }) => {
+  const extrasTotal = (extras || []).reduce((s, e) => s + (Number(e.amount) || 0), 0);
+  const monthLabel = `${longMonth[Number(bill?.bill_month) - 1]} ${bill?.bill_year}`;
+  const dueDate = bill?.due_date
+    ? new Date(bill?.due_date).toLocaleDateString("en-IN")
     : "-";
 
   // Build table rows
@@ -126,24 +30,14 @@ const BasicReceiptTemplate: React.FC<{
     subtotal?: number;
   }> = [];
 
-  const subTotal = useMemo(() => {
-    return (
-      (bill.breakdown?.base ?? 0) +
-      bill.breakdown?.dues?.reduce(
-        (acc, curr) => acc + (curr?.amount + curr?.penalty),
-        0
-      )
-    );
-  }, [bill]);
-
   // Current month base
   rows.push({
     desc: `Base charge (${monthLabel})`,
-    amount: bill.breakdown?.base ?? 0,
+    amount: bill?.breakdown?.base ?? 0,
   });
 
   // Previous dues
-  (bill.breakdown?.dues || []).forEach((d) => {
+  (bill?.breakdown?.dues || []).forEach((d) => {
     const label = `Due ${longMonth[Number(d.month)]} ${d.year}`;
     rows.push({
       desc: `${label}${d.penalty ? " + Penalty" : ""}`,
@@ -154,164 +48,439 @@ const BasicReceiptTemplate: React.FC<{
   });
 
   // Totals
-  const baseTotal = bill.breakdown?.base ?? 0;
-  const duesPenaltyTotal = (bill.breakdown?.dues || []).reduce(
+  const baseTotal = bill?.breakdown?.base ?? 0;
+  const duesPenaltyTotal = (bill?.breakdown?.dues || []).reduce(
     (sum, d) => sum + (d.amount || 0) + (d.penalty || 0),
     0
   );
-  const computedGrand = baseTotal + duesPenaltyTotal;
-  const grandTotal =
-    typeof bill.amount === "number" ? bill.amount : computedGrand;
+  const subTotal = baseTotal + duesPenaltyTotal;
+  const grandTotal = typeof bill?.amount === "number" ? bill?.amount : subTotal;
+
+  const tableHeadStyle = {
+    padding: "18px 12px",
+    textAlign: "right",
+    fontSize: "12px",
+    fontWeight: "600",
+    color: "#374151",
+    textTransform: "uppercase", 
+    letterSpacing: "0.5px",
+    borderBottom: "2px solid #e5e7eb",
+    marginTop: "-15px",
+  } as const;
+
 
   return (
-    <Document>
-      <Page size="A4" style={styles.page} wrap>
-        <View style={styles.orgHeader}>
-          <Text style={styles.orgName}>{residentOrganization?.name}</Text>
-          {residentOrganization?.address ? (
-            <Text style={styles.orgAddress}>
-              {[
-                residentOrganization?.address,
-                residentOrganization?.city,
-                residentOrganization?.state,
-                residentOrganization?.pincode,
-              ]
-                .filter((val) => val)
-                .join(", ")}
-            </Text>
-          ) : null}
-        </View>
-
-        {/* Header */}
-        <View style={styles.headerRow}>
-          <View style={styles.col}>
-            <Text style={styles.label}>Receipt No</Text>
-            <Text style={styles.title}>#{bill.id}</Text>
-          </View>
-          <Text style={chipStyleFor(bill?.status as string)}>
-            {(bill.status || "").toUpperCase()}
-          </Text>
-        </View>
-
-        {/* Bill to / Info */}
-        <View style={[styles.section, styles.twoCol]}>
-          <View style={styles.col}>
-            <Text style={styles.label}>Bill To</Text>
-            <Text style={styles.value}>{bill?.resident?.full_name}</Text>
-            {bill?.resident?.unit_number ? (
-              <Text style={styles.value}>
-                Flat: {bill?.resident?.unit_number}
-              </Text>
-            ) : null}
-          </View>
-          <View style={styles.col}>
-            <Text style={styles.label}>Bill Info</Text>
-            <Text style={styles.value}>Month: {monthLabel}</Text>
-            <Text style={styles.value}>Due date: {dueDate}</Text>
-            {bill.razorpay_payment_id ? (
-              <Text style={styles.value}>
-                Payment ID: {bill.razorpay_payment_id}
-              </Text>
-            ) : null}
-          </View>
-        </View>
-
-        <View style={styles.divider} />
-
-        {/* Items table */}
-        <View style={styles.table}>
-          <View style={styles.thead}>
-            <Text style={[styles.th, { flex: 2 }]}>Description</Text>
-            <Text style={[styles.th, styles.right]}>Amount</Text>
-            <Text style={[styles.th, styles.right]}>Penalty</Text>
-            <Text style={[styles.th, styles.right]}>Subtotal</Text>
-          </View>
-
-          {rows.map((r, idx) => (
-            <View style={styles.tr} key={idx}>
-              <Text style={[styles.td, { flex: 2 }]}>{r.desc}</Text>
-              <Text style={[styles.td, styles.right]}>{r.amount}</Text>
-              <Text style={[styles.td, styles.right]}>{r.penalty || 0}</Text>
-              <Text style={[styles.td, styles.right]}>
-                {r.subtotal != null ? r.subtotal : r.amount + (r.penalty || 0)}
-              </Text>
-            </View>
-          ))}
-        </View>
-
-        {/* Totals boxes */}
-        <View
-          style={[
-            {
-              flexDirection: "row",
-              justifyContent: "space-between",
-              alignItems: "flex-start",
-              gap: 10,
-            },
-          ]}
+    <div
+      style={{
+        fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
+        maxWidth: "800px",
+        margin: "0 auto",
+        padding: "20px",
+        backgroundColor: "#ffffff",
+        color: "#1f2937",
+      }}
+    >
+      {/* Header with gradient */}
+      <div
+        style={{
+          background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+          padding: "20px",
+          borderRadius: "12px 12px 0 0",
+          color: "white",
+          marginBottom: "20px",
+        }}
+      >
+        <div style={{ textAlign: "center" }}>
+          <h1 style={{ fontSize: "28px", fontWeight: "700", marginTop: "-15px" }}>
+            {organizationName}
+          </h1>
+          {organizationAddress && (
+            <p style={{ margin: "0", fontSize: "14px", opacity: "0.95" }}>
+              {organizationAddress}
+            </p>
+          )}
+        </div>
+        <div
+          style={{
+            marginTop: "20px",
+            paddingTop: "20px",
+            borderTop: "1px solid rgba(255,255,255,0.3)",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
         >
-          {/* Extras detail box */}
-          <View style={styles.totalsBox}>
-            <View style={[styles.totalsRow, styles.totalsHead]}>
-              <Text style={styles.totalsLabel}>Extras</Text>
-              <Text style={styles.totalsValue}></Text>
-            </View>
-            {extras.length > 0 ? (
-              extras.map((ex) => {
+          <div>
+            <p style={{ margin: "0 0 5px 0", fontSize: "12px", opacity: "0.9" }}>
+              Receipt No.
+            </p>
+            <p style={{ margin: "0", fontSize: "18px", fontWeight: "600" }}>
+              #{bill?.id}
+            </p>
+          </div>
+          <div
+            style={{
+              padding: "12px 20px",
+              borderRadius: "20px",
+              backgroundColor: "rgba(255,255,255,0.2)",
+              fontSize: "14px",
+              fontWeight: "600",
+              textTransform: "uppercase",
+            }}
+          >
+            <p style={{ marginTop: "-15px" }}>{bill?.status}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Bill Details Section */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr",
+          gap: "20px",
+          marginBottom: "20px",
+        }}
+      >
+        {/* Bill To */}
+        <div
+          style={{
+            padding: "20px",
+            backgroundColor: "#f9fafb",
+            borderRadius: "8px",
+            border: "1px solid #e5e7eb",
+          }}
+        >
+          <h3
+            style={{
+              margin: "-15px 0 12px 0",
+              fontSize: "14px",
+              color: "#6b7280",
+              fontWeight: "600",
+              textTransform: "uppercase",
+              letterSpacing: "0.5px",
+            }}
+          >
+            Bill To
+          </h3>
+          <p style={{ margin: "0 0 8px 0", fontSize: "16px", fontWeight: "600", color: "#1f2937" }}>
+            {bill?.resident?.full_name}
+          </p>
+          {bill?.resident?.unit_number && (
+            <p style={{ margin: "0 0 5px 0", fontSize: "14px", color: "#6b7280" }}>
+              Flat: {bill?.resident?.unit_number}
+            </p>
+          )}
+          {bill?.resident?.phone && (
+            <p style={{ margin: "0", fontSize: "14px", color: "#6b7280" }}>
+              Phone: {bill?.resident?.phone}
+            </p>
+          )}
+        </div>
+
+        {/* Bill Info */}
+        <div
+          style={{
+            padding: "20px",
+            backgroundColor: "#eff6ff",
+            borderRadius: "8px",
+            border: "1px solid #dbeafe",
+          }}
+        >
+          <h3
+            style={{
+              margin: "-15px 0 12px 0",
+              fontSize: "14px",
+              color: "#1e40af",
+              fontWeight: "600",
+              textTransform: "uppercase",
+              letterSpacing: "0.5px",
+            }}
+          >
+            Bill Information
+          </h3>
+          <p style={{ margin: "0 0 8px 0", fontSize: "14px", color: "#1e3a8a" }}>
+            <strong style={{ fontWeight: "600" }}>Period:</strong> {monthLabel}
+          </p>
+          <p style={{ margin: "0 0 8px 0", fontSize: "14px", color: "#1e3a8a" }}>
+            <strong style={{ fontWeight: "600" }}>Due Date:</strong> {dueDate}
+          </p>
+          {bill?.razorpay_payment_id && (
+            <p style={{ margin: "0", fontSize: "12px", color: "#1e3a8a" }}>
+              <strong style={{ fontWeight: "600" }}>Payment ID:</strong> {bill?.razorpay_payment_id}
+            </p>
+          )}
+        </div>
+      </div>
+
+      {/* Items Table */}
+      <div style={{ marginBottom: "30px" }}>
+        <table
+          style={{
+            width: "100%",
+            borderCollapse: "collapse",
+            border: "1px solid #e5e7eb",
+            borderRadius: "8px",
+            overflow: "hidden",
+          }}
+        >
+          <thead>
+            <tr style={{ backgroundColor: "#f3f4f6" }}>
+              <th
+                style={{...tableHeadStyle, textAlign: "left"}}
+              >
+                <p style={{ marginTop: "-15px", fontSize: "12px", color: "#374151" }}>
+                  Description
+                </p>
+              </th>
+              <th
+                style={tableHeadStyle}
+              >
+                <p style={{ marginTop: "-15px", fontSize: "12px", color: "#374151" }}>
+                  Amount
+                </p>
+              </th>
+              <th
+                style={tableHeadStyle}
+              >
+                <p style={{ marginTop: "-15px", fontSize: "12px", color: "#374151" }}>
+                  Penalty
+                </p>
+              </th>
+              <th
+                style={tableHeadStyle}
+              >
+                <p style={{ marginTop: "-15px", fontSize: "12px", color: "#374151" }}>
+                  Subtotal
+                </p>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r, idx) => (
+              <tr
+                key={idx}
+                style={{
+                  borderBottom: idx < rows.length - 1 ? "1px solid #f3f4f6" : "none",
+                  backgroundColor: idx % 2 === 0 ? "#ffffff" : "#fafafa",
+                }}
+              >
+                <td style={{ padding: "14px 12px", fontSize: "14px", color: "#1f2937" }}>
+                  <p style={{ marginTop: "-15px" }}>
+                    {r.desc}
+                  </p>
+                </td>
+                <td style={{ padding: "14px 12px", textAlign: "right", fontSize: "14px", color: "#1f2937" }}>
+                  <p style={{ marginTop: "-15px" }}>
+                    ₹{r.amount.toLocaleString("en-IN")}
+                  </p>
+                </td>
+                <td
+                  style={{
+                    padding: "14px 12px",
+                        textAlign: "right",
+                    fontSize: "14px",
+                    color: r.penalty ? "#dc2626" : "#6b7280",
+                  }}
+                >
+                  <p style={{ marginTop: "-15px" }}>
+                    ₹{(r.penalty || 0).toLocaleString("en-IN")}
+                  </p>
+                </td>
+                <td
+                  style={{
+                    padding: "14px 12px",
+                    textAlign: "right",
+                    fontSize: "14px",
+                    fontWeight: "600",
+                    color: "#1f2937",
+                  }}
+                >
+                  <p style={{ marginTop: "-15px" }}>
+                    ₹
+                    {(r.subtotal != null
+                      ? r.subtotal
+                      : r.amount + (r.penalty || 0)
+                    ).toLocaleString("en-IN")}
+                  </p>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Extras and Totals */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px", marginBottom: "30px" }}>
+        {/* Extras */}
+        <div
+          style={{
+            padding: "20px",
+            backgroundColor: "#fef3c7",
+            borderRadius: "8px",
+            border: "1px solid #fde68a",
+          }}
+        >
+          <h3
+            style={{
+              margin: "0 0 12px 0",
+              fontSize: "14px",
+              fontWeight: "600",
+              color: "#92400e",
+              textTransform: "uppercase",
+              letterSpacing: "0.5px",
+            }}
+          >
+            Additional Charges
+          </h3>
+          {extras?.length > 0 ? (
+            <>
+              {extras.map((ex) => {
                 const exLabel =
                   ex.month && ex.year
                     ? `${ex.name} (${longMonth[Number(ex.month)]} ${ex.year})`
                     : ex.name;
                 return (
-                  <View style={styles.totalsRow} key={ex.id}>
-                    <Text style={styles.totalsLabel}>{exLabel}</Text>
-                    <Text style={styles.totalsValue}>
-                      {Number(ex.amount) || 0}
-                    </Text>
-                  </View>
+                  <div
+                    key={ex.id}
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      padding: "10px 0",
+                      borderBottom: "1px solid #fde68a",
+                      fontSize: "14px",
+                    }}
+                  >
+                    <span style={{ color: "#78350f" }}>{exLabel}</span>
+                    <span style={{ fontWeight: "600", color: "#78350f" }}>
+                      ₹{(Number(ex.amount) || 0).toLocaleString("en-IN")}
+                    </span>
+                  </div>
                 );
-              })
-            ) : (
-              <View style={styles.totalsRow}>
-                <Text style={styles.totalsLabel}>No extras</Text>
-                <Text style={styles.totalsValue}>0</Text>
-              </View>
-            )}
-            <View style={[styles.totalsRow, styles.totalsHead]}>
-              <Text style={styles.totalsLabel}>Total</Text>
-              <Text style={styles.totalsValue}>{extrasTotal}</Text>
-            </View>
-          </View>
+              })}
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  marginTop: "12px",
+                  paddingTop: "12px",
+                  borderTop: "2px solid #fbbf24",
+                  fontSize: "16px",
+                  fontWeight: "700",
+                  color: "#78350f",
+                }}
+              >
+                <span>Total Extras</span>
+                <span>₹{extrasTotal.toLocaleString("en-IN")}</span>
+              </div>
+            </>
+          ) : (
+            <>
+              <p style={{ margin: "0 0 12px 0", fontSize: "14px", color: "#78350f" }}>
+                No additional charges
+              </p>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  paddingTop: "12px",
+                  borderTop: "2px solid #fbbf24",
+                  fontSize: "16px",
+                  fontWeight: "700",
+                  color: "#78350f",
+                }}
+              >
+                <span>Total Extras</span>
+                <span>₹0</span>
+              </div>
+            </>
+          )}
+        </div>
 
-          {/* Summary totals */}
-          <View style={[styles.totalsBox, {}]}>
-            <View style={[styles.totalsRow, styles.totalsHead]}>
-              <Text style={styles.totalsLabel}>Subtotal</Text>
-              <Text style={styles.totalsValue}>{subTotal}</Text>
-            </View>
-            <View style={styles.totalsRow}>
-              <Text style={styles.totalsLabel}>Extras</Text>
-              <Text style={styles.totalsValue}>{extrasTotal}</Text>
-            </View>
-            <View style={[styles.totalsRow, styles.totalsHead]}>
-              <Text style={styles.totalsLabel}>Total</Text>
-              <Text style={styles.totalsValue}>{grandTotal}</Text>
-            </View>
-          </View>
-        </View>
+        {/* Summary */}
+        <div
+          style={{
+            padding: "20px",
+            backgroundColor: "#dbeafe",
+            borderRadius: "8px",
+            border: "1px solid #93c5fd",
+          }}
+        >
+          <h3
+            style={{
+              margin: "0 0 12px 0",
+              fontSize: "14px",
+              fontWeight: "600",
+              color: "#1e40af",
+              textTransform: "uppercase",
+              letterSpacing: "0.5px",
+            }}
+          >
+            Summary
+          </h3>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              padding: "10px 0",
+              fontSize: "14px",
+              color: "#1e3a8a",
+            }}
+          >
+            <span>Subtotal</span>
+            <span style={{ fontWeight: "600" }}>₹{subTotal.toLocaleString("en-IN")}</span>
+          </div>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              padding: "10px 0",
+              fontSize: "14px",
+              color: "#1e3a8a",
+            }}
+          >
+            <span>Extras</span>
+            <span style={{ fontWeight: "600" }}>₹{extrasTotal.toLocaleString("en-IN")}</span>
+          </div>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              marginTop: "12px",
+              paddingTop: "12px",
+              borderTop: "2px solid #3b82f6",
+              fontSize: "18px",
+              fontWeight: "700",
+              color: "#1e40af",
+            }}
+          >
+            <span>Grand Total</span>
+            <span>₹{grandTotal.toLocaleString("en-IN")}</span>
+          </div>
+        </div>
+      </div>
 
-        {/* Footer */}
-        <Text
-          style={styles.footer}
-          render={({ pageNumber, totalPages }) =>
-            `Page ${pageNumber} of ${totalPages}`
-          }
-          fixed
-        />
-      </Page>
-    </Document>
+      {/* Footer */}
+      <div
+        style={{
+          marginTop: "40px",
+          paddingTop: "20px",
+          borderTop: "2px solid #e5e7eb",
+          textAlign: "center",
+          color: "#6b7280",
+          fontSize: "12px",
+        }}
+      >
+        <p style={{ margin: "0 0 5px 0" }}>Thank you for your payment!</p>
+        <p style={{ margin: "0" }}>
+          This is a computer-generated receipt and does not require a signature.
+        </p>
+      </div>
+    </div>
   );
 };
+
+
 
 function BillPdfDownload({
   bill,
@@ -320,28 +489,68 @@ function BillPdfDownload({
   bill: MaintenanceBill;
   extras: ExtraItem[];
 }) {
-  console.log(bill);
-  console.log(extras);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const receiptRef = useRef<HTMLDivElement>(null);
+  const { residentOrganization } = useOrganizationStore();
+
+  const handleDownload = async () => {
+    if (!receiptRef.current) return;
+
+    setIsGenerating(true);
+    try {
+      const opt = {
+        margin: 0,
+        filename: `receipt-${bill?.id}-${bill?.bill_month}-${bill?.bill_year}.pdf`,
+        image: { type: "jpeg" as const, quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" as const },
+      };
+
+      await html2pdf().set(opt).from(receiptRef.current).save();
+    } catch (error) {
+      console.error("PDF generation error:", error);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const organizationAddress = [
+    residentOrganization?.address,
+    residentOrganization?.city,
+    residentOrganization?.state,
+    residentOrganization?.pincode,
+  ]
+    .filter((val) => val)
+    .join(", ");
+
   return (
-    <PDFDownloadLink
-      document={<BasicReceiptTemplate bill={bill} extras={extras} />}
-      fileName={`bill-${bill.id}.pdf`}
-    >
-      {({ loading }) => (
-        <div
-          className={`cursor-pointer border border-gray-100 p-2 rounded-full w-[40px] h-[40px] flex items-center justify-center hover:bg-gray-100 transition-colors ${
-            loading ? "opacity-70 cursor-wait" : ""
-          }`}
-          title={loading ? "Generating PDF..." : "Download PDF"}
-        >
-          {loading ? (
-            <Loader2 className="w-[20px] h-[20px] animate-spin text-blue-600" />
-          ) : (
-            <Download className="w-[20px] h-[20px]" />
-          )}
+    <>
+      {/* Hidden receipt template for PDF generation */}
+      <div style={{ position: "absolute", left: "-9999px", top: "0" }}>
+        <div ref={receiptRef}>
+          <ReceiptTemplate
+            bill={bill}
+            extras={extras}
+            organizationName={residentOrganization?.name || ""}
+            organizationAddress={organizationAddress}
+          />
         </div>
-      )}
-    </PDFDownloadLink>
+      </div>
+
+      {/* Download button */}
+      <div
+        onClick={handleDownload}
+        className={`cursor-pointer border border-gray-100 p-2 rounded-full w-[40px] h-[40px] flex items-center justify-center hover:bg-gray-100 transition-colors ${isGenerating ? "opacity-70 cursor-wait" : ""
+          }`}
+        title={isGenerating ? "Generating PDF..." : "Download PDF"}
+      >
+        {isGenerating ? (
+          <Loader2 className="w-[20px] h-[20px] animate-spin text-blue-600" />
+        ) : (
+          <Download className="w-[20px] h-[20px]" />
+        )}
+      </div>
+    </>
   );
 }
 

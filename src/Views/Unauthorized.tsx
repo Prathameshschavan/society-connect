@@ -154,7 +154,7 @@ const UnauthorizedPage = () => {
         {/* Footer */}
         <div className="mt-8 text-center">
           <p className="text-sm text-gray-500">
-            Society Connect • Secure Community Management
+            MaintainEase • Secure Community Management
           </p>
         </div>
       </div>

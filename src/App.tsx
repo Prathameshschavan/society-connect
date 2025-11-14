@@ -4,17 +4,18 @@ import "./App.css";
 import AdminDashboard from "./components/AdminDashboard";
 import RoomOwnerDashboard from "./components/RoomOwnerDashboard";
 import SuperAdminDashboard from "./components/SuperAdminDashboard";
-import SignIn from "./views/SignIn";
+
 import ProtectedRoute from "./components/ProtectedRoute";
-import SignUp from "./views/SignUp";
-import UnauthorizedPage from "./views/Unauthorized";
-import SocietyConfigurationPage from "./views/ConfigureSettings";
+
 import Expenses from "./components/Expenses";
 import Income from "./components/Income";
 import Reports from "./components/Reports";
 import MonthlyReportDetails from "./views/MonthlyReportDetails";
+import SignIn from "./views/SignIn";
+import SocietyConfigurationPage from "./views/ConfigureSettings";
 import ChangePassword from "./views/ChangePassword";
-
+import SignUp from "./views/SignUp";
+import UnauthorizedPage from "./views/Unauthorized";
 function App() {
   return (
     <Routes>

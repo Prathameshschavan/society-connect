@@ -37,9 +37,9 @@ export function GenericSelect<T extends OptionValue>({
         id={id}
         value={String(value)}
         className="
-          block w-full rounded-md border border-gray-300 bg-white px-3 py-2 pr-10 text-sm text-gray-900
-          shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30
-          hover:border-gray-400 appearance-none
+          block  rounded-md border border-gray-300 bg-white px-3 py-2 pr-10 text-sm text-gray-900
+           focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30
+          hover:border-gray-400 appearance-none cursor-pointer
         "
         onChange={(e) => {
           const raw = e.target.value;
@@ -47,7 +47,7 @@ export function GenericSelect<T extends OptionValue>({
         }}
       >
         {options.map((o) => (
-          <option key={String(o.value)} value={String(o.value)}>
+          <option className="cursor-pointer " key={String(o.value)} value={String(o.value)}>
             {o.label}
           </option>
         ))}

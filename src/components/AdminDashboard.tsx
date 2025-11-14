@@ -7,8 +7,10 @@ import {
   Eye,
   ReceiptText,
   Search,
+  SlidersHorizontal,
   SortAsc,
   SortDesc,
+  X,
 } from "lucide-react";
 
 import TopNav from "./TopNav";
@@ -31,6 +33,7 @@ import { useProfileStore } from "../libs/stores/useProfileStore";
 import { currMonth, currYear, shortMonth } from "../utility/dateTimeServices";
 import { columns } from "../config/tableConfig/adminDashboard";
 import { GenericSelect, type OptionValue } from "./ui/GenericSelect";
+import { siteSetting } from "../config/siteSetting";
 
 // Custom hook for debounced search [web:45]
 const useDebounce = (value: string, delay: number) => {
@@ -104,6 +107,7 @@ const AdminDashboard = () => {
   const [selectedBill, setSelectedBill] = useState<MaintenanceBill | null>(
     null
   );
+  const [visiblefilters, setVisiblefilters] = useState<boolean>(false);
 
   // New filter states [web:46]
   const [filters, setFilters] = useState<FilterState>({
@@ -257,175 +261,174 @@ const AdminDashboard = () => {
     <div className="min-h-screen bg-gray-50">
       <TopNav view="admin" />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="space-y-6">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 ">
+        <div className="space-y-5">
           {/* Header */}
-          <div className="flex flex-col sm:flex-row justify-between gap-4">
-            <div>
-              <h1 className="text-2xl poppins-medium">
-                {residentOrganization?.name}
-              </h1>
-              <p className="text-gray-600 text-sm font-light">
-                View and track your society maintenance details
-              </p>
-            </div>
+          <div>
+            <h1 className="text-2xl poppins-medium ">
+              {residentOrganization?.name} Yesubai Niwas
+            </h1>
+            <p className="text-sm poppins-light">
+              {residentOrganization?.address} Sainath Nagar, Chandansar Road, Virar East - 401 305
+            </p>
           </div>
 
           {/* Enhanced Filters Section */}
-          <div className="bg-white p-6 rounded-lg shadow-sm ">
-            <div className="flex flex-col lg:flex-row gap-4">
-              {/* Date Filters */}
-              <div className="flex gap-4">
-                <GenericSelect
-                  id="months"
-                  onChange={(value) => handleFilterChange("billMonth", value)}
-                  options={[
-                    { label: "All Months", value: "" },
-                    ...shortMonth.map((month, i) => ({
-                      label: month,
-                      value: (i + 1).toString().padStart(2, "0"),
-                    })),
-                  ]}
-                  value={filters.billMonth as OptionValue}
-                  label="Month"
-                />
+          {visiblefilters && (
+            <div className="bg-white p-6 rounded-lg shadow-sm ">
+              <div className="flex flex-col lg:flex-row gap-4">
+                <div className="flex gap-4">
+                  <GenericSelect
+                    id="months"
+                    onChange={(value) => handleFilterChange("billMonth", value)}
+                    options={[
+                      { label: "All Months", value: "" },
+                      ...shortMonth.map((month, i) => ({
+                        label: month,
+                        value: (i + 1).toString().padStart(2, "0"),
+                      })),
+                    ]}
+                    value={filters.billMonth as OptionValue}
+                    label="Month"
+                  />
 
-                <GenericSelect
-                  id="years"
-                  onChange={(value) => handleFilterChange("billYear", value)}
-                  options={[
-                    { label: "All Years", value: "" },
-                    ...Array.from(
-                      { length: new Date().getFullYear() - 2000 + 1 },
-                      (_, index) => {
-                        const year = new Date().getFullYear() - index;
-                        return { label: year, value: `${year}` };
-                      }
-                    ),
-                  ]}
-                  value={filters.billYear as OptionValue}
-                  label="Year"
-                />
-              </div>
+                  <GenericSelect
+                    id="years"
+                    onChange={(value) => handleFilterChange("billYear", value)}
+                    options={[
+                      { label: "All Years", value: "" },
+                      ...Array.from(
+                        { length: new Date().getFullYear() - 2000 + 1 },
+                        (_, index) => {
+                          const year = new Date().getFullYear() - index;
+                          return { label: year, value: `${year}` };
+                        }
+                      ),
+                    ]}
+                    value={filters.billYear as OptionValue}
+                    label="Year"
+                  />
+                </div>
 
-              {/* Additional Filters */}
-              <div className="flex gap-4">
-                <GenericSelect
-                  id="unitFilter"
-                  onChange={(value) => handleFilterChange("unitNumber", value)}
-                  options={[
-                    { label: "All Units", value: "" },
-                    ...residents.map((resident) => ({
-                      label: resident?.unit_number as OptionValue,
-                      value: resident?.unit_number as OptionValue,
-                    })),
-                  ]}
-                  value={filters.unitNumber || ""}
-                  label="Unit Number"
-                />
+                <div className="flex gap-4">
+                  <GenericSelect
+                    id="unitFilter"
+                    onChange={(value) =>
+                      handleFilterChange("unitNumber", value)
+                    }
+                    options={[
+                      { label: "All Units", value: "" },
+                      ...residents.map((resident) => ({
+                        label: resident?.unit_number as OptionValue,
+                        value: resident?.unit_number as OptionValue,
+                      })),
+                    ]}
+                    value={filters.unitNumber || ""}
+                    label="Unit Number"
+                  />
 
-                <GenericSelect
-                  id="statusFilter"
-                  onChange={(value) => handleFilterChange("status", value)}
-                  options={[
-                    { label: "All Status", value: "" },
-                    { label: "Paid", value: "paid" },
-                    { label: "Pending", value: "pending" },
-                    { label: "Overdue", value: "overdue" },
-                  ]}
-                  value={filters.status || ""}
-                  label="Status"
-                />
-              </div>
+                  <GenericSelect
+                    id="statusFilter"
+                    onChange={(value) => handleFilterChange("status", value)}
+                    options={[
+                      { label: "All Status", value: "" },
+                      { label: "Paid", value: "paid" },
+                      { label: "Pending", value: "pending" },
+                      { label: "Overdue", value: "overdue" },
+                    ]}
+                    value={filters.status || ""}
+                    label="Status"
+                  />
+                </div>
 
-              {/* Sort Controls */}
-              <div className="flex items-end  gap-4">
-                <GenericSelect
-                  id="sortBy"
-                  onChange={(value) => handleSortChange(value)}
-                  options={sortOptions}
-                  value={sortState.sortBy}
-                  label="Sort By"
-                />
+                <div className="flex items-end  gap-4">
+                  <GenericSelect
+                    id="sortBy"
+                    onChange={(value) => handleSortChange(value)}
+                    options={sortOptions}
+                    value={sortState.sortBy}
+                    label="Sort By"
+                  />
+
+                  <button
+                    onClick={() =>
+                      setSortState((prev) => ({
+                        ...prev,
+                        sortOrder: prev.sortOrder === "asc" ? "desc" : "asc",
+                      }))
+                    }
+                    className="flex self-end items-center gap-2 px-4 py-1.5 border border-gray-300 rounded hover:bg-gray-50 transition-colors"
+                    title={`Sort ${
+                      sortState.sortOrder === "asc" ? "Descending" : "Ascending"
+                    }`}
+                  >
+                    {sortState.sortOrder === "asc" ? (
+                      <SortAsc className="w-4 h-4" />
+                    ) : (
+                      <SortDesc className="w-4 h-4" />
+                    )}
+                    {sortState.sortOrder === "asc" ? "Asc" : "Desc"}
+                  </button>
+                </div>
 
                 <button
-                  onClick={() =>
-                    setSortState((prev) => ({
-                      ...prev,
-                      sortOrder: prev.sortOrder === "asc" ? "desc" : "asc",
-                    }))
-                  }
-                  className="flex self-end items-center gap-2 px-4 py-1.5 border border-gray-300 rounded hover:bg-gray-50 transition-colors"
-                  title={`Sort ${
-                    sortState.sortOrder === "asc" ? "Descending" : "Ascending"
-                  }`}
+                  onClick={resetFilters}
+                  className="px-4 py-2.5 self-end  text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded transition-colors"
                 >
-                  {sortState.sortOrder === "asc" ? (
-                    <SortAsc className="w-4 h-4" />
-                  ) : (
-                    <SortDesc className="w-4 h-4" />
-                  )}
-                  {sortState.sortOrder === "asc" ? "Asc" : "Desc"}
+                  Reset Filters
                 </button>
               </div>
-
-              {/* Reset Button */}
-              <button
-                onClick={resetFilters}
-                className="px-4 py-2.5 self-end  text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded transition-colors"
-              >
-                Reset Filters
-              </button>
-            </div>
-
-            {/* Search Bar */}
-            <div className="mt-4">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                <input
-                  type="text"
-                  placeholder="Search by resident name..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                />
-                {searchQuery && (
-                  <button
-                    onClick={() => setSearchQuery("")}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                  >
-                    ×
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Bill Generation Button */}
-          {profile?.role === "admin" &&
-            filters.billMonth === currMonth &&
-            filters.billYear === currYear &&
-            maintenanceBills?.length === 0 && (
-              <button
-                disabled={generateBillLoading}
-                onClick={handleCreateBill}
-                className="w-full sm:w-fit flex items-center whitespace-nowrap justify-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg font-medium transition-colors disabled:opacity-70"
-                aria-busy={generateBillLoading}
-              >
-                <ReceiptText className="w-5 h-5" />
-                {generateBillLoading ? "Generating..." : "Generate Bill"}
-              </button>
-            )}
-
-          {/* Results Summary */}
-          {!loading && (
-            <div className="text-sm text-gray-600">
-              {pagination?.totalItems || 0} maintenance bills found
-              {debouncedSearchQuery && (
-                <span> for "{debouncedSearchQuery}"</span>
-              )}
             </div>
           )}
+
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-5">
+            <div className="flex  items-center justify-between gap-5 w-full sm:w-fit">
+              {profile?.role === "admin" &&
+                filters.billMonth === currMonth &&
+                filters.billYear === currYear &&
+                maintenanceBills?.length === 0 && (
+                  <button
+                    disabled={generateBillLoading}
+                    onClick={handleCreateBill}
+                    className={`bg-[#22C36E] w-full sm:w-fit flex items-center whitespace-nowrap justify-center gap-2 text-white px-6 py-2 rounded-lg font-medium transition-colors disabled:opacity-70`}
+                    aria-busy={generateBillLoading}
+                  >
+                    <ReceiptText className="w-5 h-5" />
+                    {generateBillLoading ? "Generating..." : "Generate Bill"}
+                  </button>
+                )}
+              <button
+                onClick={() => setVisiblefilters(!visiblefilters)}
+                className={`w-full sm:w-fit flex items-center whitespace-nowrap justify-center gap-2 text-black border px-6 py-2 rounded-lg font-medium transition-colors disabled:opacity-70`}
+              >
+                {visiblefilters ? (
+                  <X className="w-5 h-5" />
+                ) : (
+                  <SlidersHorizontal className="w-5 h-5" />
+                )}
+                Fliters
+              </button>
+            </div>
+
+            <div className="relative w-full sm:w-[280px]">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <input
+                type="text"
+                placeholder="Search by resident name"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full sm:max-w-[280px]  pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                  ×
+                </button>
+              )}
+            </div>
+          </div>
 
           {/* Main Table */}
           <GenericTable

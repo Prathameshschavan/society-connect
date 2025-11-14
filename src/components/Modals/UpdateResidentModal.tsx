@@ -16,7 +16,7 @@ import toast from "react-hot-toast";
 import { supabase } from "../../libs/supabase/supabaseClient";
 import { useProfileStore } from "../../libs/stores/useProfileStore";
 import useAdminService from "../../hooks/serviceHooks/useAdminService";
-import type { Profile } from "../../types/user.types";
+import type { IProfile } from "../../types/user.types";
 
 export interface UpdateResidentFormData {
   // Personal Info
@@ -52,7 +52,7 @@ export interface UpdateResidentFormData {
 interface UpdateResidentModalProps {
   isOpen: boolean;
   onClose: () => void;
-  resident: Profile | null;
+  resident: IProfile | null;
 }
 
 const UpdateResidentModal: React.FC<UpdateResidentModalProps> = ({

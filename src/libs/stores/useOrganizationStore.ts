@@ -1,7 +1,7 @@
 // stores/useOrganizationStore.ts
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { Profile } from "../../types/user.types";
+import type { IProfile } from "../../types/user.types";
 
 export interface Organization {
   id: string;
@@ -23,7 +23,7 @@ export interface Organization {
   established_date?: string | null;
   created_at?: string;
   updated_at?: string | number;
-  admin: Profile[];
+  admin: IProfile[];
   extras: ExtraItem[];
   due_date: string;
   calculate_maintenance_by: string;

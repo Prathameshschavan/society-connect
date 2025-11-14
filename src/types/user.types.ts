@@ -1,52 +1,59 @@
+import type { IOrganization } from "./organization.types";
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export type TSignIn = {
-  phone: string;
+  email: string;
   password: string;
 };
 
-// types/auth.types.ts
-export interface User {
-  id: string;
-  email?: string;
-  phone?: string;
-  created_at: string;
-}
-
-export interface Organization {
-  id: string;
-  name: string;
-  address?: string;
-  total_units: number;
-  maintenance_rate: number;
-  maintenance_amount?: number;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface Profile {
-  id: string;
-  organization_id?: string;
-  role: "super_admin" | "admin" | "resident" | "tenant" | "committee_member";
-  full_name: string;
-  phone: string;
-  unit_number?: string;
-  square_footage?: number;
-  must_change_password: boolean;
-  created_at: string;
-  updated_at: string;
-  organizations?: Organization;
-}
-
 export interface AuthContextType {
-  user: User | null;
-  profile: Profile | null;
+  user: IProfile | null;
+  profile: IProfile | null;
   loading: boolean;
   signIn: (
     phone: string,
     password: string
-  ) => Promise<{ data: any; error: any; profile?: Profile | null }>;
+  ) => Promise<{ data: any; error: any; profile?: IProfile | null }>;
   signOut: () => Promise<{ error: unknown }>;
   fetchUserProfile: (userId: string) => Promise<void>;
-  setUser: (user: User | null) => void;
-  setProfile: (profile: Profile | null) => void;
+  setUser: (user: IProfile | null) => void;
+  setProfile: (profile: IProfile | null) => void;
 }
+
+export type TRole = "super_admin" | "admin" | "resident" | "committee_member";
+
+export interface IFamilyMembers {
+  adult: number;
+  child: number;
+}
+
+export interface IVehicles {
+  twoWheeler?: number;
+}
+
+export interface IProfile {
+  id: string;
+  role: TRole; // Union type for role
+  email?: string;
+  full_name: string;
+  phone: string;
+  unit_number: string;
+  square_footage: number;
+  unit_type: string;
+  family_members: IFamilyMembers;
+  vehicles?: IVehicles;
+  is_tenant?: boolean;
+  organization_id?: string;
+  organization?: IOrganization;
+  must_change_password?: boolean;
+}
+
+export type SignInResponse = {
+  access_token: string;
+  token_type: string;
+  expires_in: number;
+  expires_at: number;
+  refresh_token: string;
+  user: IProfile;
+  weak_password: null | unknown;
+};

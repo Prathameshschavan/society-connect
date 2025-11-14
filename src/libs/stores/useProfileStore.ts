@@ -1,22 +1,22 @@
 // stores/useProfileStore.ts
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { Profile, User } from "../../types/user.types";
+import type { IProfile } from "../../types/user.types";
 
 interface ProfileState {
   // State
-  user: User | null;
-  profile: Profile | null;
+  user: IProfile | null;
+  profile: IProfile | null;
   loading: boolean;
   error: string | null;
-  residents: Profile[];
+  residents: IProfile[];
 
   // Actions
-  setUser: (user: User | null) => void;
-  setProfile: (profile: Profile | null) => void;
+  setUser: (user: IProfile | null) => void;
+  setProfile: (profile: IProfile | null) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
-  setResidents: (residents: Profile[]) => void;
+  setResidents: (residents: IProfile[]) => void;
 
   reset: () => void;
 }
@@ -52,7 +52,7 @@ export const useProfileStore = create<ProfileState>()(
       partialize: (state) => ({
         user: state.user,
         profile: state.profile,
-        residents: state.residents
+        residents: state.residents,
       }), // Only persist user and profile, not loading/error states
     }
   )

@@ -1,7 +1,7 @@
 import type { TableColumn } from "../../components/ui/GenericTable";
-import type { Profile } from "../../types/user.types";
+import type { IProfile } from "../../types/user.types";
 
-export const columns: TableColumn<Profile>[] = [
+export const columns: TableColumn<IProfile>[] = [
   {
     key: "room",
     header: "Room",

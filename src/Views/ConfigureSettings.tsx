@@ -24,7 +24,6 @@ import toast from "react-hot-toast";
 import { supabase } from "../libs/supabase/supabaseClient";
 import { useNavigate, useParams } from "react-router-dom";
 import GenericTable, { type TableAction } from "../components/ui/GenericTable";
-import type { Profile } from "../types/user.types";
 import { useProfileStore } from "../libs/stores/useProfileStore";
 import useAdminService from "../hooks/serviceHooks/useAdminService";
 import OnboardResidentModal from "../components/Modals/OnboardResidentModal";
@@ -38,11 +37,12 @@ import Contact from "../components/configureSettings/Contact";
 import Property from "../components/configureSettings/Property";
 import usePaginationService from "../hooks/serviceHooks/usePaginationService";
 import { columns } from "../config/tableConfig/configureSettings";
+import type { IProfile } from "../types/user.types";
 
 const SocietyConfigurationPage: React.FC = () => {
   const { orgId } = useParams<{ orgId: string }>();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [selectedProfile, setSelectedProfile] = useState<Profile | null>(null);
+  const [selectedProfile, setSelectedProfile] = useState<IProfile | null>(null);
   const [isViewResidentModalOpen, setIsViewResidentModalOpen] =
     useState<boolean>(false);
   const [isUpdateResidentModalOpen, setIsUpdateResidentModalOpen] =
@@ -93,7 +93,7 @@ const SocietyConfigurationPage: React.FC = () => {
     loadData();
   }, [currentPage, pageSize]);
 
-  const actions: TableAction<Profile>[] = [
+  const actions: TableAction<IProfile>[] = [
     {
       icon: <Eye className="w-4 h-4" />,
       onClick: (profile) => {
@@ -180,9 +180,8 @@ const SocietyConfigurationPage: React.FC = () => {
         due_date: data.due_date,
         penalty_rate: data?.penalty_rate,
         penalty_amount: data?.penalty_amount,
-        calculate_maintenance_by: data?.calculate_maintenance_by
+        calculate_maintenance_by: data?.calculate_maintenance_by,
       };
-
 
       const { error } = await supabase
         .from("organizations")

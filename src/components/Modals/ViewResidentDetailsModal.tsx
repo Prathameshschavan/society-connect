@@ -2,19 +2,18 @@ import React from "react";
 import {
   User,
   Phone,
-  Calendar,
   Shield,
   Home,
   FileText,
   Building2,
 } from "lucide-react";
 import Modal, { ModalBody, ModalFooter } from "./Modal";
-import type { Profile } from "../../types/user.types";
+import type { IProfile } from "../../types/user.types";
 
 interface ViewResidentDetailsModalProps {
   isOpen: boolean;
   onClose: () => void;
-  resident: Profile | null;
+  resident: IProfile | null;
 }
 
 const ViewResidentDetailsModal: React.FC<ViewResidentDetailsModalProps> = ({
@@ -24,36 +23,27 @@ const ViewResidentDetailsModal: React.FC<ViewResidentDetailsModalProps> = ({
 }) => {
   if (!isOpen || !resident) return null;
 
-  const formatDate = (dateString: string | null) => {
-    if (!dateString) return "Not specified";
-    return new Date(dateString).toLocaleDateString("en-IN", {
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-    });
-  };
-
   const getRoleColor = (role: string) => {
     switch (role) {
-      case 'super_admin':
-        return 'bg-red-100 text-red-800 border-red-200';
-      case 'admin':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'resident':
-        return 'bg-green-100 text-green-800 border-green-200';
+      case "super_admin":
+        return "bg-red-100 text-red-800 border-red-200";
+      case "admin":
+        return "bg-blue-100 text-blue-800 border-blue-200";
+      case "resident":
+        return "bg-green-100 text-green-800 border-green-200";
       default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
+        return "bg-gray-100 text-gray-800 border-gray-200";
     }
   };
 
   const getRoleLabel = (role: string) => {
     switch (role) {
-      case 'super_admin':
-        return 'Super Admin';
-      case 'admin':
-        return 'Admin';
-      case 'resident':
-        return 'Resident';
+      case "super_admin":
+        return "Super Admin";
+      case "admin":
+        return "Admin";
+      case "resident":
+        return "Resident";
       default:
         return role;
     }
@@ -74,7 +64,11 @@ const ViewResidentDetailsModal: React.FC<ViewResidentDetailsModalProps> = ({
                   {resident.full_name}
                 </h3>
                 <div className="flex items-center gap-3">
-                  <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium border ${getRoleColor(resident.role)}`}>
+                  <span
+                    className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium border ${getRoleColor(
+                      resident.role
+                    )}`}
+                  >
                     <Shield className="w-4 h-4" />
                     {getRoleLabel(resident.role)}
                   </span>
@@ -138,7 +132,7 @@ const ViewResidentDetailsModal: React.FC<ViewResidentDetailsModalProps> = ({
             </div>
 
             {/* Record Information */}
-            <div>
+            {/* <div>
               <label className="block text-sm font-medium text-gray-500 mb-3">
                 <FileText className="w-4 h-4 inline mr-2" />
                 Record Information
@@ -165,7 +159,7 @@ const ViewResidentDetailsModal: React.FC<ViewResidentDetailsModalProps> = ({
                   </div>
                 </div>
               </div>
-            </div>
+            </div> */}
           </div>
 
           {/* Right Column */}
@@ -238,7 +232,9 @@ const ViewResidentDetailsModal: React.FC<ViewResidentDetailsModalProps> = ({
         <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
           <div className="flex items-center mb-3">
             <FileText className="h-5 w-5 text-gray-600 mr-2" />
-            <h4 className="text-sm font-medium text-gray-900">Additional Information</h4>
+            <h4 className="text-sm font-medium text-gray-900">
+              Additional Information
+            </h4>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
             <div>

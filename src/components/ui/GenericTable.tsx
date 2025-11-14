@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { type ReactNode } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import Loader from "./Loader";
 
 // ---- Types ----
 export interface TableColumn<T> {
@@ -80,7 +81,7 @@ function useMediaQuery(query: string) {
 // ---- Skeleton ----
 const TableSkeleton: React.FC<{ columns: number; rows?: number }> = ({
   columns,
-  rows = 5,
+  rows = 4,
 }) => (
   <tbody>
     {[...Array(rows)].map((_, rowIndex) => (
@@ -137,7 +138,7 @@ const TablePagination: React.FC<{
   };
 
   return (
-    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between px-4 sm:px-6 py-4 border-t border-gray-200 bg-gray-50">
+    <div className="flex flex-col gap-3 sm:flex-row sm:items-center rounded-b-xl sm:justify-between px-4 sm:px-6 py-4 border-t border-gray-200 bg-gray-50">
       <div className="flex items-center justify-between gap-4">
         <span className="text-sm text-gray-700">
           Showing {(currentPage - 1) * pageSize + 1} to{" "}
@@ -193,7 +194,7 @@ const TablePagination: React.FC<{
               onClick={() => onPageChange(page)}
               className={`px-3 py-1.5 text-sm border rounded ${
                 page === currentPage
-                  ? "bg-blue-500 text-white border-blue-500"
+                  ? "bg-[#0154AC] !text-white border-[0154AC]"
                   : "border-gray-300 hover:bg-gray-100"
               }`}
             >
@@ -236,11 +237,8 @@ function GenericTable<T extends Record<string, any>>({
   actions = [],
   loading = false,
   title,
-  searchPlaceholder = "Search...",
-  onSearch,
   showSearch = false,
   showFilter = false,
-  onFilter,
   emptyMessage = "No data available",
   pagination,
   onPageChange,
@@ -253,13 +251,6 @@ function GenericTable<T extends Record<string, any>>({
   desktopVisibleKeys,
   mobileVisibleKeys,
 }: GenericTableProps<T>) {
-  const [searchQuery, setSearchQuery] = React.useState("");
-
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchQuery(e.target.value);
-    onSearch?.(e.target.value);
-  };
-
   const renderCellValue = (item: T, column: TableColumn<T>) => {
     if (column.render) return column.render(item);
     const value = item[column.key as keyof T];
@@ -301,39 +292,19 @@ function GenericTable<T extends Record<string, any>>({
   const cardsWrapperVisibility = `sm:hidden`;
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+    <div className="bg-white rounded-xl shadow-sm  border border-gray-200">
       {(title || showSearch || showFilter) && (
-        <div className="p-4 sm:p-6 border-b border-gray-200">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            {title && (
-              <h2 className="text-lg sm:text-xl font-medium text-gray-900">
-                {title}
-              </h2>
-            )}
-            {(showSearch || showFilter) && (
-              <div className="flex w-full sm:w-auto gap-3">
-                {showSearch && (
-                  <div className="relative flex-1 sm:flex-none">
-                    <input
-                      type="text"
-                      placeholder={searchPlaceholder}
-                      value={searchQuery}
-                      onChange={handleSearchChange}
-                      className="w-full sm:w-64 pl-4 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                  </div>
-                )}
-                {showFilter && (
-                  <button
-                    onClick={onFilter}
-                    className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
-                  >
-                    Filter
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
+        <div className="p-4 sm:p-6 border-b border-gray-200 bg-[#0154AC] rounded-t-xl flex flex-col sm:flex-row items-center justify-between  gap-1">
+          {title && (
+            <h2 className="text-lg sm:text-xl font-medium  w-full sm:w-auto text-white!">
+              {title}
+            </h2>
+          )}
+          {
+            <div className="text-xs sm:text-sm text-white  w-full sm:w-auto">
+              {pagination?.totalItems || 0} {title?.toLowerCase()} found
+            </div>
+          }
         </div>
       )}
 
@@ -371,7 +342,7 @@ function GenericTable<T extends Record<string, any>>({
                 <tr>
                   <td
                     colSpan={totalColumns}
-                    className="py-12 px-6 text-center text-gray-500"
+                    className="py-[123.9px] px-6 text-center text-gray-500"
                   >
                     {emptyMessage}
                   </td>
@@ -437,9 +408,11 @@ function GenericTable<T extends Record<string, any>>({
       {/* Mobile cards only */}
       <div className={`px-4 ${cardsWrapperVisibility}`}>
         {loading ? (
-          <div className="py-6 text-gray-500">Loading...</div>
+          <div className=" py-19 max-h-[50vh] flex items-center justify-center">
+            <Loader />
+          </div>
         ) : data.length === 0 ? (
-          <div className="py-8 text-center text-gray-500">{emptyMessage}</div>
+          <div className="py-25 text-center text-gray-500">{emptyMessage}</div>
         ) : (
           <ul className="divide-y divide-gray-200">
             {data.map((item, idx) => (
@@ -498,7 +471,7 @@ function GenericTable<T extends Record<string, any>>({
         )}
       </div>
 
-      {showPagination && pagination && onPageChange && !loading && (
+      {showPagination && pagination && onPageChange && (
         <TablePagination
           pagination={pagination}
           onPageChange={onPageChange}

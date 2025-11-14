@@ -10,12 +10,12 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import Expenses from "./components/Expenses";
 import Income from "./components/Income";
 import Reports from "./components/Reports";
-import MonthlyReportDetails from "./views/MonthlyReportDetails.tsx";
-import SignIn from "./views/SignIn";
-import SocietyConfigurationPage from "./views/ConfigureSettings";
-import ChangePassword from "./views/ChangePassword";
-import SignUp from "./views/SignUp";
-import UnauthorizedPage from "./views/Unauthorized";
+import MonthlyReportDetails from "./viewsss/MonthlyReportDetails.tsx";
+import SignIn from "./viewsss/SignIn.tsx";
+import SocietyConfigurationPage from "./viewsss/ConfigureSettings.tsx";
+import ChangePassword from "./viewsss/ChangePassword.tsx";
+import SignUp from "./viewsss/SignUp.tsx";
+import UnauthorizedPage from "./viewsss/Unauthorized.tsx";
 function App() {
   return (
     <Routes>

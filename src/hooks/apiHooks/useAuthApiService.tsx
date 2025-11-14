@@ -5,16 +5,15 @@ import { useProfileStore } from "../../libs/stores/useProfileStore";
 import { getProfile } from "../../apis/profile.apis";
 
 const useAuthApiService = () => {
-  const { setProfile, setUser } = useProfileStore();
+  const { setProfile } = useProfileStore();
 
   const handleSignIn = async ({ password, email }: TSignIn) => {
     try {
       const response = await signIn({ email, password });
-      
-      const profile = await getProfile(response.data.user.id);
-      
-      setUser(response.data.user);
-      setProfile(profile.data);
+
+      const profile = await getProfile(response.user.id);
+
+      setProfile(profile.data.data);
 
       toast.success("Sign-in successful!");
     } catch (error) {

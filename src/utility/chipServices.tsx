@@ -3,13 +3,13 @@ import { AlertCircle, CheckCircle, Clock } from "lucide-react";
 export const getStatusIcon = (status: string) => {
   switch (status) {
     case "paid":
-      return <CheckCircle className="w-4 h-4 !text-white" />;
+      return <CheckCircle className="w-4 h-4 text-white" />;
     case "pending":
-      return <Clock className="w-4 h-4 !text-white" />;
+      return <Clock className="w-4 h-4 text-white" />;
     case "overdue":
-      return <AlertCircle className="w-4 h-4 !text-white" />;
+      return <AlertCircle className="w-4 h-4 text-white" />;
     default:
-      return <Clock className="w-4 h-4 !text-white" />;
+      return <Clock className="w-4 h-4 text-white" />;
   }
 };
 

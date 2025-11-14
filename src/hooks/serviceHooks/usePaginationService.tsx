@@ -5,12 +5,12 @@ const usePaginationService = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [pagination, setPagination] = useState<PaginationInfo>({
-    currentPage: 1,
+    page: 1,
     totalPages: 1,
-    totalItems: 0,
-    pageSize: 10,
+    total: 0,
+    limit: 10,
     hasNextPage: false,
-    hasPrevPage: false,
+    hasPreviousPage: false,
   });
 
   const handlePageChange = (page: number) => {

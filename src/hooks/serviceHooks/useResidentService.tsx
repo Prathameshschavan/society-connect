@@ -14,12 +14,12 @@ const useResidentService = () => {
 
   const fetchMaintenanceBills = async ({
     residentId = profile?.id,
-    page = 1, 
+    page = 1,
     pageSize = 10,
-    // searchQuery = "",
-    // sortBy = "created_at",
-    // sortOrder = "desc",
-  }: FetchMaintenanceBillsParams = {}): Promise<FetchMaintenanceBillsResponse | null> => {
+  }: // searchQuery = "",
+  // sortBy = "created_at",
+  // sortOrder = "desc",
+  FetchMaintenanceBillsParams = {}): Promise<FetchMaintenanceBillsResponse | null> => {
     try {
       // Calculate offset for pagination
       const from = (page - 1) * pageSize;
@@ -61,12 +61,12 @@ const useResidentService = () => {
       const hasPrevPage = currentPage > 1;
 
       const paginationInfo: PaginationInfo = {
-        currentPage,
+        page: currentPage,
         totalPages,
-        totalItems,
-        pageSize,
+        total: totalItems,
+        limit: pageSize,
         hasNextPage,
-        hasPrevPage,
+        hasPreviousPage: hasPrevPage,
       };
 
       setBills(data);

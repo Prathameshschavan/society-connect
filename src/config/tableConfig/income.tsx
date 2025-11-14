@@ -15,7 +15,7 @@ export const columns: TableColumn<IncomeRow>[] = [
   },
   {
     key: "desc",
-    header: "description",
+    header: "Description",
     render: (income) => (
       <div>
         <p className=" text-gray-900">

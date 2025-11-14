@@ -4,22 +4,30 @@ import "./App.css";
 import AdminDashboard from "./components/AdminDashboard";
 import RoomOwnerDashboard from "./components/RoomOwnerDashboard";
 import SuperAdminDashboard from "./components/SuperAdminDashboard";
-import SignIn from "./Views/SignIn";
+import SignIn from "./views/SignIn";
 import ProtectedRoute from "./components/ProtectedRoute";
-import SignUp from "./Views/SignUp";
-import UnauthorizedPage from "./Views/Unauthorized";
-import SocietyConfigurationPage from "./Views/ConfigureSettings";
+import SignUp from "./views/SignUp";
+import UnauthorizedPage from "./views/Unauthorized";
+import SocietyConfigurationPage from "./views/ConfigureSettings";
 import Expenses from "./components/Expenses";
 import Income from "./components/Income";
 import Reports from "./components/Reports";
-import MonthlyReportDetails from "./Views/MonthlyReportDetails";
-import ChangePassword from "./Views/ChangePassword";
+import MonthlyReportDetails from "./views/MonthlyReportDetails";
+import ChangePassword from "./views/ChangePassword";
 
 function App() {
   return (
     <Routes>
       <Route
         path="/admin"
+        element={
+          <ProtectedRoute allowedRoles={["admin", "committee_member"]}>
+            <AdminDashboard />
+          </ProtectedRoute>
+        }
+      ></Route>
+      <Route
+        path="/"
         element={
           <ProtectedRoute allowedRoles={["admin", "committee_member"]}>
             <AdminDashboard />
@@ -108,7 +116,7 @@ function App() {
       <Route
         path="/configure-settings/:orgId"
         element={
-          <ProtectedRoute allowedRoles={["admin"]}>
+        <ProtectedRoute allowedRoles={["admin"]}>
             <SocietyConfigurationPage />
           </ProtectedRoute>
         }

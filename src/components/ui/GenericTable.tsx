@@ -20,12 +20,12 @@ export interface TableAction<T> {
 }
 
 export interface PaginationInfo {
-  currentPage: number;
+  page: number;
   totalPages: number;
-  totalItems: number;
-  pageSize: number;
+  total: number;
+  limit: number;
   hasNextPage: boolean;
-  hasPrevPage: boolean;
+  hasPreviousPage: boolean;
 }
 
 export interface GenericTableProps<T> {
@@ -114,12 +114,12 @@ const TablePagination: React.FC<{
   pageSizeOptions = [5, 10, 20, 50],
 }) => {
   const {
-    currentPage,
-    totalPages,
-    totalItems,
-    pageSize,
     hasNextPage,
-    hasPrevPage,
+    hasPreviousPage,
+    limit: pageSize,
+    page: currentPage,
+    total,
+    totalPages,
   } = pagination;
 
   const getPageNumbers = () => {
@@ -142,7 +142,7 @@ const TablePagination: React.FC<{
       <div className="flex items-center justify-between gap-4">
         <span className="text-sm text-gray-700">
           Showing {(currentPage - 1) * pageSize + 1} to{" "}
-          {Math.min(currentPage * pageSize, totalItems)} of {totalItems} entries
+          {Math.min(currentPage * pageSize, total)} of {total} entries
         </span>
 
         {onPageSizeChange && (
@@ -166,7 +166,7 @@ const TablePagination: React.FC<{
       <div className="flex flex-wrap justify-center  items-center gap-2">
         <button
           onClick={() => onPageChange(currentPage - 1)}
-          disabled={!hasPrevPage}
+          disabled={!hasPreviousPage}
           className="flex items-center self-stretch gap-1 px-3 py-1.5 text-sm border border-gray-300 rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <ChevronLeft className="w-4 h-4" />
@@ -302,7 +302,7 @@ function GenericTable<T extends Record<string, any>>({
           )}
           {
             <div className="text-xs sm:text-sm text-white  w-full sm:w-auto">
-              {pagination?.totalItems || 0} {title?.toLowerCase()} found
+              {pagination?.total || 0} {title?.toLowerCase()} found
             </div>
           }
         </div>

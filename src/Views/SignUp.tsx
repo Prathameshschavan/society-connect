@@ -27,7 +27,7 @@ const SignUp: React.FC = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-  const { setProfile, setUser } = useProfileStore();
+  const { setProfile } = useProfileStore();
 
   const {
     register,
@@ -95,8 +95,6 @@ const SignUp: React.FC = () => {
       }
 
       if (authData.user) {
-        // The profile will be created automatically by the database trigger
-        setUser(authData?.user);
         setProfile(authData?.user?.user_metadata as never);
 
         toast.success("Registration successfully");

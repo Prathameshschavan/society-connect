@@ -198,7 +198,7 @@ const ViewResidentDetailsModal: React.FC<ViewResidentDetailsModalProps> = ({
             )}
 
             {/* Organization Information */}
-            {resident.organizations && (
+            {resident.organization && (
               <div>
                 <label className="block text-sm font-medium text-gray-500 mb-3">
                   <Building2 className="w-4 h-4 inline mr-2" />
@@ -211,7 +211,7 @@ const ViewResidentDetailsModal: React.FC<ViewResidentDetailsModalProps> = ({
                       <div>
                         <p className="text-xs text-indigo-700">Society Name</p>
                         <p className="font-medium text-indigo-900 text-lg">
-                          {resident.organizations.name}
+                          {resident.organization.name}
                         </p>
                       </div>
                     </div>

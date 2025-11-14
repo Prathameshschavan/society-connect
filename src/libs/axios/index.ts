@@ -1,20 +1,24 @@
 import axios from "axios";
+import { supabase } from "../supabase/supabaseClient";
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL,
   timeout: 20000,
   headers: {
     "Content-Type": "application/json",
-    apiKey: import.meta.env.VITE_SUPABASE_ANON_KEY || "",
   },
 });
 
 // Request interceptor to attach token or other request modifications
 api.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem("authToken");
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+  async (config) => {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    if (session) {
+      const accessToken = session.access_token;
+      config.headers.Authorization = `Bearer ${accessToken}`;
     }
 
     return config;

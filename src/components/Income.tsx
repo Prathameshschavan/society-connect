@@ -7,10 +7,11 @@ import {
   Search,
   SortAsc,
   SortDesc,
+  X,
+  SlidersHorizontal,
 } from "lucide-react";
 
 import { GenericSelect, type OptionValue } from "./ui/GenericSelect";
-import TopNav from "./TopNav";
 import GenericTable, { type TableAction } from "./ui/GenericTable";
 import { AddIncomeModal } from "./Modals/AddIncomeModal";
 import ViewIncomeModal from "./Modals/ViewIncomeModal";
@@ -23,12 +24,13 @@ import useIncomeService, {
   type IncomeSortByOptions,
 } from "../hooks/serviceHooks/useIncomeService";
 
-import { useOrganizationStore } from "../libs/stores/useOrganizationStore";
 import { useReportStore } from "../libs/stores/useReportStore";
 
 import { currMonth, currYear, shortMonth } from "../utility/dateTimeServices";
 import { columns } from "../config/tableConfig/income";
 import { useProfileStore } from "../libs/stores/useProfileStore";
+import Layout from "./Layout/Layout";
+import { siteSetting } from "../config/siteSetting";
 
 // Custom hook for debounced search [web:149]
 const useDebounce = (value: string | number | undefined, delay: number) => {
@@ -107,9 +109,8 @@ const Income = () => {
   const [isOpenViewIncomeModal, setIsOpenViewIncomeModal] = useState(false);
   const [isOpenUpdateIncomeModal, setIsOpenUpdateIncomeModal] = useState(false);
   const [isOpenDeleteIncomeModal, setIsOpenDeleteIncomeModal] = useState(false);
+  const [visiblefilters, setVisiblefilters] = useState<boolean>(false);
 
-  // Stores & Services
-  const { residentOrganization } = useOrganizationStore();
   const { incomes } = useReportStore();
   const { profile } = useProfileStore();
   const {
@@ -139,11 +140,11 @@ const Income = () => {
           minAmount: debouncedMinAmount as number, // Use debounced value [web:149]
           maxAmount: debouncedMaxAmount as number, // Use debounced value [web:149]
         },
-        orgId: residentOrganization?.id as string,
+        orgId: profile?.organization?.id as string,
       });
 
       if (result) {
-        setPagination(result.pagination);
+        setPagination(result.pagination as never);
       }
     } catch (error) {
       console.error("Error loading data:", error);
@@ -218,27 +219,27 @@ const Income = () => {
     },
     ...(profile?.role === "admin"
       ? [
-        {
-          icon: <Edit className="w-4 h-4" />,
-          onClick: (income: IncomeRow) => {
-            setSelectedIncome(income);
-            setIsOpenUpdateIncomeModal(true);
+          {
+            icon: <Edit className="w-4 h-4" />,
+            onClick: (income: IncomeRow) => {
+              setSelectedIncome(income);
+              setIsOpenUpdateIncomeModal(true);
+            },
+            className:
+              "cursor-pointer p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors",
+            label: "Edit",
           },
-          className:
-            "cursor-pointer p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors",
-          label: "Edit",
-        },
-        {
-          icon: <Trash2 className="w-4 h-4" />,
-          onClick: (income: IncomeRow) => {
-            setSelectedIncome(income);
-            setIsOpenDeleteIncomeModal(true);
+          {
+            icon: <Trash2 className="w-4 h-4" />,
+            onClick: (income: IncomeRow) => {
+              setSelectedIncome(income);
+              setIsOpenDeleteIncomeModal(true);
+            },
+            className:
+              "cursor-pointer p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors",
+            label: "Delete",
           },
-          className:
-            "cursor-pointer p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors",
-          label: "Delete",
-        },
-      ]
+        ]
       : []),
   ];
 
@@ -249,205 +250,160 @@ const Income = () => {
     debouncedMaxAmount;
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <TopNav view="admin" />
+    <Layout role="admin">
+   
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-5">
+        <div className="flex  items-center justify-between gap-5 w-full sm:w-fit">
+          {profile?.role === "admin" && (
+            <button
+              onClick={() => setIsAddIncomeModalOpen(true)}
+              className={`bg-[#22C36E] w-full sm:w-fit flex items-center whitespace-nowrap justify-center gap-2 text-white px-6 py-2 rounded-lg font-medium transition-colors disabled:opacity-70`}
+            >
+              <BadgeIndianRupee className="w-5 h-5" />
+              Add Income
+            </button>
+          )}
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="space-y-6">
-          {/* Header */}
-          <div className="flex flex-col sm:flex-row justify-between gap-4">
-            <div>
-              <h1 className="text-2xl poppins-medium">
-                {residentOrganization?.name}
-              </h1>
-              <p className="text-gray-600 text-sm font-light">
-                Track and manage your society income
-              </p>
-            </div>
-          </div>
+          <button
+            onClick={() => setVisiblefilters(!visiblefilters)}
+            className={`w-full sm:w-fit flex items-center whitespace-nowrap justify-center gap-2 text-[${siteSetting?.mainColor}] border-[0.5px] px-6 py-2 rounded-lg font-medium transition-colors disabled:opacity-70`}
+          >
+            {visiblefilters ? (
+              <X className="w-5 h-5" />
+            ) : (
+              <SlidersHorizontal className="w-5 h-5" />
+            )}
+            Fliters
+          </button>
+        </div>
+        <div className="relative w-full sm:w-[280px]">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+          <input
+            type="text"
+            placeholder="Search by description"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full sm:max-w-[280px]  pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery("")}
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+            >
+              ×
+            </button>
+          )}
+        </div>
+      </div>
 
-          {/* Enhanced Filters Section */}
-          <div className="bg-white p-6 rounded-lg shadow-sm">
-            <div className="flex flex-col lg:flex-row gap-4">
-              {/* Date Filters */}
-              <div className="flex gap-4">
-                <GenericSelect
-                  id="months"
-                  onChange={(value) => {
-                    setCurrentPage(1);
-                    handleFilterChange("month", value);
-                    setFilters((prev) => ({ ...prev, month: value }));
-                  }}
-                  options={[
-                    { label: "All Months", value: "" },
-                    ...shortMonth.map((month, i) => ({
-                      label: month,
-                      value: (i + 1).toString().padStart(2, "0"),
-                    })),
-                  ]}
-                  value={filters.month as OptionValue}
-                  label="Month"
-                />
+      {visiblefilters && (
+        <div className="bg-white p-6 rounded-lg shadow-sm space-y-4 ">
+          <div className=" grid grid-cols-2 lg:grid-cols-5 gap-4">
+            <GenericSelect
+              id="months"
+              onChange={(value) => {
+                setCurrentPage(1);
+                handleFilterChange("month", value);
+                setFilters((prev) => ({ ...prev, month: value }));
+              }}
+              options={[
+                { label: "All Months", value: "" },
+                ...shortMonth.map((month, i) => ({
+                  label: month,
+                  value: (i + 1).toString().padStart(2, "0"),
+                })),
+              ]}
+              value={filters.month as OptionValue}
+              label="Month"
+            />
 
-                <GenericSelect
-                  id="years"
-                  onChange={(value) => {
-                    setCurrentPage(1);
-                    handleFilterChange("year", value);
-                    setFilters((prev) => ({ ...prev, year: value }));
-                  }}
-                  options={[
-                    { label: "All Years", value: "" },
-                    ...Array.from(
-                      { length: new Date().getFullYear() - 2000 + 1 },
-                      (_, index) => {
-                        const year = new Date().getFullYear() - index;
-                        return { label: year, value: `${year}` };
-                      }
-                    ),
-                  ]}
-                  value={filters.year as OptionValue}
-                  label="Year"
-                />
-              </div>
-
-              {/* Sort Controls */}
-              <div className="flex items-end gap-4">
-                <GenericSelect
-                  id="sortBy"
-                  onChange={(value) => handleSortChange(value)}
-                  options={sortOptions}
-                  value={sortState.sortBy}
-                  label="Sort By"
-                />
-
-                <button
-                  onClick={() =>
-                    setSortState((prev) => ({
-                      ...prev,
-                      sortOrder: prev.sortOrder === "asc" ? "desc" : "asc",
-                    }))
+            <GenericSelect
+              id="years"
+              onChange={(value) => {
+                setCurrentPage(1);
+                handleFilterChange("year", value);
+                setFilters((prev) => ({ ...prev, year: value }));
+              }}
+              options={[
+                { label: "All Years", value: "" },
+                ...Array.from(
+                  { length: new Date().getFullYear() - 2000 + 1 },
+                  (_, index) => {
+                    const year = new Date().getFullYear() - index;
+                    return { label: year, value: `${year}` };
                   }
-                  className="flex self-end items-center gap-2 px-4 py-1.5 border border-gray-300 rounded hover:bg-gray-50 transition-colors"
-                  title={`Sort ${sortState.sortOrder === "asc" ? "Descending" : "Ascending"
-                    }`}
-                >
-                  {sortState.sortOrder === "asc" ? (
-                    <SortAsc className="w-4 h-4" />
-                  ) : (
-                    <SortDesc className="w-4 h-4" />
-                  )}
-                  {sortState.sortOrder === "asc" ? "Asc" : "Desc"}
-                </button>
-              </div>
+                ),
+              ]}
+              value={filters.year as OptionValue}
+              label="Year"
+            />
 
-              {/* Reset Button */}
+            <GenericSelect
+              id="sortBy"
+              onChange={(value) => handleSortChange(value)}
+              options={sortOptions}
+              value={sortState.sortBy}
+              label="Sort By"
+            />
+
+            <button
+              onClick={() =>
+                setSortState((prev) => ({
+                  ...prev,
+                  sortOrder: prev.sortOrder === "asc" ? "desc" : "asc",
+                }))
+              }
+              className="flex self-end items-center gap-2 px-4 py-1.5 border border-gray-300 rounded hover:bg-gray-50 transition-colors"
+              title={`Sort ${
+                sortState.sortOrder === "asc" ? "Descending" : "Ascending"
+              }`}
+            >
+              {sortState.sortOrder === "asc" ? (
+                <SortAsc className="w-4 h-4" />
+              ) : (
+                <SortDesc className="w-4 h-4" />
+              )}
+              {sortState.sortOrder === "asc" ? "Asc" : "Desc"}
+            </button>
+            <div className="lg:flex justify-end hidden">
               <button
                 onClick={resetFilters}
-                className="px-4 py-2.5 self-end text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded transition-colors"
+                className="px-4 py-2.5 self-end whitespace-nowrap text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded transition-colors"
               >
                 Reset Filters
               </button>
             </div>
-
-            {/* Search Bar */}
-            <div className="mt-4">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                <input
-                  type="text"
-                  placeholder="Search by description..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                />
-                {searchQuery && (
-                  <button
-                    onClick={() => setSearchQuery("")}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                  >
-                    ×
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* Amount Range Filters - NOW DEBOUNCED [web:149][web:156] */}
-            <div className="mt-4 flex gap-4">
-              <div className="flex-1">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Min Amount
-                </label>
-                <input
-                  type="number"
-                  placeholder="Min"
-                  value={minAmountInput}
-                  onChange={(e) => {
-                    setMinAmountInput(e.target.value); // Update input immediately
-                    setCurrentPage(1); // Reset page when filter changes
-                  }}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
-              </div>
-              <div className="flex-1">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Max Amount
-                </label>
-                <input
-                  type="number"
-                  placeholder="Max"
-                  value={maxAmountInput}
-                  onChange={(e) => {
-                    setMaxAmountInput(e.target.value); // Update input immediately
-                    setCurrentPage(1); // Reset page when filter changes
-                  }}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
-              </div>
-            </div>
           </div>
-
-          {/* Add Income Button */}
-          {profile?.role === "admin" && <button
-            onClick={() => setIsAddIncomeModalOpen(true)}
-            className="w-full sm:w-fit flex items-center whitespace-nowrap justify-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg font-medium transition-colors hover:bg-blue-700"
-          >
-            <BadgeIndianRupee className="w-5 h-5" />
-            Add Income
-          </button>}
-
-          {/* Results Summary */}
-          {!loading && (
-            <div className="text-sm text-gray-600">
-              {pagination?.totalItems || 0} income records found
-              {debouncedSearchQuery && (
-                <span> for "{debouncedSearchQuery}"</span>
-              )}
-            </div>
-          )}
-
-          {/* Table */}
-          <GenericTable
-            title="Income"
-            columns={columns}
-            data={incomes}
-            actions={actions}
-            loading={loading}
-            emptyMessage={
-              hasActiveFilters
-                ? "No income records found matching your criteria"
-                : "No income records this month"
-            }
-            searchPlaceholder=""
-            showPagination
-            pagination={pagination}
-            onPageChange={handlePageChange}
-            onPageSizeChange={handlePageSizeChange}
-            pageSizeOptions={[5, 10, 20, 50]}
-            onSearch={() => { }}
-          />
+          <div className="flex justify-end lg:hidden">
+            <button
+              onClick={resetFilters}
+              className="px-4 py-2.5 self-end whitespace-nowrap text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded transition-colors"
+            >
+              Reset Filters
+            </button>
+          </div>
         </div>
-      </main>
+      )}
+
+      <GenericTable
+        title="Income"
+        columns={columns}
+        data={incomes}
+        actions={actions}
+        loading={loading}
+        emptyMessage={
+          hasActiveFilters
+            ? "No income records found matching your criteria"
+            : "No income records this month"
+        }
+        searchPlaceholder=""
+        showPagination
+        pagination={pagination}
+        onPageChange={handlePageChange}
+        onPageSizeChange={handlePageSizeChange}
+        pageSizeOptions={[5, 10, 20, 50]}
+        onSearch={() => {}}
+      />
 
       {/* Modals */}
       <AddIncomeModal
@@ -474,7 +430,7 @@ const Income = () => {
           setIsOpenDeleteIncomeModal(false);
         }}
       />
-    </div>
+    </Layout>
   );
 };
 

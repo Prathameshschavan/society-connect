@@ -3,11 +3,11 @@ import useCommonService from "../hooks/serviceHooks/useCommonService";
 import PaymentModal from "./Modals/PaymentModal";
 import TopNav from "./TopNav";
 import { useProfileStore } from "../libs/stores/useProfileStore";
-import type {
-  TableAction,
-  TableColumn,
-} from "./ui/GenericTable";
-import { useMaintenanceStore, type MaintenanceBill } from "../libs/stores/useMaintenanceStore";
+import type { TableAction, TableColumn } from "./ui/GenericTable";
+import {
+  useMaintenanceStore,
+  type MaintenanceBill,
+} from "../libs/stores/useMaintenanceStore";
 import { Eye } from "lucide-react";
 import GenericTable from "./ui/GenericTable";
 import ViewMaintananceDetailsModal from "./Modals/ViewMaintananceDetailsModal";
@@ -19,8 +19,7 @@ const RoomOwnerDashboard = () => {
     useCommonService();
   const { profile } = useProfileStore();
   const { maintenanceBills } = useMaintenanceStore();
-  const { fetchMaintenanceBills } =
-    useAdminService();
+  const { fetchMaintenanceBills } = useAdminService();
 
   const [loading, setLoading] = useState(false);
 
@@ -33,8 +32,14 @@ const RoomOwnerDashboard = () => {
 
   // Pagination state
 
-  const { pagination, setPagination, handlePageChange, handlePageSizeChange, currentPage, pageSize } = usePaginationService();
-
+  const {
+    pagination,
+    setPagination,
+    handlePageChange,
+    handlePageSizeChange,
+    currentPage,
+    pageSize,
+  } = usePaginationService();
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -48,23 +53,18 @@ const RoomOwnerDashboard = () => {
       });
 
       if (result) {
-        setPagination(result.pagination);
+        setPagination(result.pagination as never);
       }
     } catch (error) {
       console.error("Error loading data:", error);
     } finally {
       setLoading(false);
     }
-  }, [
-    currentPage,
-    pageSize,
-    setPagination,
-  ]);
-
+  }, [currentPage, pageSize, setPagination]);
 
   useEffect(() => {
     loadData();
-  }, [currentPage, pageSize,]);
+  }, [currentPage, pageSize]);
 
   const columns: TableColumn<MaintenanceBill>[] = [
     {
@@ -119,7 +119,7 @@ const RoomOwnerDashboard = () => {
   ];
   return (
     <div className="min-h-screen bg-gray-50">
-      <TopNav view="owner" />
+      <TopNav view="resident" />
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="space-y-6">
           {/* Header */}
@@ -187,7 +187,7 @@ const RoomOwnerDashboard = () => {
               onPageChange={handlePageChange}
               onPageSizeChange={handlePageSizeChange}
               pageSizeOptions={[5, 10, 20, 50]}
-              onSearch={() => { }}
+              onSearch={() => {}}
             />
           </div>
           {showPaymentModal && <PaymentModal setOpen={setShowPaymentModal} />}

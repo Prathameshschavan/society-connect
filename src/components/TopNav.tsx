@@ -13,22 +13,21 @@ import { NavLink, useNavigate } from "react-router-dom";
 import ConfirmationAlert from "./Modals/ConfirmationAlert";
 import { supabase } from "../libs/supabase/supabaseClient";
 import { useProfileStore } from "../libs/stores/useProfileStore";
-import { useOrganizationStore } from "../libs/stores/useOrganizationStore";
 import Drawer from "./ui/Drawer";
 import { siteSetting } from "../config/siteSetting";
+import type { TRole } from "../types/user.types";
 
 const linkBase = "flex items-center space-x-1 text-sm transition-colors";
 const active = "text-[#0154AC] font-medium";
 const inactive = "text-black font-light hover:text-[#0154AC]";
 
-const TopNav: React.FC<{ view: "admin" | "owner" }> = ({ view }) => {
+const TopNav: React.FC<{ view: TRole}> = ({ view }) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [open, setOpen] = React.useState(false);
   const [isLogoutConfirmationOpen, setIsLogoutConfirmationOpen] =
     useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const { profile, reset: resetProfile } = useProfileStore();
-  const { residentOrganization } = useOrganizationStore();
   const navigate = useNavigate();
 
   // derive menu from array
@@ -40,7 +39,7 @@ const TopNav: React.FC<{ view: "admin" | "owner" }> = ({ view }) => {
     ...(profile?.role === "admin"
       ? [
           {
-            to: `/configure-settings/${residentOrganization?.id ?? ""}`,
+            to: `/configure-settings/${profile?.organization?.id ?? ""}`,
             label: "Settings",
             icon: Settings,
           },

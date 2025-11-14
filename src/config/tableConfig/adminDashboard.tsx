@@ -44,7 +44,7 @@ export const columns: TableColumn<MaintenanceBill>[] = [
     render: (bill) => (
       <div>
         <span
-          className={`capitalize inline-flex text-black! items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(
+          className={`capitalize inline-flex text-white! items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(
             bill.status as string
           )}`}
         >

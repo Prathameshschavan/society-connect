@@ -6,20 +6,6 @@ export type TSignIn = {
   password: string;
 };
 
-export interface AuthContextType {
-  user: IProfile | null;
-  profile: IProfile | null;
-  loading: boolean;
-  signIn: (
-    phone: string,
-    password: string
-  ) => Promise<{ data: any; error: any; profile?: IProfile | null }>;
-  signOut: () => Promise<{ error: unknown }>;
-  fetchUserProfile: (userId: string) => Promise<void>;
-  setUser: (user: IProfile | null) => void;
-  setProfile: (profile: IProfile | null) => void;
-}
-
 export type TRole = "super_admin" | "admin" | "resident" | "committee_member";
 
 export interface IFamilyMembers {

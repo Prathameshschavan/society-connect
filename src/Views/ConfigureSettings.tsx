@@ -17,9 +17,6 @@ import {
   Plus,
 } from "lucide-react";
 import type { Organization } from "../libs/stores/useOrganizationStore";
-import useOrganizationService, {
-  type FetchOrganizationResponse,
-} from "../hooks/serviceHooks/useOrganizationService";
 import toast from "react-hot-toast";
 import { supabase } from "../libs/supabase/supabaseClient";
 import { useNavigate, useParams } from "react-router-dom";
@@ -38,6 +35,8 @@ import Property from "../components/configureSettings/Property";
 import usePaginationService from "../hooks/serviceHooks/usePaginationService";
 import { columns } from "../config/tableConfig/configureSettings";
 import type { IProfile } from "../types/user.types";
+import { getOrganization } from "../apis/organization.apis";
+import useProfileApiService from "../hooks/apiHooks/useProfileApiService";
 
 const SocietyConfigurationPage: React.FC = () => {
   const { orgId } = useParams<{ orgId: string }>();
@@ -50,12 +49,12 @@ const SocietyConfigurationPage: React.FC = () => {
   const [isDeleteConfirmationModalOpen, setIsDeleteConfirmationModalOpen] =
     useState<boolean>(false);
   const [activeTab, setActiveTab] = useState("basic");
-  const { fetchOrganization } = useOrganizationService();
   const [organization, setOrganization] = useState<Organization | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
   const { residents } = useProfileStore();
   const { fetchResidents, permanentlyDeleteResident } = useAdminService();
+  const { handleGetAllProfiles } = useProfileApiService();
   const [loading, setLoading] = useState(false);
   const [isOnboardModalOpen, setIsOnboardModalOpen] = useState(false);
 
@@ -72,15 +71,16 @@ const SocietyConfigurationPage: React.FC = () => {
   const loadData = async () => {
     setLoading(true);
     try {
-      const result = await fetchResidents({
+      const result = await handleGetAllProfiles({
         page: currentPage,
-        pageSize: pageSize,
+        limit: pageSize,
         sortBy: "unit_number",
-        sortOrder: "asc",
+        order: "asc",
+        organization_id: orgId,
       });
 
       if (result) {
-        setPagination(result.pagination);
+        setPagination(result.meta);
       }
     } catch (error) {
       console.error("Error loading data:", error);
@@ -242,19 +242,19 @@ const SocietyConfigurationPage: React.FC = () => {
 
       try {
         setIsLoading(true);
-        const res = await fetchOrganization({ orgId });
+        const res = await getOrganization(orgId);
 
         if (!res) {
           setOrganization(null);
           return;
         }
 
-        const { data }: FetchOrganizationResponse = res;
+        const data = res?.data?.data;
 
         let establishedDate = "";
 
-        if (data?.[0].established_date) {
-          const date = new Date(data?.[0].established_date);
+        if (data?.established_date) {
+          const date = new Date(data?.established_date);
           // Fix: Format as YYYY-MM-DD with leading zeros
           const year = date.getFullYear();
           const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -262,39 +262,36 @@ const SocietyConfigurationPage: React.FC = () => {
           establishedDate = `${year}-${month}-${day}`;
         }
 
-        if (data?.[0]) {
-          setOrganization(data?.[0]);
+        if (data) {
+          setOrganization(data);
           // Populate form fields
-          setValue("name", data?.[0].name || "");
-          setValue("address", data?.[0].address || "");
-          setValue("city", data?.[0].city || "");
-          setValue("state", data?.[0].state || "");
-          setValue("pincode", data?.[0].pincode || "");
-          setValue("phone", data?.[0].phone || "");
-          setValue("registration_number", data?.[0].registration_number || "");
+          setValue("name", data?.name || "");
+          setValue("address", data?.address || "");
+          setValue("city", data?.city || "");
+          setValue("state", data?.state || "");
+          setValue("pincode", data?.pincode || "");
+          setValue("phone", data?.phone || "");
+          setValue("registration_number", data?.registration_number || "");
           setValue("established_date", establishedDate);
-          setValue("total_units", data?.[0].total_units || 0);
-          setValue("maintenance_rate", data?.[0].maintenance_rate || 0);
-          setValue("maintenance_amount", data?.[0].maintenance_amount || 0);
-          setValue("due_date", data?.[0].due_date || "");
-          setValue("penalty_amount", data?.[0].penalty_amount || 0);
-          setValue("penalty_rate", data?.[0].penalty_rate || 0);
+          setValue("total_units", data?.total_units || 0);
+          setValue("maintenance_rate", data?.maintenance_rate || 0);
+          setValue("maintenance_amount", data?.maintenance_amount || 0);
+          setValue("due_date", data?.due_date || "");
+          setValue("penalty_amount", data?.penalty_amount || 0);
+          setValue("penalty_rate", data?.penalty_rate || 0);
           setValue(
             "tenant_maintenance_rate",
-            data?.[0].tenant_maintenance_rate || 0
+            data?.tenant_maintenance_rate || 0
           );
           setValue(
             "tenant_maintenance_amount",
-            data?.[0].tenant_maintenance_amount || 0
+            data?.tenant_maintenance_amount || 0
           );
-          setValue("extras", data?.[0].extras || []);
-          setValue(
-            "calculate_maintenance_by",
-            data?.[0].calculate_maintenance_by
-          );
+          setValue("extras", data?.extras || []);
+          setValue("calculate_maintenance_by", data?.calculate_maintenance_by);
           setValue(
             "is_maintenance_calculated_by_fixed",
-            data?.[0].calculate_maintenance_by == "fixed" ? true : false
+            data?.calculate_maintenance_by == "fixed" ? true : false
           );
         }
       } catch (error) {
@@ -306,7 +303,6 @@ const SocietyConfigurationPage: React.FC = () => {
     };
 
     handleFetchOrganization();
-    fetchResidents({ orgId, sortBy: "unit_number", sortOrder: "asc" });
   }, [orgId, setValue]);
 
   if (isLoading) {

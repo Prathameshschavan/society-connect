@@ -8,6 +8,7 @@ import { useProfileStore } from "../../libs/stores/useProfileStore";
 import { supabase } from "../../libs/supabase/supabaseClient";
 import toast from "react-hot-toast";
 import { currMonth, currYear, longMonth } from "../../utility/dateTimeServices";
+import type { PaginationInfo } from "../../components/ui/GenericTable";
 
 export type DuesLine = {
   month: string; // "01".."12"
@@ -68,15 +69,6 @@ export interface FetchMaintenanceBillsResponse {
   data: any[];
   pagination: PaginationInfo;
   totalBills: number;
-}
-
-interface PaginationInfo {
-  currentPage: number;
-  totalPages: number;
-  totalItems: number;
-  pageSize: number;
-  hasNextPage: boolean;
-  hasPrevPage: boolean;
 }
 
 interface FetchResidentsResponse {
@@ -282,14 +274,13 @@ const useAdminService = () => {
       const hasPrevPage = currentPage > 1;
 
       const paginationInfo: PaginationInfo = {
-        currentPage,
+        page: currentPage,
         totalPages,
-        totalItems,
-        pageSize,
+        total: totalItems,
+        limit: pageSize,
         hasNextPage,
-        hasPrevPage,
+        hasPreviousPage: hasPrevPage,
       };
-
       // Update store
       setResidents(data as never);
 

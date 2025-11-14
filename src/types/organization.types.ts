@@ -7,6 +7,7 @@ export interface IExtra {
 }
 
 export interface IOrganization {
+  id: string;
   name: string;
   address: string;
   maintenance_amount: number;

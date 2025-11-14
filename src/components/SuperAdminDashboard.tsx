@@ -15,16 +15,7 @@ import GenericTable, {
 import ConfirmationAlert from "./Modals/ConfirmationAlert";
 import UpdateSocietyModal from "./Modals/UpdatedSocietyModal";
 import ViewSocietyDetailsModal from "./Modals/ViewSocietyDetailsModal";
-
-// Define PaginationInfo interface
-interface PaginationInfo {
-  currentPage: number;
-  totalPages: number;
-  totalItems: number;
-  pageSize: number;
-  hasNextPage: boolean;
-  hasPrevPage: boolean;
-}
+import usePaginationService from "../hooks/serviceHooks/usePaginationService";
 
 const SuperAdminDashboard = () => {
   const [isOnboardModalOpen, setIsOnboardModalOpen] = useState(false);
@@ -35,18 +26,14 @@ const SuperAdminDashboard = () => {
   const [confirmationAlert, setConfirmationAlert] = useState(false);
   const [selectedOrg, setSelectedOrg] = useState<Organization | null>(null);
 
-  // Pagination state
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
-  const [pagination, setPagination] = useState<PaginationInfo>({
-    currentPage: 1,
-    totalPages: 1,
-    totalItems: 0,
-    pageSize: 10,
-    hasNextPage: false,
-    hasPrevPage: false,
-  });
-
+  const {
+    currentPage,
+    pageSize,
+    pagination,
+    handlePageChange,
+    handlePageSizeChange,
+    setPagination,
+  } = usePaginationService();
   const { organizations, organizationsCount, totalUnitsCount } =
     useOrganizationStore();
   const { fetchOrganization, searchOrganizations, softDeleteOrganization } =
@@ -62,7 +49,7 @@ const SuperAdminDashboard = () => {
       });
 
       if (result) {
-        setPagination(result.pagination);
+        setPagination(result.pagination as never);
       }
     } catch (error) {
       console.error("Error loading data:", error);
@@ -74,16 +61,6 @@ const SuperAdminDashboard = () => {
   useEffect(() => {
     loadData();
   }, [currentPage, pageSize]);
-
-  // Pagination handlers
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-  };
-
-  const handlePageSizeChange = (newPageSize: number) => {
-    setPageSize(newPageSize);
-    setCurrentPage(1); // Reset to first page when page size changes
-  };
 
   const columns: TableColumn<Organization>[] = [
     {
@@ -174,7 +151,7 @@ const SuperAdminDashboard = () => {
   );
   return (
     <div className="min-h-screen bg-gray-50">
-      <TopNav view="owner" />
+      <TopNav view="super_admin" />
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="space-y-6">
           {/* Header */}

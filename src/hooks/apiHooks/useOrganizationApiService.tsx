@@ -1,40 +1,32 @@
 import toast from "react-hot-toast";
+import { getAllOrganizations } from "../../apis/organization.apis";
 import type { GETMethodParams } from "../../types/general.types";
-import { getAllProfiles } from "../../apis/profile.apis";
-import { useProfileStore } from "../../libs/stores/useProfileStore";
 
-const useProfileApiService = () => {
-  const { setResidents } = useProfileStore();
+const useOrganizationApiService = () => {
   const handleGetAllProfiles = async ({
-    is_tenant,
     limit,
     order,
-    organization_id,
     page,
-    role,
     search,
     sortBy,
   }: GETMethodParams) => {
     try {
-      const response = await getAllProfiles({
-        is_tenant,
+      const response = await getAllOrganizations({
         limit,
         order,
-        organization_id,
         page,
-        role,
         search,
         sortBy,
       });
       console.log(response);
-      setResidents(response?.data?.data);
-      return response?.data;
     } catch (error) {
       console.error("Profile error:", error);
       toast.error("Failed to fetch residents");
     }
   };
+
+  
   return { handleGetAllProfiles };
 };
 
-export default useProfileApiService;
+export default useOrganizationApiService;

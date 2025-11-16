@@ -1,34 +1,7 @@
 // stores/useOrganizationStore.ts
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { IProfile } from "../../types/user.types";
-
-export interface Organization {
-  id: string;
-  name: string;
-  address?: string;
-  city?: string;
-  state?: string;
-  pincode?: string;
-  phone?: string;
-  email?: string;
-  maintenance_amount?: number;
-  maintenance_rate?: number;
-  tenant_maintenance_amount?: number;
-  tenant_maintenance_rate?: number;
-  penalty_amount?: number;
-  penalty_rate?: number;
-  total_units?: number;
-  registration_number?: string;
-  established_date?: string | null;
-  created_at?: string;
-  updated_at?: string | number;
-  admin: IProfile[];
-  extras: ExtraItem[];
-  due_date: string;
-  calculate_maintenance_by: string;
-  is_maintenance_calculated_by_fixed: boolean;
-}
+import type { IOrganization } from "../../types/organization.types";
 
 export interface ExtraItem {
   id: string;
@@ -40,20 +13,18 @@ export interface ExtraItem {
 
 interface OrganizationState {
   // State
-  organizations: Organization[];
-  residentOrganization: Organization | null;
+  organizations: IOrganization[];
   organizationsCount: number;
   totalUnitsCount: number;
 
   // Actions
-  setOrganizations: (organizations: Organization[]) => void;
-  setResidentOrganization: (organization: Organization | null) => void;
+  setOrganizations: (organizations: IOrganization[]) => void;
   reset: () => void;
   setOrganizationsCount: (value: number) => void;
   setTotalUnitsCount: (value: number) => void;
 
   // Getters
-  getOrganizationById: (id: string) => Organization | undefined;
+  getOrganizationById: (id: string) => IOrganization | undefined;
 }
 
 export const useOrganizationStore = create<OrganizationState>()(
@@ -61,7 +32,6 @@ export const useOrganizationStore = create<OrganizationState>()(
     (set, get) => ({
       // Initial state
       organizations: [],
-      residentOrganization: null,
       organizationsCount: 0,
       totalUnitsCount: 0,
 
@@ -71,13 +41,9 @@ export const useOrganizationStore = create<OrganizationState>()(
         set({ organizationsCount }),
       setTotalUnitsCount: (totalUnitsCount) => set({ totalUnitsCount }),
 
-      setResidentOrganization: (organization) =>
-        set({ residentOrganization: organization }),
-
       reset: () =>
         set({
           organizations: [],
-          residentOrganization: null,
         }),
 
       // Computed getters
@@ -90,7 +56,6 @@ export const useOrganizationStore = create<OrganizationState>()(
       name: "organization-storage",
       partialize: (state) => ({
         organizations: state.organizations,
-        residentOrganization: state.residentOrganization,
         organizationsCount: state.organizationsCount,
         totalUnitsCount: state.totalUnitsCount,
       }),

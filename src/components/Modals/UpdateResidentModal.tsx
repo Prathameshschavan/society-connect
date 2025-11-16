@@ -219,6 +219,7 @@ const UpdateResidentModal: React.FC<UpdateResidentModalProps> = ({
         orgId: profile?.organization_id,
         sortBy: "unit_number",
         sortOrder: "asc",
+
       });
 
       onClose();

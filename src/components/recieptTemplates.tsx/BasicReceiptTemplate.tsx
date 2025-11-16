@@ -1,13 +1,10 @@
 import React, { useRef, useState } from "react";
 import type { MaintenanceBill } from "../../libs/stores/useMaintenanceStore";
-import {
-  useOrganizationStore,
-  type ExtraItem,
-} from "../../libs/stores/useOrganizationStore";
+import { type ExtraItem } from "../../libs/stores/useOrganizationStore";
 import { longMonth } from "../../utility/dateTimeServices";
 import { Download, Loader2 } from "lucide-react";
 import html2pdf from "html2pdf.js";
-
+import { useProfileStore } from "../../libs/stores/useProfileStore";
 
 // Receipt Template Component (Hidden, used for PDF generation)
 export const ReceiptTemplate: React.FC<{
@@ -16,8 +13,13 @@ export const ReceiptTemplate: React.FC<{
   organizationName: string;
   organizationAddress: string;
 }> = ({ bill, extras, organizationName, organizationAddress }) => {
-  const extrasTotal = (extras || []).reduce((s, e) => s + (Number(e.amount) || 0), 0);
-  const monthLabel = `${longMonth[Number(bill?.bill_month) - 1]} ${bill?.bill_year}`;
+  const extrasTotal = (extras || []).reduce(
+    (s, e) => s + (Number(e.amount) || 0),
+    0
+  );
+  const monthLabel = `${longMonth[Number(bill?.bill_month) - 1]} ${
+    bill?.bill_year
+  }`;
   const dueDate = bill?.due_date
     ? new Date(bill?.due_date).toLocaleDateString("en-IN")
     : "-";
@@ -62,12 +64,11 @@ export const ReceiptTemplate: React.FC<{
     fontSize: "12px",
     fontWeight: "600",
     color: "#374151",
-    textTransform: "uppercase", 
+    textTransform: "uppercase",
     letterSpacing: "0.5px",
     borderBottom: "2px solid #e5e7eb",
     marginTop: "-15px",
   } as const;
-
 
   return (
     <div
@@ -91,7 +92,9 @@ export const ReceiptTemplate: React.FC<{
         }}
       >
         <div style={{ textAlign: "center" }}>
-          <h1 style={{ fontSize: "28px", fontWeight: "700", marginTop: "-15px" }}>
+          <h1
+            style={{ fontSize: "28px", fontWeight: "700", marginTop: "-15px" }}
+          >
             {organizationName}
           </h1>
           {organizationAddress && (
@@ -111,7 +114,9 @@ export const ReceiptTemplate: React.FC<{
           }}
         >
           <div>
-            <p style={{ margin: "0 0 5px 0", fontSize: "12px", opacity: "0.9" }}>
+            <p
+              style={{ margin: "0 0 5px 0", fontSize: "12px", opacity: "0.9" }}
+            >
               Receipt No.
             </p>
             <p style={{ margin: "0", fontSize: "18px", fontWeight: "600" }}>
@@ -163,11 +168,24 @@ export const ReceiptTemplate: React.FC<{
           >
             Bill To
           </h3>
-          <p style={{ margin: "0 0 8px 0", fontSize: "16px", fontWeight: "600", color: "#1f2937" }}>
+          <p
+            style={{
+              margin: "0 0 8px 0",
+              fontSize: "16px",
+              fontWeight: "600",
+              color: "#1f2937",
+            }}
+          >
             {bill?.resident?.full_name}
           </p>
           {bill?.resident?.unit_number && (
-            <p style={{ margin: "0 0 5px 0", fontSize: "14px", color: "#6b7280" }}>
+            <p
+              style={{
+                margin: "0 0 5px 0",
+                fontSize: "14px",
+                color: "#6b7280",
+              }}
+            >
               Flat: {bill?.resident?.unit_number}
             </p>
           )}
@@ -199,15 +217,20 @@ export const ReceiptTemplate: React.FC<{
           >
             Bill Information
           </h3>
-          <p style={{ margin: "0 0 8px 0", fontSize: "14px", color: "#1e3a8a" }}>
+          <p
+            style={{ margin: "0 0 8px 0", fontSize: "14px", color: "#1e3a8a" }}
+          >
             <strong style={{ fontWeight: "600" }}>Period:</strong> {monthLabel}
           </p>
-          <p style={{ margin: "0 0 8px 0", fontSize: "14px", color: "#1e3a8a" }}>
+          <p
+            style={{ margin: "0 0 8px 0", fontSize: "14px", color: "#1e3a8a" }}
+          >
             <strong style={{ fontWeight: "600" }}>Due Date:</strong> {dueDate}
           </p>
           {bill?.razorpay_payment_id && (
             <p style={{ margin: "0", fontSize: "12px", color: "#1e3a8a" }}>
-              <strong style={{ fontWeight: "600" }}>Payment ID:</strong> {bill?.razorpay_payment_id}
+              <strong style={{ fontWeight: "600" }}>Payment ID:</strong>{" "}
+              {bill?.razorpay_payment_id}
             </p>
           )}
         </div>
@@ -226,31 +249,47 @@ export const ReceiptTemplate: React.FC<{
         >
           <thead>
             <tr style={{ backgroundColor: "#f3f4f6" }}>
-              <th
-                style={{...tableHeadStyle, textAlign: "left"}}
-              >
-                <p style={{ marginTop: "-15px", fontSize: "12px", color: "#374151" }}>
+              <th style={{ ...tableHeadStyle, textAlign: "left" }}>
+                <p
+                  style={{
+                    marginTop: "-15px",
+                    fontSize: "12px",
+                    color: "#374151",
+                  }}
+                >
                   Description
                 </p>
               </th>
-              <th
-                style={tableHeadStyle}
-              >
-                <p style={{ marginTop: "-15px", fontSize: "12px", color: "#374151" }}>
+              <th style={tableHeadStyle}>
+                <p
+                  style={{
+                    marginTop: "-15px",
+                    fontSize: "12px",
+                    color: "#374151",
+                  }}
+                >
                   Amount
                 </p>
               </th>
-              <th
-                style={tableHeadStyle}
-              >
-                <p style={{ marginTop: "-15px", fontSize: "12px", color: "#374151" }}>
+              <th style={tableHeadStyle}>
+                <p
+                  style={{
+                    marginTop: "-15px",
+                    fontSize: "12px",
+                    color: "#374151",
+                  }}
+                >
                   Penalty
                 </p>
               </th>
-              <th
-                style={tableHeadStyle}
-              >
-                <p style={{ marginTop: "-15px", fontSize: "12px", color: "#374151" }}>
+              <th style={tableHeadStyle}>
+                <p
+                  style={{
+                    marginTop: "-15px",
+                    fontSize: "12px",
+                    color: "#374151",
+                  }}
+                >
                   Subtotal
                 </p>
               </th>
@@ -261,16 +300,28 @@ export const ReceiptTemplate: React.FC<{
               <tr
                 key={idx}
                 style={{
-                  borderBottom: idx < rows.length - 1 ? "1px solid #f3f4f6" : "none",
+                  borderBottom:
+                    idx < rows.length - 1 ? "1px solid #f3f4f6" : "none",
                   backgroundColor: idx % 2 === 0 ? "#ffffff" : "#fafafa",
                 }}
               >
-                <td style={{ padding: "14px 12px", fontSize: "14px", color: "#1f2937" }}>
-                  <p style={{ marginTop: "-15px" }}>
-                    {r.desc}
-                  </p>
+                <td
+                  style={{
+                    padding: "14px 12px",
+                    fontSize: "14px",
+                    color: "#1f2937",
+                  }}
+                >
+                  <p style={{ marginTop: "-15px" }}>{r.desc}</p>
                 </td>
-                <td style={{ padding: "14px 12px", textAlign: "right", fontSize: "14px", color: "#1f2937" }}>
+                <td
+                  style={{
+                    padding: "14px 12px",
+                    textAlign: "right",
+                    fontSize: "14px",
+                    color: "#1f2937",
+                  }}
+                >
                   <p style={{ marginTop: "-15px" }}>
                     ₹{r.amount.toLocaleString("en-IN")}
                   </p>
@@ -278,7 +329,7 @@ export const ReceiptTemplate: React.FC<{
                 <td
                   style={{
                     padding: "14px 12px",
-                        textAlign: "right",
+                    textAlign: "right",
                     fontSize: "14px",
                     color: r.penalty ? "#dc2626" : "#6b7280",
                   }}
@@ -311,7 +362,14 @@ export const ReceiptTemplate: React.FC<{
       </div>
 
       {/* Extras and Totals */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px", marginBottom: "30px" }}>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr",
+          gap: "20px",
+          marginBottom: "30px",
+        }}
+      >
         {/* Extras */}
         <div
           style={{
@@ -376,7 +434,13 @@ export const ReceiptTemplate: React.FC<{
             </>
           ) : (
             <>
-              <p style={{ margin: "0 0 12px 0", fontSize: "14px", color: "#78350f" }}>
+              <p
+                style={{
+                  margin: "0 0 12px 0",
+                  fontSize: "14px",
+                  color: "#78350f",
+                }}
+              >
                 No additional charges
               </p>
               <div
@@ -428,7 +492,9 @@ export const ReceiptTemplate: React.FC<{
             }}
           >
             <span>Subtotal</span>
-            <span style={{ fontWeight: "600" }}>₹{subTotal.toLocaleString("en-IN")}</span>
+            <span style={{ fontWeight: "600" }}>
+              ₹{subTotal.toLocaleString("en-IN")}
+            </span>
           </div>
           <div
             style={{
@@ -440,7 +506,9 @@ export const ReceiptTemplate: React.FC<{
             }}
           >
             <span>Extras</span>
-            <span style={{ fontWeight: "600" }}>₹{extrasTotal.toLocaleString("en-IN")}</span>
+            <span style={{ fontWeight: "600" }}>
+              ₹{extrasTotal.toLocaleString("en-IN")}
+            </span>
           </div>
           <div
             style={{
@@ -480,8 +548,6 @@ export const ReceiptTemplate: React.FC<{
   );
 };
 
-
-
 function BillPdfDownload({
   bill,
   extras,
@@ -491,7 +557,7 @@ function BillPdfDownload({
 }) {
   const [isGenerating, setIsGenerating] = useState(false);
   const receiptRef = useRef<HTMLDivElement>(null);
-  const { residentOrganization } = useOrganizationStore();
+  const { profile } = useProfileStore();
 
   const handleDownload = async () => {
     if (!receiptRef.current) return;
@@ -515,10 +581,10 @@ function BillPdfDownload({
   };
 
   const organizationAddress = [
-    residentOrganization?.address,
-    residentOrganization?.city,
-    residentOrganization?.state,
-    residentOrganization?.pincode,
+    profile?.organization?.address,
+    profile?.organization?.city,
+    profile?.organization?.state,
+    profile?.organization?.pincode,
   ]
     .filter((val) => val)
     .join(", ");
@@ -531,7 +597,7 @@ function BillPdfDownload({
           <ReceiptTemplate
             bill={bill}
             extras={extras}
-            organizationName={residentOrganization?.name || ""}
+            organizationName={profile?.organization?.name || ""}
             organizationAddress={organizationAddress}
           />
         </div>
@@ -540,8 +606,9 @@ function BillPdfDownload({
       {/* Download button */}
       <div
         onClick={handleDownload}
-        className={`cursor-pointer border border-gray-100 p-2 rounded-full w-[40px] h-[40px] flex items-center justify-center hover:bg-gray-100 transition-colors ${isGenerating ? "opacity-70 cursor-wait" : ""
-          }`}
+        className={`cursor-pointer border border-gray-100 p-2 rounded-full w-[40px] h-[40px] flex items-center justify-center hover:bg-gray-100 transition-colors ${
+          isGenerating ? "opacity-70 cursor-wait" : ""
+        }`}
         title={isGenerating ? "Generating PDF..." : "Download PDF"}
       >
         {isGenerating ? (

@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect } from "react";
-import { useForm, type SubmitHandler } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import {
   Building2,
   Phone,
@@ -9,16 +9,13 @@ import {
   IndianRupee,
   Save,
   ArrowLeft,
-  Settings,
   AlertCircle,
   Eye,
   Edit,
   Trash2,
   Plus,
 } from "lucide-react";
-import type { Organization } from "../libs/stores/useOrganizationStore";
 import toast from "react-hot-toast";
-import { supabase } from "../libs/supabase/supabaseClient";
 import { useNavigate, useParams } from "react-router-dom";
 import GenericTable, { type TableAction } from "../components/ui/GenericTable";
 import { useProfileStore } from "../libs/stores/useProfileStore";
@@ -37,6 +34,9 @@ import { columns } from "../config/tableConfig/configureSettings";
 import type { IProfile } from "../types/user.types";
 import { getOrganization } from "../apis/organization.apis";
 import useProfileApiService from "../hooks/apiHooks/useProfileApiService";
+import Layout from "../components/Layout/Layout";
+import useOrganizationApiService from "../hooks/apiHooks/useOrganizationApiService";
+import type { IOrganization } from "../types/organization.types";
 
 const SocietyConfigurationPage: React.FC = () => {
   const { orgId } = useParams<{ orgId: string }>();
@@ -49,14 +49,16 @@ const SocietyConfigurationPage: React.FC = () => {
   const [isDeleteConfirmationModalOpen, setIsDeleteConfirmationModalOpen] =
     useState<boolean>(false);
   const [activeTab, setActiveTab] = useState("basic");
-  const [organization, setOrganization] = useState<Organization | null>(null);
+  const [organization, setOrganization] = useState<IOrganization | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
-  const { residents } = useProfileStore();
+  const { residents, profile } = useProfileStore();
   const { fetchResidents, permanentlyDeleteResident } = useAdminService();
   const { handleGetAllProfiles } = useProfileApiService();
   const [loading, setLoading] = useState(false);
   const [isOnboardModalOpen, setIsOnboardModalOpen] = useState(false);
+
+  const { handleUpdateOrganization } = useOrganizationApiService();
 
   const {
     currentPage,
@@ -132,7 +134,7 @@ const SocietyConfigurationPage: React.FC = () => {
     formState: { errors, isDirty },
     setValue,
     watch,
-  } = useForm<Organization>({
+  } = useForm<IOrganization>({
     defaultValues: {
       name: "",
       address: "",
@@ -150,11 +152,11 @@ const SocietyConfigurationPage: React.FC = () => {
       penalty_amount: 0,
       penalty_rate: 0,
       extras: [],
-      due_date: "",
+      due_date: 0,
     },
   });
 
-  const onSubmit: SubmitHandler<Organization> = async (data) => {
+  const onSubmit = async (data: IOrganization) => {
     if (!orgId) {
       toast.error("Organization ID not found");
       return;
@@ -162,7 +164,8 @@ const SocietyConfigurationPage: React.FC = () => {
 
     setIsSubmitting(true);
     try {
-      const updateData: Partial<Organization> = {
+      const updateData = {
+        ...profile?.organization,
         name: data.name,
         address: data.address || "",
         city: data.city || "",
@@ -177,22 +180,16 @@ const SocietyConfigurationPage: React.FC = () => {
         tenant_maintenance_rate: data.tenant_maintenance_rate || 0,
         tenant_maintenance_amount: data.tenant_maintenance_amount || 0,
         extras: data.extras || [],
-        due_date: data.due_date,
+        due_date: Number(data.due_date),
         penalty_rate: data?.penalty_rate,
         penalty_amount: data?.penalty_amount,
         calculate_maintenance_by: data?.calculate_maintenance_by,
       };
 
-      const { error } = await supabase
-        .from("organizations")
-        .update(updateData)
-        .eq("id", orgId);
-
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      toast.success("Society configuration updated successfully!");
+      handleUpdateOrganization({
+        data: updateData as IOrganization,
+        id: orgId,
+      });
     } catch (error) {
       console.error("Error updating society:", error);
       toast.error("Failed to update society configuration!");
@@ -289,10 +286,6 @@ const SocietyConfigurationPage: React.FC = () => {
           );
           setValue("extras", data?.extras || []);
           setValue("calculate_maintenance_by", data?.calculate_maintenance_by);
-          setValue(
-            "is_maintenance_calculated_by_fixed",
-            data?.calculate_maintenance_by == "fixed" ? true : false
-          );
         }
       } catch (error) {
         console.error("Unexpected error:", error);
@@ -342,110 +335,76 @@ const SocietyConfigurationPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => navigate(-1)}
-                className="inline-flex items-center gap-2 px-3 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                <span className="hidden md:block">Back to Dashboard</span>
-              </button>
-              <div className="h-6 w-px bg-gray-300" />
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center">
-                  <Settings className="w-4 h-4 text-indigo-600" />
-                </div>
-                <div>
-                  <h1 className="text-lg font-semibold text-gray-900">
-                    Society Configuration
-                  </h1>
-                  <p className="text-sm text-gray-500">{organization.name}</p>
-                </div>
-              </div>
-            </div>
+    <Layout role="admin">
+      <form onSubmit={handleSubmit(onSubmit)}>
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+          {/* Tab Navigation */}
+          <div className="border-b border-gray-200 overflow-auto">
+            <nav className="flex items-center" aria-label="Tabs">
+              {tabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex whitespace-nowrap items-center gap-2 py-4 px-4 border-b-2 font-medium text-sm transition-colors ${
+                    activeTab === tab.id
+                      ? "border-indigo-500 text-indigo-600"
+                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                  }`}
+                >
+                  <tab.icon className="w-4 h-4" />
+                  {tab.label}
+                </button>
+              ))}
+            </nav>
+          </div>
+
+          {/* Tab Content */}
+          <div className="p-6">{renderTabContent()}</div>
+          <div className="pr-6 pb-6 flex justify-end">
+            <button
+              type="submit"
+              disabled={isSubmitting || !isDirty}
+              className="inline-flex items-center gap-2 px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isSubmitting ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Save className="w-4 h-4" />
+                  Save Configuration
+                </>
+              )}
+            </button>
           </div>
         </div>
-      </div>
-
-      {/* Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <form onSubmit={handleSubmit(onSubmit)}>
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-            {/* Tab Navigation */}
-            <div className="border-b border-gray-200 overflow-auto">
-              <nav className="flex items-center" aria-label="Tabs">
-                {tabs.map((tab) => (
-                  <button
-                    key={tab.id}
-                    type="button"
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`flex whitespace-nowrap items-center gap-2 py-4 px-4 border-b-2 font-medium text-sm transition-colors ${
-                      activeTab === tab.id
-                        ? "border-indigo-500 text-indigo-600"
-                        : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                    }`}
-                  >
-                    <tab.icon className="w-4 h-4" />
-                    {tab.label}
-                  </button>
-                ))}
-              </nav>
-            </div>
-
-            {/* Tab Content */}
-            <div className="p-6">{renderTabContent()}</div>
-            <div className="pr-6 pb-6 flex justify-end">
-              <button
-                type="submit"
-                disabled={isSubmitting || !isDirty}
-                className="inline-flex items-center gap-2 px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isSubmitting ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                    Saving...
-                  </>
-                ) : (
-                  <>
-                    <Save className="w-4 h-4" />
-                    Save Configuration
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-        </form>
-        <div className="mt-8">
-          <button
-            type="button"
-            onClick={() => setIsOnboardModalOpen(true)}
-            className="mb-4 flex items-center justify-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors"
-          >
-            <Plus className="w-5 h-5" />
-            Add Room Owner
-          </button>
-          <GenericTable
-            title="Residents"
-            columns={columns}
-            data={residents}
-            actions={actions}
-            loading={loading}
-            emptyMessage="No Resident Found"
-            searchPlaceholder="Search resident"
-            showPagination
-            pagination={pagination}
-            onPageChange={handlePageChange}
-            onPageSizeChange={handlePageSizeChange}
-            pageSizeOptions={[5, 10, 20, 50]}
-            onSearch={() => {}}
-          />
-        </div>
-      </div>
+      </form>
+      <button
+        type="button"
+        onClick={() => setIsOnboardModalOpen(true)}
+        className={`bg-[#22C36E] w-full sm:w-fit flex items-center whitespace-nowrap justify-center gap-2 text-white px-6 py-2 rounded-lg font-medium transition-colors disabled:opacity-70`}
+      >
+        <Plus className="w-5 h-5" />
+        Add Room Owner
+      </button>
+      <GenericTable
+        title="Residents"
+        columns={columns}
+        data={residents}
+        actions={actions}
+        loading={loading}
+        emptyMessage="No Resident Found"
+        searchPlaceholder="Search resident"
+        showPagination
+        pagination={pagination}
+        onPageChange={handlePageChange}
+        onPageSizeChange={handlePageSizeChange}
+        pageSizeOptions={[5, 10, 20, 50]}
+        onSearch={() => {}}
+      />
       <OnboardResidentModal
         isOpen={isOnboardModalOpen}
         onClose={() => setIsOnboardModalOpen(false)}
@@ -470,7 +429,7 @@ const SocietyConfigurationPage: React.FC = () => {
           setIsDeleteConfirmationModalOpen(false);
         }}
       />
-    </div>
+    </Layout>
   );
 };
 

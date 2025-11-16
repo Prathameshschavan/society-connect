@@ -1,7 +1,14 @@
 import { useEffect, useRef } from "react";
 import { NavLink } from "react-router-dom";
-import { X, Home, Settings, BadgeIndianRupee, ArrowDownWideNarrow, FileChartColumn } from "lucide-react";
-import { useOrganizationStore } from "../../libs/stores/useOrganizationStore";
+import {
+  X,
+  Home,
+  Settings,
+  BadgeIndianRupee,
+  ArrowDownWideNarrow,
+  FileChartColumn,
+} from "lucide-react";
+import { useProfileStore } from "../../libs/stores/useProfileStore";
 
 type DrawerProps = {
   open: boolean;
@@ -14,18 +21,18 @@ const active = "bg-blue-50 text-blue-700";
 const inactive = "text-gray-700 hover:bg-gray-50";
 
 export default function Drawer({ open, onClose, title = "Menu" }: DrawerProps) {
-  const { residentOrganization } = useOrganizationStore();
+  const { profile } = useProfileStore();
   const panelRef = useRef<HTMLDivElement>(null);
   const firstFocusRef = useRef<HTMLButtonElement>(null);
   const lastFocusRef = useRef<HTMLButtonElement>(null);
 
-    const links = [
+  const links = [
     { to: "/admin", label: "Dashboard", icon: Home, end: true },
     { to: "/income", label: "Income", icon: BadgeIndianRupee },
     { to: "/expenses", label: "Expenses", icon: ArrowDownWideNarrow },
     { to: "/reports", label: "Reports", icon: FileChartColumn },
     {
-      to: `/configure-settings/${residentOrganization?.id ?? ""}`,
+      to: `/configure-settings/${profile?.organization?.id ?? ""}`,
       label: "Settings",
       icon: Settings,
     },

@@ -1,10 +1,12 @@
 import toast from "react-hot-toast";
 import type { GETMethodParams } from "../../types/general.types";
-import { getAllProfiles } from "../../apis/profile.apis";
+import { getAllProfiles, updateProfile } from "../../apis/profile.apis";
 import { useProfileStore } from "../../libs/stores/useProfileStore";
+import type { IProfile } from "../../types/user.types";
 
 const useProfileApiService = () => {
-  const { setResidents } = useProfileStore();
+  const { setResidents, setProfile } = useProfileStore();
+
   const handleGetAllProfiles = async ({
     is_tenant,
     limit,
@@ -26,7 +28,6 @@ const useProfileApiService = () => {
         search,
         sortBy,
       });
-      console.log(response);
       setResidents(response?.data?.data);
       return response?.data;
     } catch (error) {
@@ -34,7 +35,26 @@ const useProfileApiService = () => {
       toast.error("Failed to fetch residents");
     }
   };
-  return { handleGetAllProfiles };
+
+  const handleUpdateProfile = async ({
+    id,
+    data,
+  }: {
+    id: string;
+    data: IProfile;
+  }) => {
+    try {
+      const response = await updateProfile(id, data);
+      setProfile(response?.data?.data);
+      toast.success("Profile updated successfully!");
+      return response?.data?.data;
+    } catch (error) {
+      console.error("Profile error:", error);
+      toast.error("Failed to update profile");
+    }
+  };
+
+  return { handleGetAllProfiles, handleUpdateProfile };
 };
 
 export default useProfileApiService;

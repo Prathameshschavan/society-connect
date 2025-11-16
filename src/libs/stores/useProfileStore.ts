@@ -2,6 +2,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { IProfile } from "../../types/user.types";
+import type { IOrganization } from "../../types/organization.types";
 
 interface ProfileState {
   profile: IProfile | null;
@@ -13,7 +14,7 @@ interface ProfileState {
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
   setResidents: (residents: IProfile[]) => void;
-
+  setProfileOrganization: (org: IOrganization) => void;
   reset: () => void;
 }
 
@@ -31,7 +32,12 @@ export const useProfileStore = create<ProfileState>()(
       setLoading: (loading) => set({ loading }),
       setError: (error) => set({ error }),
       setResidents: (residents) => set({ residents }),
-
+      setProfileOrganization: (org) =>
+        set((state) => ({
+          profile: state.profile
+            ? { ...state.profile, organization: org }
+            : null,
+        })),
       // Reset all state
       reset: () =>
         set({

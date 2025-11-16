@@ -5,11 +5,11 @@ import {
   currMonth,
   currYear,
 } from "../../utility/dateTimeServices";
-import { useOrganizationStore } from "../../libs/stores/useOrganizationStore";
 import Modal, { ModalBody, ModalFooter } from "./Modal";
 import useIncomeService, {
   type IncomeRow,
 } from "../../hooks/serviceHooks/useIncomeService";
+import { useProfileStore } from "../../libs/stores/useProfileStore";
 
 export type IncomeFormValues = {
   name: string;
@@ -32,7 +32,7 @@ export function UpdateIncomeModal({
   onClose,
   income,
 }: UpdateIncomeModalProps) {
-  const { residentOrganization } = useOrganizationStore();
+  const { profile } = useProfileStore();
   const { fetchIncomes, updateIncome } = useIncomeService();
 
   const {
@@ -48,7 +48,7 @@ export function UpdateIncomeModal({
       amount: undefined as unknown as number,
       month: currMonth,
       year: currYear,
-      organization_id: residentOrganization?.id,
+      organization_id: profile?.organization?.id,
       date: currFullDate,
     },
   });
@@ -56,7 +56,7 @@ export function UpdateIncomeModal({
   // Populate form with existing data when modal opens or income changes
   useEffect(() => {
     if (isOpen && income) {
-      setValue("organization_id", residentOrganization?.id || "");
+      setValue("organization_id", profile?.organization?.id || "");
       setValue("name", income?.name || "");
       setValue("description", income?.description || "");
       setValue("amount", income?.amount || 0);

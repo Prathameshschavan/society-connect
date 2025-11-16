@@ -5,11 +5,10 @@ import {
   currMonth,
   currYear,
 } from "../../utility/dateTimeServices";
-import { useOrganizationStore } from "../../libs/stores/useOrganizationStore";
 import Modal, { ModalBody, ModalFooter } from "./Modal";
 import useExpenseService from "../../hooks/serviceHooks/useExpenseService";
 import type { ExpenseFormValues } from "../../libs/stores/useReportStore";
-
+import { useProfileStore } from "../../libs/stores/useProfileStore";
 
 type ExpenseModalProps = {
   isOpen: boolean;
@@ -17,8 +16,9 @@ type ExpenseModalProps = {
 };
 
 export function AddExpenseModal({ isOpen, onClose }: ExpenseModalProps) {
-  const { residentOrganization } = useOrganizationStore();
-  const { addExpense, fetchExpenses, uploadExpenseImage, updateExpense } = useExpenseService();
+  const { profile } = useProfileStore();
+  const { addExpense, fetchExpenses, uploadExpenseImage, updateExpense } =
+    useExpenseService();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
@@ -35,7 +35,7 @@ export function AddExpenseModal({ isOpen, onClose }: ExpenseModalProps) {
       amount: undefined as unknown as number,
       month: currMonth,
       year: currYear,
-      organization_id: residentOrganization?.id,
+      organization_id: profile?.organization?.id,
       date: currFullDate,
       status: "unpaid",
     },
@@ -55,16 +55,16 @@ export function AddExpenseModal({ isOpen, onClose }: ExpenseModalProps) {
     try {
       // First create the expense
       const expenseId = await addExpense(data);
-      
+
       // If there's a file, upload it and update the expense
       if (selectedFile && expenseId) {
         const imagePath = await uploadExpenseImage(selectedFile, expenseId);
         // Update expense with image URL
         await updateExpense(expenseId, { ...data, image_url: imagePath });
       }
-      
+
       await fetchExpenses();
-      
+
       // Clean up
       if (imagePreview) {
         URL.revokeObjectURL(imagePreview);
@@ -199,7 +199,9 @@ export function AddExpenseModal({ isOpen, onClose }: ExpenseModalProps) {
               <option value="overdue">Overdue</option>
             </select>
             {errors.status && (
-              <p className="mt-1 text-xs text-red-600">{errors.status.message}</p>
+              <p className="mt-1 text-xs text-red-600">
+                {errors.status.message}
+              </p>
             )}
           </div>
 
@@ -217,7 +219,7 @@ export function AddExpenseModal({ isOpen, onClose }: ExpenseModalProps) {
               <p className="text-xs text-gray-500">
                 Upload receipt image or photo of person who received payment
               </p>
-              
+
               {imagePreview && (
                 <div className="mt-2">
                   <img

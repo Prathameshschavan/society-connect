@@ -1,6 +1,5 @@
 import toast from "react-hot-toast";
 import type { PaginationInfo } from "../../components/ui/GenericTable";
-import { useOrganizationStore } from "../../libs/stores/useOrganizationStore";
 import {
   useReportStore,
   type Expense,
@@ -9,6 +8,7 @@ import {
 import { supabase } from "../../libs/supabase/supabaseClient";
 import { getMonthAndYearFromDate } from "../../utility/dateTimeServices";
 import imageCompression from "browser-image-compression";
+import { useProfileStore } from "../../libs/stores/useProfileStore";
 
 export type ExpenseSortByOptions =
   | "date"
@@ -42,7 +42,7 @@ interface FetchExpensesResponse {
 }
 
 const useExpenseService = () => {
-  const { residentOrganization } = useOrganizationStore();
+  const { profile } = useProfileStore();
   const { setExpenses } = useReportStore();
 
   async function updateExpense(id: string, data: Partial<ExpenseFormValues>) {
@@ -76,7 +76,7 @@ const useExpenseService = () => {
     expenseId: string
   ): Promise<string> {
     const fileExt = file.name.split(".").pop();
-    const fileName = `${residentOrganization?.id}/${
+    const fileName = `${profile?.organization?.id}/${
       file.name
     }_${expenseId}_${Date.now()}.${fileExt}`;
 
@@ -127,7 +127,7 @@ const useExpenseService = () => {
       amount: Number(data.amount),
       month,
       year,
-      organization_id: residentOrganization?.id,
+      organization_id: profile?.organization?.id,
       date: data.date,
       status: data.status || "unpaid",
       created_by: (await supabase.auth.getUser()).data.user?.id,

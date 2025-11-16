@@ -3,7 +3,7 @@ import type { IncomeFormValues } from "../../components/Modals/AddIncomeModal";
 import { supabase } from "../../libs/supabase/supabaseClient";
 import { useReportStore } from "../../libs/stores/useReportStore";
 import { getMonthAndYearFromDate } from "../../utility/dateTimeServices";
-import { useOrganizationStore } from "../../libs/stores/useOrganizationStore";
+import { useProfileStore } from "../../libs/stores/useProfileStore";
 
 export type IncomeSortByOptions =
   | "date"
@@ -58,7 +58,7 @@ export type IncomeRow = {
 
 const useIncomeService = () => {
   const { setIncomes } = useReportStore();
-  const { residentOrganization } = useOrganizationStore();
+  const { profile } = useProfileStore();
 
   async function addIncome(data: IncomeFormValues) {
     const { month, year } = getMonthAndYearFromDate(data.date);
@@ -69,7 +69,7 @@ const useIncomeService = () => {
       amount: Number(data.amount),
       month,
       year,
-      organization_id: residentOrganization?.id,
+      organization_id: profile?.organization?.id,
       date: data?.date,
     };
     const { error } = await supabase.from("income").insert(payload);
@@ -85,7 +85,7 @@ const useIncomeService = () => {
       amount: Number(data.amount),
       month,
       year,
-      organization_id: residentOrganization?.id,
+      organization_id: profile?.organization?.id,
       date: data?.date,
     };
 

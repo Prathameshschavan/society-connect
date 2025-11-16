@@ -6,13 +6,13 @@ import {
   currYear,
   getMonthAndYearFromDate,
 } from "../../utility/dateTimeServices";
-import { useOrganizationStore } from "../../libs/stores/useOrganizationStore";
 import Modal, { ModalBody, ModalFooter } from "./Modal";
 import useExpenseService from "../../hooks/serviceHooks/useExpenseService";
 import type {
   Expense,
   ExpenseFormValues,
 } from "../../libs/stores/useReportStore";
+import { useProfileStore } from "../../libs/stores/useProfileStore";
 
 type EditExpenseModalProps = {
   isOpen: boolean;
@@ -25,7 +25,7 @@ export function EditExpenseModal({
   onClose,
   expense,
 }: EditExpenseModalProps) {
-  const { residentOrganization } = useOrganizationStore();
+  const { profile } = useProfileStore();
   const {
     updateExpense,
     fetchExpenses,
@@ -50,7 +50,7 @@ export function EditExpenseModal({
       amount: undefined as unknown as number,
       month: currMonth,
       year: currYear,
-      organization_id: residentOrganization?.id,
+      organization_id: profile?.organization?.id,
       date: currFullDate,
       status: "unpaid",
     },
@@ -120,7 +120,7 @@ export function EditExpenseModal({
     setSelectedFile(null);
     setImagePreview(null);
   };
-  
+
   const submit = async (data: ExpenseFormValues) => {
     if (!expense) return;
 

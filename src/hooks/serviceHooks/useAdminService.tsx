@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useMaintenanceStore } from "../../libs/stores/useMaintenanceStore";
 import {
-  useOrganizationStore,
   type ExtraItem,
 } from "../../libs/stores/useOrganizationStore";
 import { useProfileStore } from "../../libs/stores/useProfileStore";
@@ -87,7 +86,6 @@ type UpdateStatusInput = {
 const useAdminService = () => {
   const { profile, setResidents } = useProfileStore();
   const { setMaintenanceBills } = useMaintenanceStore();
-  const { residentOrganization } = useOrganizationStore();
 
   const updateMaintenanceStatus = async (input: UpdateStatusInput) => {
     const payload: Record<string, any> = {
@@ -343,22 +341,22 @@ const useAdminService = () => {
       Number.isNaN(Number(v)) ? `${label} must be a number` : null;
 
     for (const [v, label] of [
-      [residentOrganization?.maintenance_amount, "maintenanceFixedAmount"],
-      [residentOrganization?.maintenance_rate, "maintenanceRate"],
-      [residentOrganization?.penalty_amount, "penaltyFixedAmount"],
-      [residentOrganization?.penalty_rate, "penaltyRate"],
+      [profile?.organization?.maintenance_amount, "maintenanceFixedAmount"],
+      [profile?.organization?.maintenance_rate, "maintenanceRate"],
+      [profile?.organization?.penalty_amount, "penaltyFixedAmount"],
+      [profile?.organization?.penalty_rate, "penaltyRate"],
       [
-        residentOrganization?.tenant_maintenance_amount,
+        profile?.organization?.tenant_maintenance_amount,
         "tenantMaintenanceFixedAmount",
       ],
-      [residentOrganization?.tenant_maintenance_rate, "tenantMaintenanceRate"],
+      [profile?.organization?.tenant_maintenance_rate, "tenantMaintenanceRate"],
     ] as const) {
       const err = numOrErr(v, label);
       if (err) return { error: err }; // [memory:12]
     }
 
     // Validate extras shape: id, name non-empty, amount > 0
-    const badExtra = (residentOrganization?.extras ?? []).find(
+    const badExtra = (profile?.organization?.extras ?? []).find(
       (e) =>
         !e ||
         !e.id ||
@@ -483,18 +481,19 @@ const useAdminService = () => {
       .filter((r: any) => !already.has(r.id))
       .map((r: any) => {
         const base =
-          residentOrganization?.calculate_maintenance_by === "fixed"
+          profile?.organization?.calculate_maintenance_by === "fixed"
             ? r.role == "tenant"
-              ? Number(residentOrganization?.tenant_maintenance_amount)
-              : Number(residentOrganization?.maintenance_amount)
+              ? Number(profile?.organization?.tenant_maintenance_amount)
+              : Number(profile?.organization?.maintenance_amount)
             : r.role == "tenant"
-            ? Number(residentOrganization?.tenant_maintenance_rate) *
+            ? Number(profile?.organization?.tenant_maintenance_rate) *
               r.square_footage
-            : Number(residentOrganization?.maintenance_rate) * r.square_footage;
+            : Number(profile?.organization?.maintenance_rate) *
+              r.square_footage;
 
         // current period extras (array)
         const currentExtras: ExtraItem[] = (
-          residentOrganization?.extras ?? []
+          profile?.organization?.extras ?? []
         ).map((e) => ({
           id: String(e.id),
           name: String(e.name),
@@ -514,9 +513,9 @@ const useAdminService = () => {
 
         const dues: DuesLine[] = prior.map((p) => {
           const penalty =
-            residentOrganization?.calculate_maintenance_by === "fixed"
-              ? Number(residentOrganization?.penalty_amount)
-              : Number(residentOrganization?.penalty_rate) * r.square_footage;
+            profile?.organization?.calculate_maintenance_by === "fixed"
+              ? Number(profile?.organization?.penalty_amount)
+              : Number(profile?.organization?.penalty_rate) * r.square_footage;
 
           // Carry prior extras as arrays; if none recorded previously, carry none
           const previousExtras: ExtraItem[] = Array.isArray(p.extras)
@@ -560,9 +559,9 @@ const useAdminService = () => {
           bill_year: currYearStr,
           status: "pending",
           penalty: dues.length
-            ? residentOrganization?.calculate_maintenance_by === "fixed"
-              ? Number(residentOrganization?.penalty_amount)
-              : Number(residentOrganization?.penalty_rate) * r.square_footage
+            ? profile?.organization?.calculate_maintenance_by === "fixed"
+              ? Number(profile?.organization?.penalty_amount)
+              : Number(profile?.organization?.penalty_rate) * r.square_footage
             : 0,
           breakdown,
         };

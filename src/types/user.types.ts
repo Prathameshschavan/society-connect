@@ -18,7 +18,7 @@ export interface IVehicles {
 }
 
 export interface IProfile {
-  id: string;
+  id?: string;
   role: TRole; // Union type for role
   email?: string;
   full_name: string;
@@ -32,6 +32,12 @@ export interface IProfile {
   organization_id?: string;
   organization?: IOrganization;
   must_change_password?: boolean;
+  emergency_contact?: IContact;
+}
+
+export interface IContact {
+  name: string;
+  phone: string;
 }
 
 export type SignInResponse = {

@@ -301,7 +301,7 @@ const Expenses = () => {
               onChange={(value) => {
                 setCurrentPage(1);
                 handleFilterChange("month", value);
-                setFilters((prev) => ({ ...prev, month: value }));
+                setFilters((prev) => ({ ...prev, month: `${value}` }));
               }}
               options={[
                 { label: "All Months", value: "" },
@@ -319,7 +319,7 @@ const Expenses = () => {
               onChange={(value) => {
                 setCurrentPage(1);
                 handleFilterChange("year", value);
-                setFilters((prev) => ({ ...prev, year: value }));
+                setFilters((prev) => ({ ...prev, year: `${value}` }));
               }}
               options={[
                 { label: "All Years", value: "" },

@@ -11,44 +11,27 @@ import {
   MapPin,
 } from "lucide-react";
 import Modal from "./Modal";
-import useOrganizationService from "../../hooks/serviceHooks/useOrganizationService";
-import { supabase } from "../../libs/supabase/supabaseClient";
 import toast from "react-hot-toast";
-import { supabaseAdmin } from "../../libs/supabase/supabaseAdmin";
-import type { Organization } from "../../libs/stores/useOrganizationStore";
-
-export interface SocietyFormData {
-  name: string;
-  address: string;
-  city: string;
-  state: string;
-  pincode: string;
-  phone: string;
-  //   email: string;
-  adminContactName: string;
-  adminPhone: string;
-  adminUnitNumber: string;
-  adminSquareFootage: string;
-  //   adminEmail: string;
-  registrationNumber: string;
-  establishedDate: string;
-  totalFlats: number;
-  maintenanceRatePerSqft: number;
-  maintenanceFixedAmount: number;
-}
+import type { TCreateOrganizationData } from "../../types/organization.types";
+import ActionModalHeader from "../ActionModalHeader";
+import CustomInput from "../ui/CustomInput";
+import useOrganizationApiService from "../../hooks/apiHooks/useOrganizationApiService";
+import CustomSelect from "../ui/CustomSelect";
 
 interface OnboardSocietyModalProps {
   isOpen: boolean;
   onClose: () => void;
+  callback?: () => void;
 }
 
 const OnboardSocietyModal: React.FC<OnboardSocietyModalProps> = ({
   isOpen,
   onClose,
+  callback,
 }) => {
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { fetchOrganization } = useOrganizationService();
+  const { handleCreateOrganization } = useOrganizationApiService();
 
   const {
     register,
@@ -56,46 +39,41 @@ const OnboardSocietyModal: React.FC<OnboardSocietyModalProps> = ({
     formState: { errors },
     trigger,
     reset,
-  } = useForm<SocietyFormData>({
+    watch,
+  } = useForm<TCreateOrganizationData>({
+    reValidateMode: "onChange",
+    mode: "onChange",
     defaultValues: {
       name: "",
-      address: "",
+      address_line_1: "",
+      address_line_2: "",
       city: "",
       state: "",
       pincode: "",
       phone: "",
-      //   email: "",
-      adminContactName: "",
-      adminPhone: "",
-      adminSquareFootage: "",
-      adminUnitNumber: "",
-      //   adminEmail: "",
-      registrationNumber: "",
-      establishedDate: "",
-      totalFlats: 0,
-      maintenanceRatePerSqft: 0,
-      maintenanceFixedAmount: 0,
+      admin: {
+        name: "",
+        email: "",
+        password: "",
+        unit_number: "",
+      },
+      registration_number: "",
+      established_date: "",
+      total_units: 0,
+      is_prev: false,
     },
   });
 
-  const steps = [
-    { id: 1, title: "Basic Info", icon: Building2 },
-    { id: 2, title: "Location", icon: MapPin },
-    { id: 3, title: "Contact", icon: Phone },
-    { id: 4, title: "Admin", icon: User },
-    { id: 5, title: "Property", icon: Hash },
-  ];
-
-  // Define fields for each step for validation
   const stepFields = {
     1: ["name"],
-    2: ["address", "city", "state", "pincode"],
+    2: ["address_line_1", "address_line_2", "city", "state", "pincode"],
     3: ["phone"],
-    4: ["adminContactName", "adminPhone"],
-    5: ["totalFlats"],
+    4: ["admin.email", "admin.name", "admin.password", "admin.unit_number"],
+    5: ["total_units"],
   } as const;
 
   const validateStep = async (step: number): Promise<boolean> => {
+    // You can enable below for step validations if needed:
     const fieldsToValidate = stepFields[step as keyof typeof stepFields];
     const result = await trigger(fieldsToValidate);
     return result;
@@ -115,90 +93,49 @@ const OnboardSocietyModal: React.FC<OnboardSocietyModalProps> = ({
     setCurrentStep((prev) => Math.max(prev - 1, 1));
   };
 
-  const onFormSubmit: SubmitHandler<SocietyFormData> = async (data) => {
+  const onFormSubmit: SubmitHandler<TCreateOrganizationData> = async (data) => {
     setIsSubmitting(true);
     try {
-      const { data: existingUser } = await supabaseAdmin
-        .from("profiles")
-        .select("*")
-        .eq("phone", data.adminPhone)
-        .single();
-
-      if (existingUser) {
-        toast.error("Admin with is phone number already registered");
-        return;
-      }
-
-      const syntheticEmail = `${data.adminPhone}@society.app`;
-
-      const organizationData: Omit<
-        Organization,
-        | "id"
-        | "created_at"
-        | "admin"
-        | "calculate_maintenance_by"
-        | "is_maintenance_calculated_by_fixed"
-      > = {
-        name: data.name,
-        address: data.address || "",
-        city: data.city || "",
-        state: data.state || "",
-        pincode: data.pincode || "",
-        phone: data.phone || "",
-        maintenance_rate: data.maintenanceRatePerSqft || 0,
-        maintenance_amount: data.maintenanceFixedAmount || 0,
-        total_units: data.totalFlats || 0,
-        registration_number: data.registrationNumber || "",
-        established_date: data.establishedDate || null,
-        updated_at: new Date().toISOString(),
-        due_date: "",
-        extras: [],
+      const payload: TCreateOrganizationData = {
+        ...(data.name ? { name: data?.name } : {}),
+        ...(data.address_line_1
+          ? { address_line_1: data?.address_line_1 }
+          : {}),
+        ...(data.address_line_2
+          ? { address_line_2: data?.address_line_2 }
+          : {}),
+        ...(data.city ? { city: data?.city } : {}),
+        ...(data.state ? { state: data?.state } : {}),
+        ...(data.pincode ? { pincode: data?.pincode } : {}),
+        ...(data.registration_number
+          ? { registration_number: data?.registration_number }
+          : {}),
+        ...(data.established_date
+          ? { established_date: data?.established_date }
+          : {}),
+        ...(data.phone ? { phone: data?.phone } : {}),
+        ...(data.total_units ? { total_units: data?.total_units } : {}),
+        is_prev: `${data.is_prev}` === "true" ? true : false,
+        admin: {
+          ...data?.admin,
+          email: `${data?.admin?.phone}@society.app`,
+          password: "123456",
+        },
       };
 
-      const { data: orgData, error } = await supabase
-        .from("organizations")
-        .insert([organizationData])
-        .select()
-        .single();
-
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      // 4. Create admin user using admin client
-      const { error: authError } = await supabaseAdmin.auth.admin.createUser({
-        email: syntheticEmail,
-        password: "123456",
-        email_confirm: true,
-        user_metadata: {
-          role: "admin",
-          full_name: data.adminContactName,
-          phone: data.adminPhone,
-          organization_id: orgData?.id,
-          unit_number: data?.adminUnitNumber,
-          square_footage: data?.adminSquareFootage,
-        },
-      });
-
-      if (authError) {
-        console.error("Auth error:", authError);
-
-        // Cleanup organization if user creation fails
-        await supabase.from("organizations").delete().eq("id", orgData.id);
-
-        toast.error(authError.message);
-        return;
-      }
-
-      await fetchOrganization({});
-
+      await handleCreateOrganization(payload);
+      callback?.();
       onClose();
       setCurrentStep(1);
       reset();
       toast.success("Society and admin created successfully!");
     } catch (error) {
-      console.error("Error creating society:", error);
-      toast.error("Society onboarding failed!");
+      console.log(error);
+      if (error instanceof Error) {
+        toast.error(error.message || "Society onboarding failed!");
+      } else {
+        toast.error("Society onboarding failed!");
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -215,478 +152,216 @@ const OnboardSocietyModal: React.FC<OnboardSocietyModalProps> = ({
       case 1:
         return (
           <div className="space-y-4">
-            <div className="text-center mb-6">
-              <div className="inline-flex items-center justify-center w-12 h-12 bg-indigo-100 rounded-full mb-3">
-                <Building2 className="w-6 h-6 text-indigo-600" />
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900">
-                Basic Information
-              </h3>
-              <p className="text-sm text-gray-600">
-                Let's start with your society's basic details
-              </p>
-            </div>
+            <ActionModalHeader
+              Icon={Building2}
+              currentStep={1}
+              totalSteps={5}
+              desc="Let's start with your society's basic details"
+              title="Basic Information"
+            />
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Society Name *
-              </label>
-              <input
-                type="text"
-                {...register("name", {
-                  required: "Society name is required",
-                  minLength: {
-                    value: 2,
-                    message: "Society name must be at least 2 characters",
-                  },
-                })}
-                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent ${
-                  errors.name ? "border-red-500" : "border-gray-300"
-                }`}
-                placeholder="Enter society name"
-              />
-              {errors.name && (
-                <p className="text-red-500 text-xs mt-1">
-                  {errors.name.message}
-                </p>
-              )}
-            </div>
+            <CustomInput
+              type="text"
+              label="Society Name"
+              {...register("name", {
+                required: "Society Name is required",
+              })}
+              error={errors?.name}
+              value={watch("name")}
+            />
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Registration Number
-              </label>
-              <input
-                type="text"
-                {...register("registrationNumber")}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                placeholder="Enter registration number"
-              />
-            </div>
+            <CustomInput
+              type="text"
+              label="Registration Number"
+              {...register("registration_number")}
+              error={errors?.registration_number}
+              value={watch("registration_number")}
+            />
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Established Date
-              </label>
-              <input
-                type="date"
-                {...register("establishedDate")}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-              />
-            </div>
+            <CustomInput
+              type="date"
+              label="Established Date"
+              {...register("established_date")}
+              error={errors?.established_date}
+              value={watch("established_date")}
+            />
           </div>
         );
 
       case 2:
         return (
           <div className="space-y-4">
-            <div className="text-center mb-6">
-              <div className="inline-flex items-center justify-center w-12 h-12 bg-indigo-100 rounded-full mb-3">
-                <MapPin className="w-6 h-6 text-indigo-600" />
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900">
-                Location Details
-              </h3>
-              <p className="text-sm text-gray-600">
-                Where is your society located?
-              </p>
-            </div>
+            <ActionModalHeader
+              Icon={MapPin}
+              currentStep={2}
+              totalSteps={5}
+              desc="Where is your society located?"
+              title="Location Details"
+            />
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Complete Address *
-              </label>
-              <textarea
-                {...register("address", {
-                  required: "Address is required",
-                  minLength: {
-                    value: 10,
-                    message: "Please enter a complete address",
-                  },
-                })}
-                rows={2}
-                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent ${
-                  errors.address ? "border-red-500" : "border-gray-300"
-                }`}
-                placeholder="Enter complete address"
-              />
-              {errors.address && (
-                <p className="text-red-500 text-xs mt-1">
-                  {errors.address.message}
-                </p>
-              )}
-            </div>
+            <CustomInput
+              type="text"
+              label="Address line 1"
+              {...register("address_line_1", {
+                required: "Address is required",
+              })}
+              error={errors?.address_line_1}
+              value={watch("address_line_1")}
+            />
+
+            <CustomInput
+              type="text"
+              label="Address line 2"
+              {...register("address_line_2")}
+              error={errors?.address_line_2}
+              value={watch("address_line_2")}
+            />
 
             <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  City *
-                </label>
-                <input
-                  type="text"
-                  {...register("city", {
-                    required: "City is required",
-                    minLength: {
-                      value: 2,
-                      message: "City name must be at least 2 characters",
-                    },
-                  })}
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent ${
-                    errors.city ? "border-red-500" : "border-gray-300"
-                  }`}
-                  placeholder="Enter city"
-                />
-                {errors.city && (
-                  <p className="text-red-500 text-xs mt-1">
-                    {errors.city.message}
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  State *
-                </label>
-                <input
-                  type="text"
-                  {...register("state", {
-                    required: "State is required",
-                    minLength: {
-                      value: 2,
-                      message: "State name must be at least 2 characters",
-                    },
-                  })}
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent ${
-                    errors.state ? "border-red-500" : "border-gray-300"
-                  }`}
-                  placeholder="Enter state"
-                />
-                {errors.state && (
-                  <p className="text-red-500 text-xs mt-1">
-                    {errors.state.message}
-                  </p>
-                )}
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Pincode *
-              </label>
-              <input
+              <CustomInput
                 type="text"
-                {...register("pincode", {
-                  required: "Pincode is required",
-                  pattern: {
-                    value: /^\d{6}$/,
-                    message: "Pincode must be exactly 6 digits",
-                  },
+                label="City"
+                {...register("city", {
+                  required: "City is required",
                 })}
-                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent ${
-                  errors.pincode ? "border-red-500" : "border-gray-300"
-                }`}
-                placeholder="Enter 6-digit pincode"
-                maxLength={6}
+                error={errors?.city}
+                value={watch("city")}
               />
-              {errors.pincode && (
-                <p className="text-red-500 text-xs mt-1">
-                  {errors.pincode.message}
-                </p>
-              )}
+
+              <CustomInput
+                type="text"
+                label="State"
+                {...register("state", {
+                  required: "State is required",
+                })}
+                error={errors?.state}
+                value={watch("state")}
+              />
             </div>
+
+            <CustomInput
+              type="text"
+              label="Pincode"
+              {...register("pincode", {
+                required: "Pincode is required",
+              })}
+              error={errors?.pincode}
+              value={watch("pincode")}
+            />
           </div>
         );
 
       case 3:
         return (
           <div className="space-y-4">
-            <div className="text-center mb-6">
-              <div className="inline-flex items-center justify-center w-12 h-12 bg-indigo-100 rounded-full mb-3">
-                <Phone className="w-6 h-6 text-indigo-600" />
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900">
-                Contact Information
-              </h3>
-              <p className="text-sm text-gray-600">
-                How can residents reach your society?
-              </p>
-            </div>
+            <ActionModalHeader
+              Icon={Phone}
+              currentStep={3}
+              totalSteps={5}
+              desc="How can residents reach your society?"
+              title="Contact Information"
+            />
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Society Phone Number *
-              </label>
-              <input
-                type="tel"
-                {...register("phone", {
-                  required: "Phone number is required",
-                  pattern: {
-                    value: /^\d{10}$/,
-                    message: "Phone must be exactly 10 digits",
-                  },
-                })}
-                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent ${
-                  errors.phone ? "border-red-500" : "border-gray-300"
-                }`}
-                placeholder="Enter 10-digit phone number"
-                maxLength={10}
-              />
-              {errors.phone && (
-                <p className="text-red-500 text-xs mt-1">
-                  {errors.phone.message}
-                </p>
-              )}
-            </div>
-
-            {/* <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Society Email Address *
-              </label>
-              <input
-                type="email"
-                {...register("email", {
-                  required: "Email is required",
-                  pattern: {
-                    value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-                    message: "Please enter a valid email address",
-                  },
-                })}
-                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent ${
-                  errors.email ? "border-red-500" : "border-gray-300"
-                }`}
-                placeholder="Enter society email"
-              />
-              {errors.email && (
-                <p className="text-red-500 text-xs mt-1">
-                  {errors.email.message}
-                </p>
-              )}
-            </div> */}
+            <CustomInput
+              type="tel"
+              label="Society Phone Number"
+              {...register("phone", {
+                required: "Phone number is required",
+                pattern: {
+                  value: /^\d{10}$/,
+                  message: "Phone must be exactly 10 digits",
+                },
+              })}
+              error={errors?.phone}
+              value={watch("phone")}
+              maxLength={10}
+            />
           </div>
         );
 
       case 4:
         return (
           <div className="space-y-4">
-            <div className="text-center mb-6">
-              <div className="inline-flex items-center justify-center w-12 h-12 bg-indigo-100 rounded-full mb-3">
-                <User className="w-6 h-6 text-indigo-600" />
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900">
-                Admin Contact
-              </h3>
-              <p className="text-sm text-gray-600">
-                Who will be the primary administrator?
-              </p>
-            </div>
+            <ActionModalHeader
+              Icon={User}
+              currentStep={4}
+              totalSteps={5}
+              desc="Who will be the primary administrator?"
+              title="Admin Contact"
+            />
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Admin Name *
-              </label>
-              <input
-                type="text"
-                {...register("adminContactName", {
-                  required: "Admin name is required",
-                  minLength: {
-                    value: 2,
-                    message: "Name must be at least 2 characters",
-                  },
-                })}
-                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent ${
-                  errors.adminContactName ? "border-red-500" : "border-gray-300"
-                }`}
-                placeholder="Enter admin name"
-              />
-              {errors.adminContactName && (
-                <p className="text-red-500 text-xs mt-1">
-                  {errors.adminContactName.message}
-                </p>
-              )}
-            </div>
+            <CustomInput
+              type="text"
+              label="Admin Name"
+              {...register("admin.name", {
+                required: "Admin name is required",
+                minLength: {
+                  value: 2,
+                  message: "Name must be at least 2 characters",
+                },
+              })}
+              error={errors?.admin?.name}
+              value={watch("admin.name")}
+            />
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Admin Phone *
-              </label>
-              <input
-                type="tel"
-                {...register("adminPhone", {
-                  required: "Admin phone is required",
-                  pattern: {
-                    value: /^\d{10}$/,
-                    message: "Phone must be exactly 10 digits",
-                  },
-                })}
-                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent ${
-                  errors.adminPhone ? "border-red-500" : "border-gray-300"
-                }`}
-                placeholder="Enter admin phone"
-                maxLength={10}
-              />
-              {errors.adminPhone && (
-                <p className="text-red-500 text-xs mt-1">
-                  {errors.adminPhone.message}
-                </p>
-              )}
-            </div>
+            <CustomInput
+              type="tel"
+              label="Admin Phone"
+              {...register("admin.phone", {
+                required: "Admin phone is required",
+                pattern: {
+                  value: /^\d{10}$/,
+                  message: "Phone must be exactly 10 digits",
+                },
+              })}
+              error={errors?.admin?.phone}
+              value={watch("admin.phone")}
+              maxLength={10}
+            />
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Admin Unit
-              </label>
-              <input
-                type="text"
-                {...register("adminUnitNumber", {})}
-                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent ${
-                  errors.adminUnitNumber ? "border-red-500" : "border-gray-300"
-                }`}
-                placeholder="Enter admin unit"
-                maxLength={10}
-              />
-              {errors.adminUnitNumber && (
-                <p className="text-red-500 text-xs mt-1">
-                  {errors.adminUnitNumber.message}
-                </p>
-              )}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Admin Unit's Square Footage
-              </label>
-              <input
-                type="text"
-                {...register("adminSquareFootage", {})}
-                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent ${
-                  errors.adminSquareFootage
-                    ? "border-red-500"
-                    : "border-gray-300"
-                }`}
-                placeholder="Enter admin unit's square footage"
-                maxLength={10}
-              />
-              {errors.adminSquareFootage && (
-                <p className="text-red-500 text-xs mt-1">
-                  {errors.adminSquareFootage.message}
-                </p>
-              )}
-            </div>
-
-            {/* <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Administrator Email *
-              </label>
-              <input
-                type="email"
-                {...register("adminEmail", {
-                  required: "Administrator email is required",
-                  pattern: {
-                    value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-                    message: "Please enter a valid email address",
-                  },
-                })}
-                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent ${
-                  errors.adminEmail ? "border-red-500" : "border-gray-300"
-                }`}
-                placeholder="Enter administrator email"
-              />
-              {errors.adminEmail && (
-                <p className="text-red-500 text-xs mt-1">
-                  {errors.adminEmail.message}
-                </p>
-              )}
-            </div> */}
+            <CustomInput
+              type="text"
+              label="Admin Unit"
+              {...register("admin.unit_number")}
+              error={errors?.admin?.unit_number}
+              value={watch("admin.unit_number")}
+            />
           </div>
         );
 
       case 5:
         return (
           <div className="space-y-4">
-            <div className="text-center mb-6">
-              <div className="inline-flex items-center justify-center w-12 h-12 bg-indigo-100 rounded-full mb-3">
-                <Hash className="w-6 h-6 text-indigo-600" />
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900">
-                Property Information
-              </h3>
-              <p className="text-sm text-gray-600">
-                Final details about your society
-              </p>
-            </div>
+            <ActionModalHeader
+              Icon={Hash}
+              currentStep={5}
+              totalSteps={5}
+              desc="Final details about your society"
+              title="Property Information"
+            />
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Total Number of Flats *
-              </label>
-              <input
-                type="number"
-                min="1"
-                {...register("totalFlats", {
-                  required: "Total flats is required",
-                  min: {
-                    value: 1,
-                    message: "Total flats must be at least 1",
-                  },
-                  valueAsNumber: true,
-                })}
-                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent ${
-                  errors.totalFlats ? "border-red-500" : "border-gray-300"
-                }`}
-                placeholder="Enter total number of flats"
-              />
-              {errors.totalFlats && (
-                <p className="text-red-500 text-xs mt-1">
-                  {errors.totalFlats.message}
-                </p>
-              )}
-            </div>
+            <CustomInput
+              type="number"
+              label="Total Number of Flats"
+              {...register("total_units", {
+                required: "Total flats is required",
+                min: {
+                  value: 1,
+                  message: "Total flats must be more than 0",
+                },
+                valueAsNumber: true,
+              })}
+              error={errors?.total_units}
+              value={watch("total_units")}
+            />
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Maintenance Rate (₹ per sqft)
-              </label>
-              <input
-                type="number"
-                min="0"
-                step="0.01"
-                {...register("maintenanceRatePerSqft", {
-                  min: {
-                    value: 0,
-                    message: "Rate cannot be negative",
-                  },
-                  valueAsNumber: true,
-                })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                placeholder="Enter maintenance rate per sqft"
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                Optional: You can set this up later
-              </p>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Maintenance Fixed Amount
-              </label>
-              <input
-                type="number"
-                min="0"
-                step="0.01"
-                {...register("maintenanceFixedAmount", {
-                  min: {
-                    value: 0,
-                    message: "Amount cannot be negative",
-                  },
-                  valueAsNumber: true,
-                })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                placeholder="Enter maintenance fixed amount"
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                Optional: You can set this up later
-              </p>
-            </div>
+            <CustomSelect
+              {...register("is_prev")}
+              label="Create Previous Month Bill"
+            >
+              <option value={"true"}>Yes</option>
+              <option value={"false"}>No</option>
+            </CustomSelect>
           </div>
         );
 
@@ -705,50 +380,10 @@ const OnboardSocietyModal: React.FC<OnboardSocietyModalProps> = ({
       size="lg"
     >
       <form onSubmit={handleSubmit(onFormSubmit)}>
-        {/* Progress Steps */}
-        <div className="px-6 py-4 bg-gray-50">
-          <div className="flex justify-between items-center">
-            {steps.map((step, index) => (
-              <div key={step.id} className="flex items-center">
-                <div
-                  className={`flex items-center justify-center w-8 h-8 rounded-full text-xs font-medium transition-all ${
-                    step.id <= currentStep
-                      ? "bg-indigo-600 text-white"
-                      : "bg-gray-200 text-gray-500"
-                  }`}
-                >
-                  {step.id < currentStep ? (
-                    <CheckCircle className="w-4 h-4" />
-                  ) : (
-                    step.id
-                  )}
-                </div>
-                <span
-                  className={`ml-2 text-xs font-medium ${
-                    step.id <= currentStep ? "text-indigo-600" : "text-gray-400"
-                  }`}
-                >
-                  {step.title}
-                </span>
-                {index < steps.length - 1 && (
-                  <div
-                    className={`flex-1 mx-3 h-0.5 ${
-                      step.id < currentStep ? "bg-indigo-600" : "bg-gray-300"
-                    }`}
-                    style={{ minWidth: "20px" }}
-                  />
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Form Content */}
         <div className="p-6 max-h-[60vh] overflow-y-auto">
           {renderStepContent()}
         </div>
 
-        {/* Navigation Buttons */}
         <div className="flex justify-between items-center p-6 border-t bg-gray-50">
           <button
             type="button"

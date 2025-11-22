@@ -1,15 +1,30 @@
 import toast from "react-hot-toast";
 import {
+  createOrganization,
   getAllOrganizations,
+  getOrganization,
   updateOrganization,
 } from "../../apis/organization.apis";
 import type { GETMethodParams } from "../../types/general.types";
-import type { IOrganization } from "../../types/organization.types";
+import type { IOrganization, TCreateOrganizationData } from "../../types/organization.types";
 import { useProfileStore } from "../../libs/stores/useProfileStore";
+import { useOrganizationStore } from "../../libs/stores/useOrganizationStore";
 
 const useOrganizationApiService = () => {
   const { setProfileOrganization } = useProfileStore();
-  const handleGetAllProfiles = async ({
+  const { setOrganizations } = useOrganizationStore();
+
+  const handleGetOrganization = async (id: string) => {
+    try {
+      const response = await getOrganization(id);
+      return response?.data?.data;
+    } catch (error) {
+      console.error("Organization error:", error);
+      toast.error("Failed to fetch society");
+    }
+  };
+
+  const handleGetAllOrganizations = async ({
     limit,
     order,
     page,
@@ -24,7 +39,8 @@ const useOrganizationApiService = () => {
         search,
         sortBy,
       });
-      console.log(response);
+      setOrganizations(response?.data?.data);
+      return response?.data;
     } catch (error) {
       console.error("Organization error:", error);
       toast.error("Failed to fetch society");
@@ -36,20 +52,34 @@ const useOrganizationApiService = () => {
     data,
   }: {
     id: string;
-    data: IOrganization;
+    data: Partial<IOrganization>;
   }) => {
     try {
       const response = await updateOrganization(id, data);
       setProfileOrganization(response?.data?.data);
-      toast.success("Society updated successfully!");
       return response?.data?.data;
     } catch (error) {
       console.error("Organization error:", error);
-      toast.error("Failed to update society");
     }
   };
 
-  return { handleGetAllProfiles, handleUpdateOrganization };
+  const handleCreateOrganization = async (data: TCreateOrganizationData) => {
+    try {
+      const response = await createOrganization(data);
+      return response?.data?.data;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error : any) {
+      console.error("Organization error:", error);
+      throw Error(error.response.data.message)
+    }
+  };
+
+  return {
+    handleGetAllOrganizations,
+    handleUpdateOrganization,
+    handleGetOrganization,
+    handleCreateOrganization,
+  };
 };
 
 export default useOrganizationApiService;

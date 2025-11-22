@@ -1,10 +1,10 @@
 import React from "react";
 import type { FieldErrors, UseFormRegister } from "react-hook-form";
-import type { Organization } from "../../libs/stores/useOrganizationStore";
+import type { IOrganization } from "../../types/organization.types";
 
 const Property: React.FC<{
-  register: UseFormRegister<Organization>;
-  errors: FieldErrors<Organization>;
+  register: UseFormRegister<IOrganization>;
+  errors: FieldErrors<IOrganization>;
 }> = ({ errors, register }) => {
   return (
     <div className="space-y-6">

@@ -1,12 +1,5 @@
 import React from "react";
-import {
-  User,
-  Phone,
-  Shield,
-  Home,
-  FileText,
-  Building2,
-} from "lucide-react";
+import { User, Phone, Shield, Home, FileText, Building2 } from "lucide-react";
 import Modal, { ModalBody, ModalFooter } from "./Modal";
 import type { IProfile } from "../../types/user.types";
 
@@ -240,7 +233,7 @@ const ViewResidentDetailsModal: React.FC<ViewResidentDetailsModalProps> = ({
             <div>
               <span className="text-gray-700 font-medium">Resident ID:</span>
               <span className="text-gray-900 ml-2 font-mono text-xs">
-                {resident.id.slice(0, 8)}...
+                {(resident?.id as string).slice(0, 8)}...
               </span>
             </div>
             <div>

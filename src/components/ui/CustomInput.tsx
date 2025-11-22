@@ -38,7 +38,7 @@ const CustomInput = forwardRef<HTMLInputElement, CustomInputProps>(
 
     // Base CSS classes
     const baseInputClasses = `
-      w-full px-4 py-3 border rounded-lg 
+      w-full px-4 py-2 border rounded-lg 
       focus:ring-2 focus:ring-indigo-500 focus:border-transparent 
       transition-colors duration-200
       ${error ? 'border-red-500' : 'border-gray-300'}
@@ -47,11 +47,11 @@ const CustomInput = forwardRef<HTMLInputElement, CustomInputProps>(
 
     const baseLabelClasses = `
       block text-sm font-medium mb-2
-      ${error ? 'text-red-700' : 'text-gray-700'}
+      ${error ? 'text-gray-700' : 'text-gray-700'}
     `;
 
     const baseErrorClasses = `
-      text-red-500 text-sm mt-1
+      text-red-500 text-xs mt-1
     `;
 
     return (

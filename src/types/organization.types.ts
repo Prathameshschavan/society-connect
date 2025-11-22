@@ -1,3 +1,5 @@
+import type { IProfile } from "./user.types";
+
 export interface IExtra {
   id: string;
   name: string;
@@ -8,8 +10,10 @@ export interface IExtra {
 
 export interface IOrganization {
   id: string;
+  admins: IProfile[];
   name: string;
-  address: string;
+  address_line_1: string;
+  address_line_2: string;
   maintenance_amount: number;
   maintenance_rate: number;
   total_units: number;
@@ -26,4 +30,18 @@ export interface IOrganization {
   tenant_maintenance_amount?: number;
   tenant_maintenance_rate?: number;
   calculate_maintenance_by?: string;
+  created_at?: string;
+  is_prev: boolean;
 }
+
+export type TCreateOrganizationData = Partial<IOrganization> & {
+  admin: {
+    name: string;
+    email: string;
+    password: string;
+    unit_number: string;
+    phone: string;
+  };
+};
+
+export type TUpdateOrganizationData = Partial<IOrganization> & {};

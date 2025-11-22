@@ -1,10 +1,10 @@
 import React from "react";
 import type { FieldErrors, UseFormRegister } from "react-hook-form";
-import type { Organization } from "../../libs/stores/useOrganizationStore";
+import type { IOrganization } from "../../types/organization.types";
 
 const Location: React.FC<{
-  register: UseFormRegister<Organization>;
-  errors: FieldErrors<Organization>;
+  register: UseFormRegister<IOrganization>;
+  errors: FieldErrors<IOrganization>;
 }> = ({ errors, register }) => {
   return (
     <div className="space-y-6">
@@ -15,10 +15,10 @@ const Location: React.FC<{
         <div className="space-y-6">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Complete Address *
+              Address line 1
             </label>
             <textarea
-              {...register("address", {
+              {...register("address_line_1", {
                 required: "Address is required",
                 minLength: {
                   value: 10,
@@ -27,13 +27,13 @@ const Location: React.FC<{
               })}
               rows={3}
               className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent ${
-                errors.address ? "border-red-500" : "border-gray-300"
+                errors.address_line_1 ? "border-red-500" : "border-gray-300"
               }`}
               placeholder="Enter complete address"
             />
-            {errors.address && (
+            {errors.address_line_1 && (
               <p className="text-red-500 text-xs mt-1">
-                {errors.address.message}
+                {errors.address_line_1.message}
               </p>
             )}
           </div>

@@ -565,7 +565,7 @@ const Reports = () => {
           <div className="flex gap-4">
             <GenericSelect
               id="months"
-              onChange={(value) => handleFilterChange("month", value)}
+              onChange={(value) => handleFilterChange("month", `${value}`)}
               options={[
                 { label: "All Months", value: "" },
                 ...shortMonth.map((month, i) => ({
@@ -579,7 +579,7 @@ const Reports = () => {
 
             <GenericSelect
               id="years"
-              onChange={(value) => handleFilterChange("year", value)}
+              onChange={(value) => handleFilterChange("year", `${value}`)}
               options={[
                 // { label: "All Years", value: "" },
                 ...Array.from(

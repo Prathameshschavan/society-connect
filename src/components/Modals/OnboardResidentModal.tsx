@@ -11,16 +11,16 @@ import {
 } from "lucide-react";
 import Modal from "./Modal";
 import toast from "react-hot-toast";
-import { supabaseAdmin } from "../../libs/supabase/supabaseAdmin";
 import { useProfileStore } from "../../libs/stores/useProfileStore";
-import useAdminService from "../../hooks/serviceHooks/useAdminService";
+import useProfileApiService from "../../hooks/apiHooks/useProfileApiService";
+import type { IProfile, TRole } from "../../types/user.types";
 
 export interface ResidentFormData {
   // Personal Info
   fullName: string;
   phone: string;
   email: string;
-  role: string;
+  role: TRole;
   emergencyContact: string;
   emergencyContactName: string;
 
@@ -71,7 +71,7 @@ const OnboardResidentModal: React.FC<OnboardResidentModalProps> = ({
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { profile } = useProfileStore();
-  const { fetchResidents } = useAdminService();
+  const { handleAddProfile } = useProfileApiService();
   // const { residentOrganization } = useOrganizationStore();
 
   const {
@@ -144,27 +144,26 @@ const OnboardResidentModal: React.FC<OnboardResidentModalProps> = ({
   const onFormSubmit: SubmitHandler<ResidentFormData> = async (data) => {
     setIsSubmitting(true);
     try {
-      // Check if user already exists
-      const { data: existingUser } = await supabaseAdmin
-        .from("profiles")
-        .select("*")
-        .eq("phone", data.phone)
-        .single();
+      // const { data: existingUser } = await supabaseAdmin
+      //   .from("profiles")
+      //   .select("*")
+      //   .eq("phone", data.phone)
+      //   .single();
 
-      if (existingUser) {
-        toast.error("User with this phone number already exists");
-        return;
-      }
+      // if (existingUser) {
+      //   toast.error("User with this phone number already exists");
+      //   return;
+      // }
 
-      const userObject = {
+      const userObject: IProfile = {
         organization_id: profile?.organization_id,
         role: data?.role,
         full_name: data?.fullName,
         phone: data?.phone,
         unit_number: data?.unitNumber,
         unit_type: data?.unitType,
-        square_footage: data?.squareFootage,
-        must_change_password: null,
+        square_footage: Number(data?.squareFootage),
+        must_change_password: true,
         emergency_contact: {
           name: data?.emergencyContactName,
           phone: data?.emergencyContact,
@@ -174,38 +173,36 @@ const OnboardResidentModal: React.FC<OnboardResidentModalProps> = ({
           adult: data?.adultsCount,
         },
         vehicles: {
-          hasVehicles: data?.hasVehicle,
           twoWheeler: data?.twoWheelerCount,
-          fourWheeler: data?.fourWheelerCount,
         },
       };
 
-      const syntheticEmail = `${data.phone}@society.app`;
+      // const syntheticEmail = `${data.phone}@society.app`;
 
-      // Create user account
-      const { error: authError } = await supabaseAdmin.auth.admin.createUser({
-        email: syntheticEmail,
-        password: "123456", // Default password - user should change this
-        email_confirm: true,
-        user_metadata: userObject,
-      });
+      // const { error: authError } = await supabaseAdmin.auth.admin.createUser({
+      //   email: syntheticEmail,
+      //   password: "123456",
+      //   email_confirm: true,
+      //   user_metadata: userObject,
+      // });
 
-      if (authError) {
-        console.error("Auth error:", authError);
-        toast.error(authError.message);
-        return;
-      }
+      // if (authError) {
+      //   console.error("Auth error:", authError);
+      //   toast.error(authError.message);
+      //   return;
+      // }
 
-      await fetchResidents({
-        orgId: profile?.organization_id,
-        sortBy: "unit_number",
-        sortOrder: "asc",
-      });
+      // await fetchResidents({
+      //   orgId: profile?.organization_id,
+      //   sortBy: "unit_number",
+      //   sortOrder: "asc",
+      // });
 
-      onClose();
-      setCurrentStep(1);
-      reset();
-      toast.success("Resident onboarded successfully!");
+      // onClose();
+      // setCurrentStep(1);
+      // reset();
+      await handleAddProfile(userObject);
+      
     } catch (error) {
       console.error("Error creating resident:", error);
       toast.error("Resident onboarding failed!");

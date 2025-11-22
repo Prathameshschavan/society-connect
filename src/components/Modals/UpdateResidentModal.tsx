@@ -14,8 +14,6 @@ import {
 import Modal from "./Modal";
 import toast from "react-hot-toast";
 import { supabase } from "../../libs/supabase/supabaseClient";
-import { useProfileStore } from "../../libs/stores/useProfileStore";
-import useAdminService from "../../hooks/serviceHooks/useAdminService";
 import type { IProfile } from "../../types/user.types";
 
 export interface UpdateResidentFormData {
@@ -53,17 +51,17 @@ interface UpdateResidentModalProps {
   isOpen: boolean;
   onClose: () => void;
   resident: IProfile | null;
+  callback?: () => void;
 }
 
 const UpdateResidentModal: React.FC<UpdateResidentModalProps> = ({
   isOpen,
   onClose,
   resident,
+  callback,
 }) => {
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { profile } = useProfileStore();
-  const { fetchResidents } = useAdminService();
 
   const {
     register,
@@ -214,14 +212,7 @@ const UpdateResidentModal: React.FC<UpdateResidentModalProps> = ({
         toast.error(error.message);
         return;
       }
-
-      await fetchResidents({
-        orgId: profile?.organization_id,
-        sortBy: "unit_number",
-        sortOrder: "asc",
-
-      });
-
+      callback?.();
       onClose();
       setCurrentStep(1);
       toast.success("Resident updated successfully!");

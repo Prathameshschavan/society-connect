@@ -1,49 +1,42 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useForm, type SubmitHandler } from "react-hook-form";
 import {
   Building2,
   Phone,
   Hash,
-  CheckCircle,
   ArrowRight,
   ArrowLeft,
   MapPin,
   Save,
 } from "lucide-react";
 import Modal from "./Modal";
-import useOrganizationService from "../../hooks/serviceHooks/useOrganizationService";
-import { supabase } from "../../libs/supabase/supabaseClient";
 import toast from "react-hot-toast";
-import type { Organization } from "../../libs/stores/useOrganizationStore";
-
-export interface UpdateSocietyFormData {
-  name: string;
-  address: string;
-  city: string;
-  state: string;
-  pincode: string;
-  phone: string;
-  registrationNumber: string;
-  establishedDate: string;
-  totalFlats: number;
-  maintenanceRatePerSqft: number;
-  maintenanceFixedAmount: number;
-}
+import ActionModalHeader from "../ActionModalHeader";
+import CustomInput from "../ui/CustomInput";
+import useOrganizationApiService from "../../hooks/apiHooks/useOrganizationApiService";
+import type { TUpdateOrganizationData } from "../../types/organization.types";
+import CustomSelect from "../ui/CustomSelect";
 
 interface UpdateSocietyModalProps {
   isOpen: boolean;
   onClose: () => void;
-  societyData: Organization | null;
+  callback?: () => void;
+  orgId: string | null;
 }
 
 const UpdateSocietyModal: React.FC<UpdateSocietyModalProps> = ({
   isOpen,
   onClose,
-  societyData,
+  orgId,
+  callback,
 }) => {
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { fetchOrganization } = useOrganizationService();
+  const { handleUpdateOrganization, handleGetOrganization } =
+    useOrganizationApiService();
+  const [loading, setLoading] = useState(false);
+
+  const [data, setData] = useState<TUpdateOrganizationData | null>(null);
 
   const {
     register,
@@ -52,52 +45,14 @@ const UpdateSocietyModal: React.FC<UpdateSocietyModalProps> = ({
     trigger,
     reset,
     setValue,
-  } = useForm<UpdateSocietyFormData>({
-    defaultValues: {
-      name: "",
-      address: "",
-      city: "",
-      state: "",
-      pincode: "",
-      phone: "",
-      registrationNumber: "",
-      establishedDate: "",
-      totalFlats: 0,
-      maintenanceRatePerSqft: 0,
-      maintenanceFixedAmount: 0,
-    },
-  });
+    watch,
+  } = useForm<TUpdateOrganizationData>();
 
-  // Populate form with existing data when modal opens
-  useEffect(() => {
-    if (societyData && isOpen) {
-      setValue("name", societyData.name || "");
-      setValue("address", societyData.address || "");
-      setValue("city", societyData.city || "");
-      setValue("state", societyData.state || "");
-      setValue("pincode", societyData.pincode || "");
-      setValue("phone", societyData.phone || "");
-      setValue("registrationNumber", societyData.registration_number || "");
-      setValue("establishedDate", societyData.established_date || "");
-      setValue("totalFlats", societyData.total_units || 0);
-      setValue("maintenanceRatePerSqft", societyData.maintenance_rate || 0);
-      setValue("maintenanceFixedAmount", 0); // Add this field to Organization type if needed
-    }
-  }, [societyData, isOpen, setValue]);
-
-  const steps = [
-    { id: 1, title: "Basic Info", icon: Building2 },
-    { id: 2, title: "Location", icon: MapPin },
-    { id: 3, title: "Contact", icon: Phone },
-    { id: 4, title: "Property", icon: Hash },
-  ];
-
-  // Define fields for each step for validation
   const stepFields = {
     1: ["name"],
-    2: ["address", "city", "state", "pincode"],
+    2: ["address_line_1", "address_line_2", "city", "state", "pincode"],
     3: ["phone"],
-    4: ["totalFlats"],
+    4: ["total_units"],
   } as const;
 
   const validateStep = async (step: number): Promise<boolean> => {
@@ -120,38 +75,34 @@ const UpdateSocietyModal: React.FC<UpdateSocietyModalProps> = ({
     setCurrentStep((prev) => Math.max(prev - 1, 1));
   };
 
-  const onFormSubmit: SubmitHandler<UpdateSocietyFormData> = async (data) => {
-    if (!societyData?.id) {
-      toast.error("Society ID not found");
-      return;
-    }
-
+  const onFormSubmit: SubmitHandler<TUpdateOrganizationData> = async (
+    input
+  ) => {
     setIsSubmitting(true);
     try {
-      const updateData = {
-        name: data.name,
-        address: data.address || "",
-        city: data.city || "",
-        state: data.state || "",
-        pincode: data.pincode || "",
-        phone: data.phone || "",
-        maintenance_rate: data.maintenanceRatePerSqft || 0,
-        total_units: data.totalFlats || 0,
-        registration_number: data.registrationNumber || "",
-        established_date: data.establishedDate || "",
+      const payload: TUpdateOrganizationData = {
+        ...(input.name ? { name: input?.name } : {}),
+        ...(input.registration_number
+          ? { registration_number: input?.registration_number }
+          : {}),
+        ...(input.established_date
+          ? { established_date: input?.established_date }
+          : {}),
+        ...(input.address_line_1
+          ? { address_line_1: input?.address_line_1 }
+          : {}),
+        ...(input.address_line_2
+          ? { address_line_2: input?.address_line_2 }
+          : {}),
+        ...(input.city ? { city: input?.city } : {}),
+        ...(input.state ? { state: input?.state } : {}),
+        ...(input.pincode ? { pincode: input?.pincode } : {}),
+        ...(input.phone ? { phone: input?.phone } : {}),
+        ...(input.total_units ? { total_units: input?.total_units } : {}),
+        is_prev: `${input.is_prev}` === "true" ? true : false,
       };
-
-      const { error } = await supabase
-        .from("organizations")
-        .update(updateData)
-        .eq("id", societyData.id);
-
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      await fetchOrganization({});
-
+      await handleUpdateOrganization({ id: data?.id as string, data: payload });
+      callback?.();
       onClose();
       setCurrentStep(1);
       toast.success("Society updated successfully!");
@@ -174,312 +125,191 @@ const UpdateSocietyModal: React.FC<UpdateSocietyModalProps> = ({
       case 1:
         return (
           <div className="space-y-4">
-            <div className="text-center mb-6">
-              <div className="inline-flex items-center justify-center w-12 h-12 bg-indigo-100 rounded-full mb-3">
-                <Building2 className="w-6 h-6 text-indigo-600" />
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900">
-                Basic Information
-              </h3>
-              <p className="text-sm text-gray-600">
-                Update your society's basic details
-              </p>
-            </div>
+            <ActionModalHeader
+              Icon={Building2}
+              currentStep={1}
+              totalSteps={4}
+              desc="Let's start with your society's basic details"
+              title="Basic Information"
+            />
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Society Name *
-              </label>
-              <input
-                type="text"
-                {...register("name", {
-                  required: "Society name is required",
-                  minLength: {
-                    value: 2,
-                    message: "Society name must be at least 2 characters",
-                  },
-                })}
-                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent ${
-                  errors.name ? "border-red-500" : "border-gray-300"
-                }`}
-                placeholder="Enter society name"
-              />
-              {errors.name && (
-                <p className="text-red-500 text-xs mt-1">
-                  {errors.name.message}
-                </p>
-              )}
-            </div>
+            <CustomInput
+              type="text"
+              label="Society Name"
+              {...register("name", {
+                required: "Society name is required",
+                minLength: {
+                  value: 2,
+                  message: "Society name must be at least 2 characters",
+                },
+              })}
+              error={errors.name}
+              value={watch("name")}
+            />
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Registration Number
-              </label>
-              <input
-                type="text"
-                {...register("registrationNumber")}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                placeholder="Enter registration number"
-              />
-            </div>
+            <CustomInput
+              type="text"
+              label="Registration Number"
+              {...register("registration_number")}
+              error={errors?.registration_number}
+              value={watch("registration_number")}
+            />
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Established Date
-              </label>
-              <input
-                type="date"
-                {...register("establishedDate")}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-              />
-            </div>
+            <CustomInput
+              type="date"
+              label="Established Date"
+              {...register("established_date")}
+              error={errors?.established_date}
+              value={watch("established_date")}
+            />
           </div>
         );
 
       case 2:
         return (
           <div className="space-y-4">
-            <div className="text-center mb-6">
-              <div className="inline-flex items-center justify-center w-12 h-12 bg-indigo-100 rounded-full mb-3">
-                <MapPin className="w-6 h-6 text-indigo-600" />
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900">
-                Location Details
-              </h3>
-              <p className="text-sm text-gray-600">
-                Update your society's location information
-              </p>
-            </div>
+            <ActionModalHeader
+              Icon={MapPin}
+              currentStep={2}
+              totalSteps={4}
+              desc="Where is your society located?"
+              title="Location Details"
+            />
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Complete Address *
-              </label>
-              <textarea
-                {...register("address", {
-                  required: "Address is required",
-                  minLength: {
-                    value: 10,
-                    message: "Please enter a complete address",
-                  },
-                })}
-                rows={2}
-                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent ${
-                  errors.address ? "border-red-500" : "border-gray-300"
-                }`}
-                placeholder="Enter complete address"
-              />
-              {errors.address && (
-                <p className="text-red-500 text-xs mt-1">
-                  {errors.address.message}
-                </p>
-              )}
-            </div>
+            <CustomInput
+              type="text"
+              label="Address line 1"
+              {...register("address_line_1", {
+                required: "Address is required",
+              })}
+              error={errors?.address_line_1}
+              value={watch("address_line_1")}
+            />
+
+            <CustomInput
+              type="text"
+              label="Address line 2"
+              {...register("address_line_2")}
+              error={errors?.address_line_2}
+              value={watch("address_line_2")}
+            />
 
             <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  City *
-                </label>
-                <input
-                  type="text"
-                  {...register("city", {
-                    required: "City is required",
-                    minLength: {
-                      value: 2,
-                      message: "City name must be at least 2 characters",
-                    },
-                  })}
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent ${
-                    errors.city ? "border-red-500" : "border-gray-300"
-                  }`}
-                  placeholder="Enter city"
-                />
-                {errors.city && (
-                  <p className="text-red-500 text-xs mt-1">
-                    {errors.city.message}
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  State *
-                </label>
-                <input
-                  type="text"
-                  {...register("state", {
-                    required: "State is required",
-                    minLength: {
-                      value: 2,
-                      message: "State name must be at least 2 characters",
-                    },
-                  })}
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent ${
-                    errors.state ? "border-red-500" : "border-gray-300"
-                  }`}
-                  placeholder="Enter state"
-                />
-                {errors.state && (
-                  <p className="text-red-500 text-xs mt-1">
-                    {errors.state.message}
-                  </p>
-                )}
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Pincode *
-              </label>
-              <input
+              <CustomInput
                 type="text"
-                {...register("pincode", {
-                  required: "Pincode is required",
-                  pattern: {
-                    value: /^\d{6}$/,
-                    message: "Pincode must be exactly 6 digits",
+                label="City"
+                {...register("city", {
+                  required: "City is required",
+                  minLength: {
+                    value: 2,
+                    message: "City name must be at least 2 characters",
                   },
                 })}
-                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent ${
-                  errors.pincode ? "border-red-500" : "border-gray-300"
-                }`}
-                placeholder="Enter 6-digit pincode"
-                maxLength={6}
+                error={errors.city}
+                value={watch("city")}
               />
-              {errors.pincode && (
-                <p className="text-red-500 text-xs mt-1">
-                  {errors.pincode.message}
-                </p>
-              )}
+
+              <CustomInput
+                type="text"
+                label="State"
+                {...register("state", {
+                  required: "State is required",
+                  minLength: {
+                    value: 2,
+                    message: "State name must be at least 2 characters",
+                  },
+                })}
+                error={errors.state}
+                value={watch("state")}
+              />
             </div>
+
+            <CustomInput
+              type="text"
+              label="Pincode"
+              {...register("pincode", {
+                required: "Pincode is required",
+              })}
+              error={errors.pincode}
+              value={watch("pincode")}
+              maxLength={6}
+            />
           </div>
         );
 
       case 3:
         return (
           <div className="space-y-4">
-            <div className="text-center mb-6">
-              <div className="inline-flex items-center justify-center w-12 h-12 bg-indigo-100 rounded-full mb-3">
-                <Phone className="w-6 h-6 text-indigo-600" />
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900">
-                Contact Information
-              </h3>
-              <p className="text-sm text-gray-600">
-                Update your society's contact details
-              </p>
-            </div>
+            <ActionModalHeader
+              Icon={Phone}
+              currentStep={3}
+              totalSteps={4}
+              desc="How can residents reach your society?"
+              title="Contact Information"
+            />
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Society Phone Number *
-              </label>
-              <input
-                type="tel"
-                {...register("phone", {
-                  required: "Phone number is required",
-                  pattern: {
-                    value: /^\d{10}$/,
-                    message: "Phone must be exactly 10 digits",
-                  },
-                })}
-                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent ${
-                  errors.phone ? "border-red-500" : "border-gray-300"
-                }`}
-                placeholder="Enter 10-digit phone number"
-                maxLength={10}
-              />
-              {errors.phone && (
-                <p className="text-red-500 text-xs mt-1">
-                  {errors.phone.message}
-                </p>
-              )}
-            </div>
+            <CustomInput
+              type="tel"
+              label="Society Phone Number"
+              {...register("phone", {
+                required: "Phone number is required",
+                pattern: {
+                  value: /^\d{10}$/,
+                  message: "Phone must be exactly 10 digits",
+                },
+              })}
+              error={errors.phone}
+              value={watch("phone")}
+              maxLength={10}
+              inputMode="numeric"
+              pattern="[0-9]*"
+              onKeyDown={(e) => {
+                if (
+                  !e.key.match(/[0-9]/) &&
+                  !["Backspace", "ArrowLeft", "ArrowRight", "Tab"].includes(
+                    e.key
+                  )
+                ) {
+                  e.preventDefault();
+                }
+              }}
+            />
           </div>
         );
 
       case 4:
         return (
           <div className="space-y-4">
-            <div className="text-center mb-6">
-              <div className="inline-flex items-center justify-center w-12 h-12 bg-indigo-100 rounded-full mb-3">
-                <Hash className="w-6 h-6 text-indigo-600" />
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900">
-                Property Information
-              </h3>
-              <p className="text-sm text-gray-600">
-                Update your society's property details
-              </p>
-            </div>
+            <ActionModalHeader
+              Icon={Hash}
+              currentStep={4}
+              totalSteps={4}
+              desc="Final details about your society"
+              title="Property Information"
+            />
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Total Number of Flats *
-              </label>
-              <input
-                type="number"
-                min="1"
-                {...register("totalFlats", {
-                  required: "Total flats is required",
-                  min: {
-                    value: 1,
-                    message: "Total flats must be at least 1",
-                  },
-                  valueAsNumber: true,
-                })}
-                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent ${
-                  errors.totalFlats ? "border-red-500" : "border-gray-300"
-                }`}
-                placeholder="Enter total number of flats"
-              />
-              {errors.totalFlats && (
-                <p className="text-red-500 text-xs mt-1">
-                  {errors.totalFlats.message}
-                </p>
-              )}
-            </div>
+            <CustomInput
+              type="number"
+              label="Total Number of Flats"
+              {...register("total_units", {
+                required: "Total flats is required",
+                min: {
+                  value: 1,
+                  message: "Total flats must be more than 0",
+                },
+                valueAsNumber: true,
+              })}
+              error={errors?.total_units}
+              value={watch("total_units")}
+            />
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Maintenance Rate (₹ per sqft)
-              </label>
-              <input
-                type="number"
-                min="0"
-                step="0.01"
-                {...register("maintenanceRatePerSqft", {
-                  min: {
-                    value: 0,
-                    message: "Rate cannot be negative",
-                  },
-                  valueAsNumber: true,
-                })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                placeholder="Enter maintenance rate per sqft"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Maintenance Fixed Amount
-              </label>
-              <input
-                type="number"
-                min="0"
-                step="0.01"
-                {...register("maintenanceFixedAmount", {
-                  min: {
-                    value: 0,
-                    message: "Amount cannot be negative",
-                  },
-                  valueAsNumber: true,
-                })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                placeholder="Enter maintenance fixed amount"
-              />
-            </div>
+            <CustomSelect
+              {...register("is_prev")}
+              label="Create Previous Month Bill"
+            >
+              <option value={"true"}>Yes</option>
+              <option value={"false"}>No</option>
+            </CustomSelect>
           </div>
         );
 
@@ -487,6 +317,31 @@ const UpdateSocietyModal: React.FC<UpdateSocietyModalProps> = ({
         return null;
     }
   };
+
+  useEffect(() => {
+    if (!isOpen || !orgId) {
+      return;
+    }
+
+    setLoading(true);
+    handleGetOrganization(orgId)
+      .then((res) => {
+        setValue("name", res?.name);
+        setValue("registration_number", res?.registration_number);
+        setValue("established_date", res?.established_date);
+        setValue("address_line_1", res?.address_line_1);
+        setValue("address_line_2", res?.address_line_2);
+        setValue("city", res?.city);
+        setValue("state", res?.state);
+        setValue("pincode", res?.pincode);
+        setValue("phone", res?.phone);
+        setValue("total_units", res?.total_units);
+        setValue("is_prev", res?.is_prev);
+        setData(res);
+      })
+      .catch(() => setData(null))
+      .finally(() => setLoading(false));
+  }, [orgId, isOpen]);
 
   if (!isOpen) return null;
 
@@ -498,90 +353,80 @@ const UpdateSocietyModal: React.FC<UpdateSocietyModalProps> = ({
       size="lg"
     >
       <form onSubmit={handleSubmit(onFormSubmit)}>
-        {/* Progress Steps */}
-        <div className="px-6 py-4 bg-gray-50">
-          <div className="flex justify-between items-center">
-            {steps.map((step, index) => (
-              <div key={step.id} className="flex items-center">
-                <div
-                  className={`flex items-center justify-center w-8 h-8 rounded-full text-xs font-medium transition-all ${
-                    step.id <= currentStep
-                      ? "bg-indigo-600 text-white"
-                      : "bg-gray-200 text-gray-500"
-                  }`}
-                >
-                  {step.id < currentStep ? (
-                    <CheckCircle className="w-4 h-4" />
-                  ) : (
-                    step.id
-                  )}
+        {loading && <p className="text-center text-gray-500">Loading...</p>}
+
+        {!loading && !data && (
+          <p className="text-center text-gray-500">No data found.</p>
+        )}
+
+        {!loading && data && (
+          <>
+            <div className="p-6 max-h-[60vh] overflow-y-auto">
+              {renderStepContent()}
+            </div>
+
+            <div className="flex justify-between items-center p-6 border-t bg-gray-50">
+              <button
+                type="button"
+                onClick={prevStep}
+                disabled={currentStep === 1}
+                className="inline-flex items-center gap-2 px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                Previous
+              </button>
+
+              {currentStep < 4 ? (
+                <div className="flex items-center gap-2">
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="inline-flex items-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                        Updating...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="w-4 h-4" />
+                        Update Society
+                      </>
+                    )}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={nextStep}
+                    className="inline-flex items-center gap-2 px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium"
+                  >
+                    Next Step
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
                 </div>
-                <span
-                  className={`ml-2 text-xs font-medium ${
-                    step.id <= currentStep ? "text-indigo-600" : "text-gray-400"
-                  }`}
-                >
-                  {step.title}
-                </span>
-                {index < steps.length - 1 && (
-                  <div
-                    className={`flex-1 mx-3 h-0.5 ${
-                      step.id < currentStep ? "bg-indigo-600" : "bg-gray-300"
-                    }`}
-                    style={{ minWidth: "20px" }}
-                  />
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Form Content */}
-        <div className="p-6 max-h-[60vh] overflow-y-auto">
-          {renderStepContent()}
-        </div>
-
-        {/* Navigation Buttons */}
-        <div className="flex justify-between items-center p-6 border-t bg-gray-50">
-          <button
-            type="button"
-            onClick={prevStep}
-            disabled={currentStep === 1}
-            className="inline-flex items-center gap-2 px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Previous
-          </button>
-
-          {currentStep < 4 ? (
-            <button
-              type="button"
-              onClick={nextStep}
-              className="inline-flex items-center gap-2 px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium"
-            >
-              Next Step
-              <ArrowRight className="w-4 h-4" />
-            </button>
-          ) : (
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="inline-flex items-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isSubmitting ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                  Updating...
-                </>
               ) : (
-                <>
-                  <Save className="w-4 h-4" />
-                  Update Society
-                </>
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="inline-flex items-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      Updating...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-4 h-4" />
+                      Update Society
+                    </>
+                  )}
+                </button>
               )}
-            </button>
-          )}
-        </div>
+            </div>
+          </>
+        )}
       </form>
     </Modal>
   );

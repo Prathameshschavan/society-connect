@@ -39,5 +39,5 @@ export const updateProfile = async (id: string, data: IProfile) => {
 };
 
 export const deleteProfile = async (id: string) => {
-  return await api.put(`profiles/${id}`);
+  return await api.delete(`profiles/${id}`);
 };

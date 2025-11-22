@@ -1,6 +1,9 @@
 import api from "../libs/axios";
 import type { GETMethodParams } from "../types/general.types";
-import type { IOrganization } from "../types/organization.types";
+import type {
+  IOrganization,
+  TCreateOrganizationData,
+} from "../types/organization.types";
 
 export const getOrganization = async (id: string) => {
   return await api.get(`organizations/${id}`);
@@ -28,14 +31,17 @@ export const getAllOrganizations = async ({
   return await api.get(url);
 };
 
-export const createOrganization = async (data: IOrganization) => {
+export const createOrganization = async (data: TCreateOrganizationData) => {
   return await api.post("organizations", data);
 };
 
-export const updateOrganization = async (id: string, data: IOrganization) => {
+export const updateOrganization = async (
+  id: string,
+  data: Partial<IOrganization>
+) => {
   return await api.put(`organizations/${id}`, data);
 };
 
 export const deleteOrganization = async (id: string) => {
   return await api.delete(`organizations/${id}`);
-}
+};

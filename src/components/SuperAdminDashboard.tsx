@@ -1,13 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { Building2, Plus, Edit, Eye, Trash2, Home } from "lucide-react";
+import { Plus, Edit, Eye, Trash2 } from "lucide-react";
 import TopNav from "./TopNav";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import OnboardSocietyModal from "./Modals/OnboardSocietyModal";
-import {
-  useOrganizationStore,
-  type Organization,
-} from "../libs/stores/useOrganizationStore";
-import useOrganizationService from "../hooks/serviceHooks/useOrganizationService";
+import { useOrganizationStore } from "../libs/stores/useOrganizationStore";
 import GenericTable, {
   type TableAction,
   type TableColumn,
@@ -16,6 +12,9 @@ import ConfirmationAlert from "./Modals/ConfirmationAlert";
 import UpdateSocietyModal from "./Modals/UpdatedSocietyModal";
 import ViewSocietyDetailsModal from "./Modals/ViewSocietyDetailsModal";
 import usePaginationService from "../hooks/serviceHooks/usePaginationService";
+import type { IOrganization } from "../types/organization.types";
+import useOrganizationApiService from "../hooks/apiHooks/useOrganizationApiService";
+import { deleteOrganization } from "../apis/organization.apis";
 
 const SuperAdminDashboard = () => {
   const [isOnboardModalOpen, setIsOnboardModalOpen] = useState(false);
@@ -24,7 +23,7 @@ const SuperAdminDashboard = () => {
   const [isViewSocietyModalOpen, setIsViewSocietyModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [confirmationAlert, setConfirmationAlert] = useState(false);
-  const [selectedOrg, setSelectedOrg] = useState<Organization | null>(null);
+  const [selectedOrg, setSelectedOrg] = useState<IOrganization | null>(null);
 
   const {
     currentPage,
@@ -34,23 +33,18 @@ const SuperAdminDashboard = () => {
     handlePageSizeChange,
     setPagination,
   } = usePaginationService();
-  const { organizations, organizationsCount, totalUnitsCount } =
-    useOrganizationStore();
-  const { fetchOrganization, searchOrganizations, softDeleteOrganization } =
-    useOrganizationService();
+  const { organizations } = useOrganizationStore();
+  const { handleGetAllOrganizations } = useOrganizationApiService();
 
   // Load data with pagination
   const loadData = async () => {
     setLoading(true);
     try {
-      const result = await fetchOrganization({
+      const res = await handleGetAllOrganizations({
         page: currentPage,
-        pageSize: pageSize,
+        limit: pageSize,
       });
-
-      if (result) {
-        setPagination(result.pagination as never);
-      }
+      setPagination(res?.meta);
     } catch (error) {
       console.error("Error loading data:", error);
     } finally {
@@ -62,7 +56,7 @@ const SuperAdminDashboard = () => {
     loadData();
   }, [currentPage, pageSize]);
 
-  const columns: TableColumn<Organization>[] = [
+  const columns: TableColumn<IOrganization>[] = [
     {
       key: "name",
       header: "Society Name",
@@ -83,23 +77,9 @@ const SuperAdminDashboard = () => {
       header: "Units",
       className: "text-gray-900 font-medium",
     },
-    {
-      key: "admin",
-      header: "Admin",
-      render: (org) => (
-        <div>
-          <div className="text-gray-900 font-medium">
-            {org?.admin?.[0]?.full_name || "N/A"}
-          </div>
-          <div className="text-sm text-gray-500">
-            {org?.admin?.[0]?.phone || ""}
-          </div>
-        </div>
-      ),
-    },
   ];
 
-  const actions: TableAction<Organization>[] = [
+  const actions: TableAction<IOrganization>[] = [
     {
       icon: <Eye className="w-4 h-4" />,
       onClick: (org) => {
@@ -132,79 +112,25 @@ const SuperAdminDashboard = () => {
     },
   ];
 
-  function debounce<T extends (...args: any[]) => void>(
-    func: T,
-    wait: number
-  ): (...args: Parameters<T>) => void {
-    let timeout: NodeJS.Timeout;
-    return (...args: Parameters<T>) => {
-      clearTimeout(timeout);
-      timeout = setTimeout(() => func(...args), wait);
-    };
-  }
-
-  const debouncedSearch = useCallback(
-    debounce((searchQuery: string) => {
-      searchOrganizations(searchQuery);
-    }, 500),
-    [searchOrganizations]
-  );
   return (
     <div className="min-h-screen bg-gray-50">
       <TopNav view="super_admin" />
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="space-y-6">
-          {/* Header */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">
-                  Super Admin Dashboard
-                </h1>
-                <p className="text-gray-600">
-                  Manage all societies and onboard new ones
-                </p>
-              </div>
-              <button
-                onClick={() => {
-                  setIsOnboardModalOpen(true);
-                }}
-                className="cursor-pointer flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors shadow-lg"
-              >
-                <Plus className="w-5 h-5" />
-                Onboard New Society
-              </button>
-            </div>
-          </div>
-
-          {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl p-6 text-white">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-blue-100 text-sm font-medium">
-                    Total Societies
-                  </p>
-                  <p className="text-3xl font-bold">{organizationsCount}</p>
-                </div>
-                <Building2 className="w-8 h-8 text-blue-200" />
-              </div>
-            </div>
-            <div className="bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl p-6 text-white">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-purple-100 text-sm font-medium">
-                    Total Units
-                  </p>
-                  <p className="text-3xl font-bold">{totalUnitsCount}</p>
-                </div>
-                <Home className="w-8 h-8 text-purple-200" />
-              </div>
-            </div>
+          <div className="flex  justify-end items-end">
+            <button
+              onClick={() => {
+                setIsOnboardModalOpen(true);
+              }}
+              className="cursor-pointer  flex items-center gap-2 bg-[#22C36E] text-white px-6 py-3 rounded-lg font-medium transition-colors shadow-lg"
+            >
+              <Plus className="w-5 h-5" />
+              Onboard New Society
+            </button>
           </div>
 
           <GenericTable
-            title="All Societies"
+            title="Societies"
             columns={columns}
             data={organizations}
             actions={actions}
@@ -217,33 +143,37 @@ const SuperAdminDashboard = () => {
             onPageChange={handlePageChange}
             onPageSizeChange={handlePageSizeChange}
             pageSizeOptions={[5, 10, 20, 50]}
-            onSearch={(searchQuery) => {
-              debouncedSearch(searchQuery);
-            }}
           />
         </div>
       </main>
       <OnboardSocietyModal
         isOpen={isOnboardModalOpen}
         onClose={() => setIsOnboardModalOpen(false)}
+        callback={() => loadData()}
       />
-      <UpdateSocietyModal
-        isOpen={isUpdateSocietyModalOpen}
-        onClose={() => setIsUpdateSocietyModalOpen(false)}
-        societyData={selectedOrg}
-      />
-      <ViewSocietyDetailsModal
-        isOpen={isViewSocietyModalOpen}
-        onClose={() => setIsViewSocietyModalOpen(false)}
-        society={selectedOrg}
-      />
+      {isUpdateSocietyModalOpen && (
+        <UpdateSocietyModal
+          isOpen={isUpdateSocietyModalOpen}
+          onClose={() => setIsUpdateSocietyModalOpen(false)}
+          orgId={selectedOrg?.id as string}
+          callback={() => loadData()}
+        />
+      )}
+      {isViewSocietyModalOpen && (
+        <ViewSocietyDetailsModal
+          isOpen={isViewSocietyModalOpen}
+          onClose={() => setIsViewSocietyModalOpen(false)}
+          orgId={selectedOrg?.id as string}
+        />
+      )}
       <ConfirmationAlert
         isOpen={confirmationAlert}
         onClose={() => setConfirmationAlert(false)}
         message="Are you sure want to delete this organization?"
         showIcon
         onConfirm={async () => {
-          await softDeleteOrganization(selectedOrg?.id as string);
+          await deleteOrganization(selectedOrg?.id as string);
+          loadData();
           setConfirmationAlert(false);
         }}
       />

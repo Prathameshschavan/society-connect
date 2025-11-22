@@ -19,7 +19,6 @@ import toast from "react-hot-toast";
 import { useNavigate, useParams } from "react-router-dom";
 import GenericTable, { type TableAction } from "../components/ui/GenericTable";
 import { useProfileStore } from "../libs/stores/useProfileStore";
-import useAdminService from "../hooks/serviceHooks/useAdminService";
 import OnboardResidentModal from "../components/Modals/OnboardResidentModal";
 import ViewResidentDetailsModal from "../components/Modals/ViewResidentDetailsModal";
 import UpdateResidentModal from "../components/Modals/UpdateResidentModal";
@@ -53,10 +52,10 @@ const SocietyConfigurationPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
   const { residents, profile } = useProfileStore();
-  const { fetchResidents, permanentlyDeleteResident } = useAdminService();
-  const { handleGetAllProfiles } = useProfileApiService();
+  const { handleGetAllProfiles, handleDeleteProfile } = useProfileApiService();
   const [loading, setLoading] = useState(false);
   const [isOnboardModalOpen, setIsOnboardModalOpen] = useState(false);
+  const [refetch, setRefetch] = useState(true);
 
   const { handleUpdateOrganization } = useOrganizationApiService();
 
@@ -90,6 +89,13 @@ const SocietyConfigurationPage: React.FC = () => {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (refetch) {
+      setRefetch(false);
+      loadData();
+    }
+  }, [currentPage, pageSize, refetch]);
 
   useEffect(() => {
     loadData();
@@ -137,7 +143,7 @@ const SocietyConfigurationPage: React.FC = () => {
   } = useForm<IOrganization>({
     defaultValues: {
       name: "",
-      address: "",
+      address_line_1: "",
       city: "",
       state: "",
       pincode: "",
@@ -145,14 +151,7 @@ const SocietyConfigurationPage: React.FC = () => {
       registration_number: "",
       established_date: "",
       total_units: 0,
-      maintenance_rate: 0,
-      maintenance_amount: 0,
-      tenant_maintenance_rate: 0,
-      tenant_maintenance_amount: 0,
-      penalty_amount: 0,
-      penalty_rate: 0,
       extras: [],
-      due_date: 0,
     },
   });
 
@@ -167,18 +166,18 @@ const SocietyConfigurationPage: React.FC = () => {
       const updateData = {
         ...profile?.organization,
         name: data.name,
-        address: data.address || "",
+        address: data.address_line_1 || "",
         city: data.city || "",
         state: data.state || "",
         pincode: data.pincode || "",
         phone: data.phone || "",
         registration_number: data.registration_number || "",
         established_date: data.established_date || "",
-        total_units: data.total_units || 0,
-        maintenance_rate: data.maintenance_rate || 0,
-        maintenance_amount: data.maintenance_amount || 0,
-        tenant_maintenance_rate: data.tenant_maintenance_rate || 0,
-        tenant_maintenance_amount: data.tenant_maintenance_amount || 0,
+        total_units: data.total_units,
+        maintenance_rate: data.maintenance_rate ,
+        maintenance_amount: data.maintenance_amount ,
+        tenant_maintenance_rate: data.tenant_maintenance_rate ,
+        tenant_maintenance_amount: data.tenant_maintenance_amount ,
         extras: data.extras || [],
         due_date: Number(data.due_date),
         penalty_rate: data?.penalty_rate,
@@ -222,7 +221,12 @@ const SocietyConfigurationPage: React.FC = () => {
 
       case "maintenance":
         return (
-          <Maintenance setValue={setValue} watch={watch} register={register} />
+          <Maintenance
+            setValue={setValue}
+            watch={watch}
+            register={register}
+            errors={errors}
+          />
         );
 
       default:
@@ -263,7 +267,7 @@ const SocietyConfigurationPage: React.FC = () => {
           setOrganization(data);
           // Populate form fields
           setValue("name", data?.name || "");
-          setValue("address", data?.address || "");
+          setValue("address_line_1", data?.address || "");
           setValue("city", data?.city || "");
           setValue("state", data?.state || "");
           setValue("pincode", data?.pincode || "");
@@ -271,18 +275,18 @@ const SocietyConfigurationPage: React.FC = () => {
           setValue("registration_number", data?.registration_number || "");
           setValue("established_date", establishedDate);
           setValue("total_units", data?.total_units || 0);
-          setValue("maintenance_rate", data?.maintenance_rate || 0);
-          setValue("maintenance_amount", data?.maintenance_amount || 0);
+          setValue("maintenance_rate", data?.maintenance_rate );
+          setValue("maintenance_amount", data?.maintenance_amount );
           setValue("due_date", data?.due_date || "");
-          setValue("penalty_amount", data?.penalty_amount || 0);
-          setValue("penalty_rate", data?.penalty_rate || 0);
+          setValue("penalty_amount", data?.penalty_amount );
+          setValue("penalty_rate", data?.penalty_rate );
           setValue(
             "tenant_maintenance_rate",
-            data?.tenant_maintenance_rate || 0
+            data?.tenant_maintenance_rate 
           );
           setValue(
             "tenant_maintenance_amount",
-            data?.tenant_maintenance_amount || 0
+            data?.tenant_maintenance_amount 
           );
           setValue("extras", data?.extras || []);
           setValue("calculate_maintenance_by", data?.calculate_maintenance_by);
@@ -403,7 +407,6 @@ const SocietyConfigurationPage: React.FC = () => {
         onPageChange={handlePageChange}
         onPageSizeChange={handlePageSizeChange}
         pageSizeOptions={[5, 10, 20, 50]}
-        onSearch={() => {}}
       />
       <OnboardResidentModal
         isOpen={isOnboardModalOpen}
@@ -418,14 +421,15 @@ const SocietyConfigurationPage: React.FC = () => {
         resident={selectedProfile}
         isOpen={isUpdateResidentModalOpen}
         onClose={() => setIsUpdateResidentModalOpen(false)}
+        callback={() => setRefetch(true)}
       />
       <ConfirmationAlert
         isOpen={isDeleteConfirmationModalOpen}
         onClose={() => setIsDeleteConfirmationModalOpen(false)}
         message="Are you sure want to delete this resident?"
         onConfirm={async () => {
-          await permanentlyDeleteResident(selectedProfile?.id as string);
-          fetchResidents({ orgId, sortBy: "unit_number", sortOrder: "asc" });
+          await handleDeleteProfile(selectedProfile?.id as string);
+          setRefetch(true);
           setIsDeleteConfirmationModalOpen(false);
         }}
       />

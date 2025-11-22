@@ -1,26 +1,28 @@
 import type React from "react";
 import type {
+  FieldErrors,
   UseFormRegister,
   UseFormSetValue,
   UseFormWatch,
 } from "react-hook-form";
-import type {
-  ExtraItem,
-  Organization,
-} from "../../libs/stores/useOrganizationStore";
+import type { ExtraItem } from "../../libs/stores/useOrganizationStore";
 import { useEffect, useState } from "react";
 import { AlertCircle, Minus, Plus } from "lucide-react";
 import { Switch } from "../ui/GenericSwitch";
+import type { IOrganization } from "../../types/organization.types";
+import CustomInput from "../ui/CustomInput";
+import CustomSelect from "../ui/CustomSelect";
 
 const Maintenance: React.FC<{
-  register: UseFormRegister<Organization>;
-  setValue: UseFormSetValue<Organization>;
-  watch: UseFormWatch<Organization>;
-}> = ({ register, setValue, watch }) => {
+  register: UseFormRegister<IOrganization>;
+  setValue: UseFormSetValue<IOrganization>;
+  watch: UseFormWatch<IOrganization>;
+  errors: FieldErrors<IOrganization>;
+}> = ({ register, setValue, watch, errors }) => {
   const watchedExtras = watch("extras") || [];
   const [extras, setExtras] = useState<ExtraItem[]>([]);
   const [isMaintenanceCalculatedByFixed, setIsMaintenanceCalculatedByFixed] =
-    useState(watch("is_maintenance_calculated_by_fixed"));
+    useState(watch("calculate_maintenance_by") === "fixed");
 
   // Sync local state with form state
   useEffect(() => {
@@ -33,8 +35,8 @@ const Maintenance: React.FC<{
     const newExtra: ExtraItem = {
       id: Date.now().toString(),
       name: "",
-      amount: 0,
       month: "",
+      amount: Number("null"),
       year: "",
     };
     const updatedExtras = [...extras, newExtra];
@@ -59,6 +61,8 @@ const Maintenance: React.FC<{
     setExtras(updatedExtras);
     setValue("extras", updatedExtras, { shouldDirty: true });
   };
+
+  console.log(errors);
 
   return (
     <div className="space-y-8">
@@ -94,9 +98,6 @@ const Maintenance: React.FC<{
                   value ? "fixed" : "perSQFT",
                   { shouldDirty: true }
                 );
-                setValue("is_maintenance_calculated_by_fixed", value, {
-                  shouldDirty: true,
-                });
                 setIsMaintenanceCalculatedByFixed((prev) => !prev);
               }}
             />
@@ -107,21 +108,21 @@ const Maintenance: React.FC<{
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {!isMaintenanceCalculatedByFixed ? (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Maintenance Rate (₹ per sq ft)
-              </label>
-              <input
+              <CustomInput
+                label="Maintenance Rate (₹ per sq ft)"
                 type="number"
-                min="0"
                 step="0.01"
                 {...register("maintenance_rate", {
+                  required:
+                    "Maintenance rate should be greater than and equal to 1",
                   min: {
-                    value: 0,
-                    message: "Rate cannot be negative",
+                    value: 1,
+                    message:
+                      "Maintenance rate should be greater than and equal to 1",
                   },
                   valueAsNumber: true,
                 })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                error={errors?.maintenance_rate}
               />
               <p className="text-[10px] text-gray-500 mt-1">
                 Example: If rate is ₹2.50, a 1000 sq ft unit will pay
@@ -129,43 +130,42 @@ const Maintenance: React.FC<{
               </p>
             </div>
           ) : (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Maintenance Fixed Amount (₹ per month)
-              </label>
-              <input
-                type="number"
-                min="0"
-                step="0.01"
-                {...register("maintenance_amount", {
-                  min: {
-                    value: 0,
-                    message: "Rate cannot be negative",
-                  },
-                  valueAsNumber: true,
-                })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-              />
-            </div>
+            <CustomInput
+              label="Maintenance Fixed Amount (₹ per month)"
+              type="number"
+              step="0.01"
+              {...register("maintenance_amount", {
+                required:
+                  "Maintenance amount should be greater than and equal to 1",
+                min: {
+                  value: 1,
+                  message:
+                    "Maintenance amount should be greater than and equal to 1",
+                },
+                valueAsNumber: true,
+              })}
+              error={errors?.maintenance_amount}
+            />
           )}
 
           {!isMaintenanceCalculatedByFixed ? (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Tenant Maintenance Rate (₹ per sq ft)
-              </label>
-              <input
+              <CustomInput
+                label="Tenant Maintenance Rate (₹ per sq ft)"
                 type="number"
                 min="0"
                 step="0.01"
                 {...register("tenant_maintenance_rate", {
+                  required:
+                    "Tenant maintenance rate should be greater than and equal to 1",
                   min: {
-                    value: 0,
-                    message: "Rate cannot be negative",
+                    value: 1,
+                    message:
+                      "Tenant maintenance rate should be greater than and equal to 1",
                   },
                   valueAsNumber: true,
                 })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                error={errors?.tenant_maintenance_rate}
               />
               <p className="text-[10px] text-gray-500 mt-1">
                 Example: If rate is ₹2.50, a 1000 sq ft unit will pay
@@ -173,87 +173,83 @@ const Maintenance: React.FC<{
               </p>
             </div>
           ) : (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Tenant Maintenance Fixed Amount (₹ per month)
-              </label>
-              <input
-                type="number"
-                min="0"
-                step="0.01"
-                {...register("tenant_maintenance_amount", {
-                  min: {
-                    value: 0,
-                    message: "Maintenance amount cannot be negative",
-                  },
-                  valueAsNumber: true,
-                })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-              />
-            </div>
+            <CustomInput
+              label="Tenant Maintenance Fixed Amount (₹ per month)"
+              type="number"
+              min="0"
+              step="0.01"
+              {...register("tenant_maintenance_amount", {
+                required:
+                  "Tenant maintenance amount should be greater than and equal to 1",
+                min: {
+                  value: 1,
+                  message:
+                    "Tenant maintenance amount should be greater than and equal to 1",
+                },
+                valueAsNumber: true,
+              })}
+              error={errors?.tenant_maintenance_amount}
+            />
           )}
 
           {!isMaintenanceCalculatedByFixed ? (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Penalty Rate (₹ per sq ft)
-              </label>
-              <input
-                type="number"
-                min="0"
-                step="0.01"
-                {...register("penalty_rate", {
-                  min: {
-                    value: 0,
-                    message: "Penalty rate cannot be negative",
-                  },
-                  valueAsNumber: true,
-                })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-              />
-              <p className="text-[10px] text-gray-500 mt-1">
-                Example: If rate is ₹2.50, a 1000 sq ft unit will pay
-                ₹2,500/month
-              </p>
-            </div>
+            <CustomInput
+              label="Penalty Rate (₹ per sq ft)"
+              type="number"
+              min="0"
+              step="0.01"
+              {...register("penalty_rate", {
+                required: "Penalty rate should be greater than and equal to 1",
+                min: {
+                  value: 1,
+                  message: "Penalty rate should be greater than and equal to 1",
+                },
+                valueAsNumber: true,
+              })}
+              error={errors?.penalty_rate}
+            />
           ) : (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Penalty Fixed Amount (₹ per month)
-              </label>
-              <input
-                type="number"
-                min="0"
-                step="0.01"
-                {...register("penalty_amount", {
-                  min: {
-                    value: 0,
-                    message: "Penalty amount cannot be negative",
-                  },
-                  valueAsNumber: true,
-                })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-              />
-            </div>
+            <CustomInput
+              label="Penalty Fixed Amount (₹ per month)"
+              type="number"
+              min="0"
+              step="0.01"
+              {...register("penalty_amount", {
+                required:
+                  "Penalty amount should be greater than and equal to 1",
+                min: {
+                  value: 1,
+                  message:
+                    "Penalty amount should be greater than and equal to 1",
+                },
+                valueAsNumber: true,
+              })}
+              error={errors?.penalty_amount}
+            />
           )}
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Due Date Per Month
-            </label>
-
-            <select
-              {...register("due_date", { required: "Due date is required" })}
-              className="w-full px-3 py-2 border rounded-lg border-gray-300"
-            >
-              <option value="">Select a due date</option>
-              <option value="10">10th of every month</option>
-              <option value="15">15th of every month</option>
-              <option value="20">20th of every month</option>
-              <option value="25">25th of every month</option>
-              <option value="last">Last day of the month</option>
-            </select>
-          </div>
+          <CustomSelect
+            label="Due Date Per Month"
+            {...register("due_date", { required: "Due date is required" })}
+          >
+            {[...Array(28).keys()].map((d) => {
+              const day = d + 1;
+              return (
+                <option key={day} value={day.toString()}>
+                  {day}
+                  {day === 1
+                    ? "st"
+                    : day === 2
+                    ? "nd"
+                    : day === 3
+                    ? "rd"
+                    : "th"}{" "}
+                  of every month
+                </option>
+              );
+            })}
+            <option value="last">Last day of the month</option>
+          </CustomSelect>
         </div>
       </div>
 

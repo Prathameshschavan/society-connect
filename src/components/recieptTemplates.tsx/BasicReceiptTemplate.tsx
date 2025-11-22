@@ -581,7 +581,7 @@ function BillPdfDownload({
   };
 
   const organizationAddress = [
-    profile?.organization?.address,
+    profile?.organization?.address_line_1,
     profile?.organization?.city,
     profile?.organization?.state,
     profile?.organization?.pincode,

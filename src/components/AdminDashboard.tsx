@@ -309,7 +309,7 @@ const AdminDashboard = () => {
           <div className=" grid grid-cols-3 lg:grid-cols-7 gap-4">
             <GenericSelect
               id="months"
-              onChange={(value) => handleFilterChange("billMonth", value)}
+              onChange={(value) => handleFilterChange("billMonth", value as string)}
               options={[
                 { label: "All Months", value: "" },
                 ...shortMonth.map((month, i) => ({
@@ -323,7 +323,7 @@ const AdminDashboard = () => {
 
             <GenericSelect
               id="years"
-              onChange={(value) => handleFilterChange("billYear", value)}
+              onChange={(value) => handleFilterChange("billYear", value as string)}
               options={[
                 { label: "All Years", value: "" },
                 ...Array.from(
@@ -340,7 +340,7 @@ const AdminDashboard = () => {
 
             <GenericSelect
               id="unitFilter"
-              onChange={(value) => handleFilterChange("unitNumber", value)}
+              onChange={(value) => handleFilterChange("unitNumber", value as string)}
               options={[
                 { label: "All Units", value: "" },
                 ...residents.map((resident) => ({

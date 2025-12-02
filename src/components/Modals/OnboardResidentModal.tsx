@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import { useForm, type SubmitHandler } from "react-hook-form";
 import {
   User,
-  Home,
   Users,
   CheckCircle,
   ArrowRight,
@@ -18,7 +17,6 @@ import ActionModalHeader from "../ActionModalHeader";
 import CustomInput from "../ui/CustomInput";
 import CustomSelect from "../ui/CustomSelect";
 import type { AddResidentParams } from "../../apis/resident.apis";
-import useUnitApiService from "../../hooks/apiHooks/useUnitApiService";
 
 export interface ResidentFormData {
   // Personal Info

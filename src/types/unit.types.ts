@@ -6,6 +6,6 @@ export interface IUnit {
   square_footage: number;
   unit_type: string;
   organization_id: string;
-  profile_id?: string;
+  profile_id?: string | null;
   profile?: IProfile;
 }

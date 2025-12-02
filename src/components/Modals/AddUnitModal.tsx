@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useForm, type SubmitHandler } from "react-hook-form";
-import { Home } from "lucide-react";
-import Modal from "./Modal";
+import Modal, { ModalBody, ModalFooter } from "./Modal";
 import CustomInput from "../ui/CustomInput";
 import CustomSelect from "../ui/CustomSelect";
 import Autocomplete from "../ui/Autocomplete";
@@ -98,109 +97,91 @@ const AddUnitModal: React.FC<AddUnitModalProps> = ({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={handleModalClose} size="lg">
-      <div className="p-6">
-        {/* Header */}
-        <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gray-200">
-          <div className="p-2 bg-green-100 rounded-lg">
-            <Home className="w-6 h-6 text-green-600" />
-          </div>
-          <div>
-            <h2 className="text-2xl font-semibold text-gray-900">
-              Add New Unit
-            </h2>
-            <p className="text-sm text-gray-500 mt-1">
-              Create a new unit in the system
-            </p>
-          </div>
-        </div>
+    <Modal
+      isOpen={isOpen}
+      title="Add Unit"
+      onClose={handleModalClose}
+      size="lg"
+    >
+      <form onSubmit={handleSubmit(onFormSubmit)}>
+        <ModalBody>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <CustomInput
+              key="unitNumber"
+              label="Unit Number"
+              type="text"
+              placeholder="e.g., 101, A-12"
+              {...register("unitNumber", {
+                required: "Unit number is required",
+              })}
+              error={errors.unitNumber?.message}
+            />
 
-        {/* Form */}
-        <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-6">
-          {/* Unit Information Section */}
-          <div>
-            <h3 className="text-lg font-medium text-gray-900 mb-4">
-              Unit Information
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <CustomInput
-                key="unitNumber"
-                label="Unit Number"
-                type="text"
-                placeholder="e.g., 101, A-12"
-                {...register("unitNumber", {
-                  required: "Unit number is required",
-                })}
-                error={errors.unitNumber?.message}
-              />
+            <CustomInput
+              key="squareFootage"
+              label="Square Footage"
+              type="number"
+              placeholder="e.g., 1200"
+              {...register("squareFootage", {
+                required: "Square footage is required",
+                min: {
+                  value: 1,
+                  message: "Square footage must be greater than 0",
+                },
+              })}
+              error={errors.squareFootage?.message}
+            />
 
-              <CustomInput
-                key="squareFootage"
-                label="Square Footage"
-                type="number"
-                placeholder="e.g., 1200"
-                {...register("squareFootage", {
-                  required: "Square footage is required",
-                  min: {
-                    value: 1,
-                    message: "Square footage must be greater than 0",
-                  },
-                })}
-                error={errors.squareFootage?.message}
-              />
-
-              <CustomSelect
-                key="unitType"
-                label="Unit Type"
-                {...register("unitType", {
-                  required: "Unit type is required",
-                })}
-                error={errors.unitType?.message}
-              >
-                <option value="1RK">1RK</option>
-                <option value="1BHK">1BHK</option>
-                <option value="2BHK">2BHK</option>
-                <option value="3BHK">3BHK</option>
-                <option value="4BHK">4BHK</option>
-                <option value="Studio">Studio</option>
-                <option value="Penthouse">Penthouse</option>
-                <option value="Other">Other</option>
-              </CustomSelect>
-
-              <Autocomplete
-                label="Assign Resident (Optional)"
-                options={residents.map((resident) => ({
-                  value: resident.id || "",
-                  label: `${resident.full_name} (${resident.phone})`,
-                }))}
-                value={selectedProfileId}
-                onChange={(value) => setValue("profileId", value)}
-                onAddNew={() => setIsAddResidentModalOpen(true)}
-                placeholder="Search for a resident..."
-              />
-            </div>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
-            <button
-              type="button"
-              onClick={handleModalClose}
-              className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
-              disabled={isSubmitting}
+            <CustomSelect
+              key="unitType"
+              label="Unit Type"
+              {...register("unitType", {
+                required: "Unit type is required",
+              })}
+              error={errors.unitType?.message}
             >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="px-6 py-2 bg-[#22C36E] text-white rounded-lg hover:bg-[#1ea05f] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isSubmitting ? "Adding..." : "Add Unit"}
-            </button>
+              <option value="1RK">1RK</option>
+              <option value="1BHK">1BHK</option>
+              <option value="2BHK">2BHK</option>
+              <option value="3BHK">3BHK</option>
+              <option value="4BHK">4BHK</option>
+              <option value="Studio">Studio</option>
+              <option value="Penthouse">Penthouse</option>
+              <option value="Other">Other</option>
+            </CustomSelect>
+
+            <Autocomplete
+              label="Assign Resident (Optional)"
+              options={residents.map((resident) => ({
+                value: resident.id || "",
+                label: `${resident.full_name} (${resident.phone})`,
+              }))}
+              value={selectedProfileId}
+              onChange={(value) => setValue("profileId", value)}
+              onAddNew={() => setIsAddResidentModalOpen(true)}
+              placeholder="Search for a resident..."
+            />
           </div>
-        </form>
-      </div>
+        </ModalBody>
+
+        <ModalFooter className="flex justify-end gap-3">
+          <button
+            type="button"
+            onClick={handleModalClose}
+            className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+            disabled={isSubmitting}
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="px-6 py-2 bg-[#22C36E] text-white rounded-lg hover:bg-[#1ea05f] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isSubmitting ? "Adding..." : "Add Unit"}
+          </button>
+        </ModalFooter>
+      </form>
 
       {/* Onboard Resident Modal */}
       <OnboardResidentModal

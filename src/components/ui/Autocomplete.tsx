@@ -189,7 +189,7 @@ const Autocomplete: React.FC<AutocompleteProps> = ({
         className="bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto"
       >
         {filteredOptions.length > 0 ? (
-          filteredOptions.map((option, index) => (
+          [...filteredOptions.splice(0, 3)].map((option, index) => (
             <div
               key={option.value}
               onClick={() => handleSelect(option.value)}

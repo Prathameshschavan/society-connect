@@ -91,7 +91,7 @@ const AdminDashboard = () => {
   } = usePaginationService();
 
   // Stores
-  const { profile, residents } = useProfileStore();
+  const { profile } = useProfileStore();
   const { maintenanceBills } = useMaintenanceStore();
 
   // Modal states
@@ -336,20 +336,6 @@ const AdminDashboard = () => {
               ]}
               value={filters.billYear as OptionValue}
               label="Year"
-            />
-
-            <GenericSelect
-              id="unitFilter"
-              onChange={(value) => handleFilterChange("unitNumber", value as string)}
-              options={[
-                { label: "All Units", value: "" },
-                ...residents.map((resident) => ({
-                  label: resident?.unit_number as OptionValue,
-                  value: resident?.unit_number as OptionValue,
-                })),
-              ]}
-              value={filters.unitNumber || ""}
-              label="Unit Number"
             />
 
             <GenericSelect

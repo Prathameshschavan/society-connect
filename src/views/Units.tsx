@@ -12,6 +12,7 @@ import {
   SortDesc,
   Trash2,
   X,
+  Home,
 } from "lucide-react";
 
 import GenericTable, {
@@ -24,7 +25,6 @@ import usePaginationService from "../hooks/serviceHooks/usePaginationService";
 import useUnitApiService from "../hooks/apiHooks/useUnitApiService";
 import { useUnitStore } from "../libs/stores/useUnitStore";
 import type { IUnit } from "../types/unit.types";
-import { siteSetting } from "../config/siteSetting";
 import { useProfileStore } from "../libs/stores/useProfileStore";
 import ConfirmationAlert from "../components/Modals/ConfirmationAlert";
 import AddUnitModal from "../components/Modals/AddUnitModal";
@@ -258,7 +258,7 @@ const Units = () => {
     },
     {
       key: "profile",
-      header: "Resident",
+      header: "Owner",
       render: (unit) => (
         <div>
           {unit.profile ? (
@@ -266,13 +266,22 @@ const Units = () => {
               <div className="font-medium text-gray-900">
                 {unit.profile.full_name}
               </div>
-              <div className="text-sm text-gray-500 capitalize">
+              <div className="text-sm text-gray-700 capitalize">
                 {unit.profile?.role?.replaceAll("_", " ")}
               </div>
             </div>
           ) : (
             <span className="text-gray-400 italic">Vacant</span>
           )}
+        </div>
+      ),
+    },
+    {
+      key: "tenant",
+      header: "Tenant",
+      render: (unit) => (
+        <div className="text-sm text-gray-700 capitalize">
+          {unit.profile?.is_tenant ? "Yes" : "No"}
         </div>
       ),
     },
@@ -313,52 +322,67 @@ const Units = () => {
   ];
 
   return (
-    <Layout role="admin">
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-5">
-        <div className="flex items-center justify-between gap-5 w-full sm:w-fit">
+    <Layout
+      role="admin"
+      pageHeader={{
+        description: "Manage units, assign owners, and track vacancies",
+        title: "Units",
+        icon: <Home className="w-6 h-6 text-[#0154AC]" />,
+      }}
+      visibileTopSection={false}
+    >
+
+      {/* Actions Bar */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4 mb-6">
+        <div className="flex items-center gap-3 w-full sm:w-auto">
           <button
             onClick={() => setIsAddModalOpen(true)}
-            className={`bg-[#22C36E] w-full sm:w-fit flex items-center whitespace-nowrap justify-center gap-2 text-white px-6 py-2 rounded-lg font-medium transition-colors`}
+            className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 bg-[#22C36E] text-white rounded-lg font-medium hover:bg-[#1ea05f] transition-all duration-200 shadow-sm hover:shadow-md active:scale-[0.98]"
           >
             <Plus className="w-5 h-5" />
-            Add Unit
+            <span>Add Unit</span>
           </button>
           <button
             onClick={() => setVisibleFilters(!visibleFilters)}
-            className={`w-full sm:w-fit flex items-center whitespace-nowrap justify-center gap-2 text-[${siteSetting?.mainColor}] border-[0.5px] px-6 py-2 rounded-lg font-medium transition-colors`}
+            className={`flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 border-2 rounded-lg font-medium transition-all duration-200 ${
+              visibleFilters
+                ? "bg-[#0154AC] text-white border-[#0154AC]"
+                : "bg-white text-[#0154AC] border-[#0154AC] hover:bg-[#0154AC]/5"
+            }`}
           >
             {visibleFilters ? (
               <X className="w-5 h-5" />
             ) : (
               <SlidersHorizontal className="w-5 h-5" />
             )}
-            Filters
+            <span>Filters</span>
           </button>
         </div>
 
-        <div className="relative w-full sm:w-[280px]">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+        <div className="relative w-full sm:w-[320px]">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
           <input
             type="text"
             placeholder="Search by unit number or resident"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full sm:max-w-[280px] pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+            className="w-full pl-10 pr-10 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0154AC] focus:border-[#0154AC] transition-all"
           />
           {searchQuery && (
             <button
               onClick={() => setSearchQuery("")}
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
             >
-              ×
+              <X className="w-4 h-4" />
             </button>
           )}
         </div>
       </div>
 
+      {/* Filters Section */}
       {visibleFilters && (
-        <div className="bg-white p-6 rounded-lg shadow-sm space-y-4">
-          <div className="grid grid-cols-3 lg:grid-cols-6 gap-4">
+        <div className="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-gray-200 mb-6 space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
             <GenericSelect
               id="unitTypeFilter"
               onChange={(value) =>
@@ -412,7 +436,7 @@ const Units = () => {
                   sortOrder: prev.sortOrder === "asc" ? "desc" : "asc",
                 }))
               }
-              className="flex self-end items-center gap-2 px-4 py-1.5 border border-gray-300 rounded hover:bg-gray-50 transition-colors"
+              className="flex self-end items-center gap-2 px-4 py-2.5 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-all duration-200 shadow-sm hover:shadow"
               title={`Sort ${
                 sortState.sortOrder === "asc" ? "Descending" : "Ascending"
               }`}
@@ -422,13 +446,15 @@ const Units = () => {
               ) : (
                 <SortDesc className="w-4 h-4" />
               )}
-              {sortState.sortOrder === "asc" ? "Asc" : "Desc"}
+              <span className="text-sm font-medium">
+                {sortState.sortOrder === "asc" ? "Asc" : "Desc"}
+              </span>
             </button>
 
             <div className="lg:flex justify-end hidden">
               <button
                 onClick={resetFilters}
-                className="px-4 py-2.5 self-end whitespace-nowrap text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded transition-colors"
+                className="px-4 py-2.5 self-end whitespace-nowrap text-sm font-medium text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-all duration-200"
               >
                 Reset Filters
               </button>
@@ -437,7 +463,7 @@ const Units = () => {
           <div className="flex justify-end lg:hidden">
             <button
               onClick={resetFilters}
-              className="px-4 py-2.5 self-end whitespace-nowrap text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded transition-colors"
+              className="px-4 py-2.5 self-end whitespace-nowrap text-sm font-medium text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-all duration-200"
             >
               Reset Filters
             </button>

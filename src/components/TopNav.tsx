@@ -10,7 +10,7 @@ import {
   User,
 } from "lucide-react";
 import React, { useState, useRef, useEffect } from "react";
-import { NavLink, useNavigate } from "react-router-dom";
+import { NavLink } from "react-router-dom";
 import ConfirmationAlert from "./Modals/ConfirmationAlert";
 import { useProfileStore } from "../libs/stores/useProfileStore";
 import Drawer from "./ui/Drawer";
@@ -126,10 +126,13 @@ const TopNav: React.FC<{ view: TRole }> = ({ view }) => {
                   <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200">
                     <div className="px-4 py-2 border-b border-gray-100">
                       <p className="text-sm font-medium text-gray-900">
-                        {profile?.full_name || "User"}
+                        {profile?.full_name}
                       </p>
                       <p className="text-xs font-light text-gray-500 capitalize">
-                        {profile?.role?.replace("_", " ") || "Role"}
+                        {profile?.organization?.name}
+                      </p>
+                      <p className="text-xs font-medium text-gray-700 capitalize">
+                        {profile?.role?.replace("_", " ")}
                       </p>
                     </div>
 

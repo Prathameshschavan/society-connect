@@ -9,132 +9,28 @@ import {
   Save,
   ArrowLeft,
   AlertCircle,
-  Eye,
-  Edit,
-  Trash2,
-  Plus,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { useNavigate, useParams } from "react-router-dom";
-import GenericTable, { type TableAction } from "../components/ui/GenericTable";
-import { useProfileStore } from "../libs/stores/useProfileStore";
-import OnboardResidentModal from "../components/Modals/OnboardResidentModal";
-import ViewResidentDetailsModal from "../components/Modals/ViewResidentDetailsModal";
-import UpdateResidentModal from "../components/Modals/UpdateResidentModal";
-import ConfirmationAlert from "../components/Modals/ConfirmationAlert";
 import Maintenance from "../components/configureSettings/Maintenance";
 import Basic from "../components/configureSettings/Basic";
 import Location from "../components/configureSettings/Location";
 import Contact from "../components/configureSettings/Contact";
 import Property from "../components/configureSettings/Property";
-import usePaginationService from "../hooks/serviceHooks/usePaginationService";
-import { columns } from "../config/tableConfig/configureSettings";
 import { getOrganization } from "../apis/organization.apis";
 import Layout from "../components/Layout/Layout";
 import useOrganizationApiService from "../hooks/apiHooks/useOrganizationApiService";
 import type { IOrganization } from "../types/organization.types";
-import useUnitApiService from "../hooks/apiHooks/useUnitApiService";
-import { useUnitStore } from "../libs/stores/useUnitStore";
-import type { IUnit } from "../types/unit.types";
 
 const SocietyConfigurationPage: React.FC = () => {
   const { orgId } = useParams<{ orgId: string }>();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [selectedUnit, setSelectedUnit] = useState<IUnit | null>(null);
-  const [isViewResidentModalOpen, setIsViewResidentModalOpen] =
-    useState<boolean>(false);
-  const [isUpdateResidentModalOpen, setIsUpdateResidentModalOpen] =
-    useState<boolean>(false);
-  const [isDeleteConfirmationModalOpen, setIsDeleteConfirmationModalOpen] =
-    useState<boolean>(false);
   const [activeTab, setActiveTab] = useState("basic");
   const [organization, setOrganization] = useState<IOrganization | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
-  const { units } = useUnitStore();
-  const { profile } = useProfileStore();
-  const { handleDeleteUnit } = useUnitApiService();
-  const { handleGetAllUnits } = useUnitApiService();
-  const [loading, setLoading] = useState(false);
-  const [isOnboardModalOpen, setIsOnboardModalOpen] = useState(false);
-  const [refetch, setRefetch] = useState(true);
 
   const { handleUpdateOrganization } = useOrganizationApiService();
-
-  const {
-    currentPage,
-    handlePageChange,
-    handlePageSizeChange,
-    pageSize,
-    pagination,
-    setPagination,
-  } = usePaginationService();
-
-  // Load data with pagination
-  const loadData = async () => {
-    setLoading(true);
-    try {
-      const result = await handleGetAllUnits({
-        page: currentPage,
-        limit: pageSize,
-        order: "asc",
-        sortBy: "unit_number",
-        organization_id: orgId,
-      });
-
-      if (result) {
-        setPagination(result.meta);
-      }
-    } catch (error) {
-      console.error("Error loading data:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (refetch) {
-      setRefetch(false);
-      loadData();
-    }
-  }, [currentPage, pageSize, refetch]);
-
-  useEffect(() => {
-    loadData();
-  }, [currentPage, pageSize]);
-
-  const actions: TableAction<IUnit>[] = [
-    {
-      icon: <Eye className="w-4 h-4" />,
-      onClick: (unit) => {
-        setSelectedUnit(unit);
-        setIsViewResidentModalOpen(true);
-      },
-      className:
-        "cursor-pointer p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors",
-      label: "View",
-    },
-    {
-      icon: <Edit className="w-4 h-4" />,
-      onClick: (unit) => {
-        setSelectedUnit(unit);
-        setIsUpdateResidentModalOpen(true);
-      },
-      className:
-        "cursor-pointer p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors",
-      label: "Edit",
-    },
-    {
-      icon: <Trash2 className="w-4 h-4" />,
-      onClick: (unit) => {
-        setSelectedUnit(unit);
-        setIsDeleteConfirmationModalOpen(true);
-      },
-      className:
-        "cursor-pointer p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors",
-      label: "Delete",
-    },
-  ];
 
   const {
     register,
@@ -155,7 +51,7 @@ const SocietyConfigurationPage: React.FC = () => {
     setIsSubmitting(true);
     try {
       const updateData = {
-        ...profile?.organization,
+        ...organization,
         name: data.name,
         address_line_1: data.address_line_1 || "",
         address_line_2: data.address_line_2 || "",
@@ -336,106 +232,65 @@ const SocietyConfigurationPage: React.FC = () => {
   }
 
   return (
-    <Layout role="admin">
-      <form onSubmit={handleSubmit(onSubmit)}>
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-          {/* Tab Navigation */}
-          <div className="border-b border-gray-200 overflow-auto">
-            <nav className="flex items-center" aria-label="Tabs">
-              {tabs.map((tab) => (
-                <button
-                  key={tab.id}
-                  type="button"
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`flex whitespace-nowrap items-center gap-2 py-4 px-4 border-b-2 font-medium text-sm transition-colors ${
-                    activeTab === tab.id
-                      ? "border-indigo-500 text-indigo-600"
-                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                  }`}
-                >
-                  <tab.icon className="w-4 h-4" />
-                  {tab.label}
-                </button>
-              ))}
-            </nav>
+    <Layout role="admin" visibileTopSection={false} pageHeader={{
+      description: "Configure your society's information and maintenance settings",
+      title: "Society Settings",
+      icon: <Building2 className="w-6 h-6 text-[#0154AC]" />,
+    }}>
+      <div className=" mx-auto">
+
+
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          {/* Tab Navigation - Mobile First */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <div className="overflow-x-auto scrollbar-hide">
+              <nav className="flex gap-1 p-2 bg-gray-50/50" aria-label="Tabs">
+                {tabs.map((tab) => (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`flex items-center justify-center gap-2 px-3 sm:px-4 py-2.5 rounded-lg font-medium text-sm whitespace-nowrap transition-all duration-200 ${
+                      activeTab === tab.id
+                        ? "bg-[#0154AC] text-white shadow-md"
+                        : "text-gray-600 hover:bg-white hover:text-gray-900"
+                    }`}
+                  >
+                    <tab.icon className="w-4 h-4 flex-shrink-0" />
+                    <span className="hidden sm:inline">{tab.label}</span>
+                  </button>
+                ))}
+              </nav>
+            </div>
+
+            {/* Tab Content */}
+            <div className="p-4 sm:p-6 bg-white min-h-[400px]">
+              {renderTabContent()}
+            </div>
           </div>
 
-          {/* Tab Content */}
-          <div className="p-6">{renderTabContent()}</div>
-          <div className="pr-6 pb-6 flex justify-end">
+          {/* Sticky Save Button - Mobile Optimized */}
+          <div className="sticky bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg rounded-t-xl sm:rounded-xl sm:border sm:shadow-sm p-4">
             <button
               type="submit"
               disabled={isSubmitting}
-              className="inline-flex items-center gap-2 px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full sm:w-auto sm:min-w-[200px] inline-flex items-center justify-center gap-2 px-6 py-3 bg-[#0154AC] text-white rounded-lg hover:bg-[#013d8a] transition-all duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg active:scale-[0.98]"
             >
               {isSubmitting ? (
                 <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                  Saving...
+                  <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
+                  <span>Saving...</span>
                 </>
               ) : (
                 <>
-                  <Save className="w-4 h-4" />
-                  Save Configuration
+                  <Save className="w-5 h-5" />
+                  <span>Save Configuration</span>
                 </>
               )}
             </button>
           </div>
-        </div>
-      </form>
-      {/* <button
-        type="button"
-        onClick={() => setIsOnboardModalOpen(true)}
-        className={`bg-[#22C36E] w-full sm:w-fit flex items-center whitespace-nowrap justify-center gap-2 text-white px-6 py-2 rounded-lg font-medium transition-colors disabled:opacity-70`}
-      >
-        <Plus className="w-5 h-5" />
-        Add Room Owner
-      </button> */}
-      {/* <GenericTable
-        title="Residents"
-        columns={columns}
-        data={units}
-        actions={actions}
-        loading={loading}
-        emptyMessage="No Resident Found"
-        showPagination
-        pagination={pagination}
-        onPageChange={handlePageChange}
-        onPageSizeChange={handlePageSizeChange}
-        pageSizeOptions={[5, 10, 20, 50]}
-      />
-      {isOnboardModalOpen && (
-        <OnboardResidentModal
-          isOpen={isOnboardModalOpen}
-          onClose={() => setIsOnboardModalOpen(false)}
-          callback={() => setRefetch(true)}
-        />
-      )}
-      {isViewResidentModalOpen && (
-        <ViewResidentDetailsModal
-          resident={selectedUnit}
-          isOpen={isViewResidentModalOpen}
-          onClose={() => setIsViewResidentModalOpen(false)}
-        />
-      )}
-      {isUpdateResidentModalOpen && (
-        <UpdateResidentModal
-          resident={selectedUnit}
-          isOpen={isUpdateResidentModalOpen}
-          onClose={() => setIsUpdateResidentModalOpen(false)}
-          callback={() => setRefetch(true)}
-        />
-      )}
-      <ConfirmationAlert
-        isOpen={isDeleteConfirmationModalOpen}
-        onClose={() => setIsDeleteConfirmationModalOpen(false)}
-        message="Are you sure want to delete this resident?"
-        onConfirm={async () => {
-          await handleDeleteUnit(selectedUnit?.id as string);
-          setRefetch(true);
-          setIsDeleteConfirmationModalOpen(false);
-        }}
-      /> */}
+        </form>
+      </div>
     </Layout>
   );
 };

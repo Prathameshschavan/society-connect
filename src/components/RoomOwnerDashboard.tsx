@@ -48,7 +48,7 @@ const RoomOwnerDashboard = () => {
         page: currentPage,
         pageSize: pageSize,
         filters: {
-          unitNumber: profile?.unit_number,
+          unitNumber: profile?.unit?.unit_number,
         },
       });
 
@@ -130,7 +130,7 @@ const RoomOwnerDashboard = () => {
                   Payment Ledger
                 </h1>
                 <p className="text-gray-600 mt-1">
-                  {profile?.full_name} • Room {profile?.unit_number}
+                  {profile?.full_name} • Room {profile?.unit?.unit_number}
                 </p>
               </div>
               <div className="text-right">

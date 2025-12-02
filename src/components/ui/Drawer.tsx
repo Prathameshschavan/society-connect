@@ -1,14 +1,15 @@
 import { useEffect, useRef } from "react";
 import { NavLink } from "react-router-dom";
 import {
-  X,
   Home,
   Settings,
   BadgeIndianRupee,
   ArrowDownWideNarrow,
-  FileChartColumn,
+  LayoutDashboard,
+  Users,
 } from "lucide-react";
 import { useProfileStore } from "../../libs/stores/useProfileStore";
+import { siteSetting } from "../../config/siteSetting";
 
 type DrawerProps = {
   open: boolean;
@@ -26,11 +27,13 @@ export default function Drawer({ open, onClose, title = "Menu" }: DrawerProps) {
   const firstFocusRef = useRef<HTMLButtonElement>(null);
   const lastFocusRef = useRef<HTMLButtonElement>(null);
 
-  const links = [
-    { to: "/admin", label: "Dashboard", icon: Home, end: true },
+  const adminLinks = [
+    { to: "/admin", label: "Dashboard", icon: LayoutDashboard, end: true },
     { to: "/income", label: "Income", icon: BadgeIndianRupee },
     { to: "/expenses", label: "Expenses", icon: ArrowDownWideNarrow },
-    { to: "/reports", label: "Reports", icon: FileChartColumn },
+    { to: "/units", label: "Units", icon: Home },
+    { to: "/residents", label: "Residents", icon: Users },
+    // { to: "/reports", label: "Reports", icon: FileChartColumn },
     ...(profile?.role === "admin"
       ? [
           {
@@ -41,7 +44,6 @@ export default function Drawer({ open, onClose, title = "Menu" }: DrawerProps) {
         ]
       : []),
   ];
-
   // Focus trap and ESC close
   useEffect(() => {
     if (open) {
@@ -97,20 +99,19 @@ export default function Drawer({ open, onClose, title = "Menu" }: DrawerProps) {
         className={`fixed top-0 left-0 h-full w-80 max-w-[85%] bg-white shadow-xl transform transition-transform duration-200
         ${open ? "translate-x-0" : "-translate-x-full"}`}
       >
-        <div className="flex items-center justify-between px-4 py-3 bg-indigo-600">
-          <span className="text-base font-semibold text-white">{title}</span>
-          <button
-            ref={firstFocusRef}
-            onClick={onClose}
-            className="p-2 rounded-md "
-          >
-            <X className="h-5 w-5 text-white" />
-            <span className="sr-only">Close menu</span>
-          </button>
+        <div className="flex items-center gap-2 px-4 pt-4 pb-2">
+          <img
+            className="h-8 w-8"
+            src={siteSetting?.logo}
+            alt={siteSetting.logoAlt}
+          />
+          <h1 className="text-xl font-semibold text-[#0154AC] -mb-0.5 ">
+            {siteSetting.siteName}
+          </h1>
         </div>
 
         <nav className="p-2">
-          {links.map(({ to, label, icon: Icon, end }) => (
+          {adminLinks.map(({ to, label, icon: Icon, end }) => (
             <NavLink
               key={label}
               to={to}

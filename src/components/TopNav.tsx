@@ -6,36 +6,39 @@ import {
   Menu,
   ArrowDownWideNarrow,
   BadgeIndianRupee,
-  FileChartColumn,
+  LayoutDashboard,
+  User,
 } from "lucide-react";
 import React, { useState, useRef, useEffect } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import ConfirmationAlert from "./Modals/ConfirmationAlert";
-import { supabase } from "../libs/supabase/supabaseClient";
 import { useProfileStore } from "../libs/stores/useProfileStore";
 import Drawer from "./ui/Drawer";
 import { siteSetting } from "../config/siteSetting";
 import type { TRole } from "../types/user.types";
+import useAuthApiService from "../hooks/apiHooks/useAuthApiService";
 
 const linkBase = "flex items-center space-x-1 text-sm transition-colors";
 const active = "text-[#0154AC] font-medium";
 const inactive = "text-black font-light hover:text-[#0154AC]";
 
-const TopNav: React.FC<{ view: TRole}> = ({ view }) => {
+const TopNav: React.FC<{ view: TRole }> = ({ view }) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [open, setOpen] = React.useState(false);
   const [isLogoutConfirmationOpen, setIsLogoutConfirmationOpen] =
     useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const { profile, reset: resetProfile } = useProfileStore();
-  const navigate = useNavigate();
+  const { profile } = useProfileStore();
+  const { handleLogout } = useAuthApiService();
 
   // derive menu from array
   const adminLinks = [
-    { to: "/admin", label: "Dashboard", icon: Home, end: true },
+    { to: "/admin", label: "Dashboard", icon: LayoutDashboard, end: true },
     { to: "/income", label: "Income", icon: BadgeIndianRupee },
     { to: "/expenses", label: "Expenses", icon: ArrowDownWideNarrow },
-    { to: "/reports", label: "Reports", icon: FileChartColumn },
+    { to: "/units", label: "Units", icon: Home },
+    { to: "/residents", label: "Residents", icon: Users },
+    // { to: "/reports", label: "Reports", icon: FileChartColumn },
     ...(profile?.role === "admin"
       ? [
           {
@@ -58,16 +61,6 @@ const TopNav: React.FC<{ view: TRole}> = ({ view }) => {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
-
-  const handleLogout = async () => {
-    try {
-      await supabase.auth.signOut();
-      resetProfile();
-      navigate("/sign-in");
-    } catch (error) {
-      console.error("Logout error:", error);
-    }
-  };
 
   return (
     <nav className={`border-b border-gray-200 sticky top-0 z-40 bg-[white]`}>
@@ -125,7 +118,7 @@ const TopNav: React.FC<{ view: TRole}> = ({ view }) => {
                   className="cursor-pointer flex items-center space-x-2 text-gray-600 hover:text-gray-900 focus:outline-none"
                 >
                   <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center">
-                    <Users className="w-4 h-4 text-black" />
+                    <User className="w-4 h-4 text-black" />
                   </div>
                 </button>
 

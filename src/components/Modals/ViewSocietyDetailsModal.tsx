@@ -1,12 +1,5 @@
 import React, { useEffect, useState } from "react";
-import {
-  Building2,
-  Phone,
-  MapPin,
-  Hash,
-  Users,
-  FileText,
-} from "lucide-react";
+import { Building2, Phone, MapPin, Hash, Users, FileText } from "lucide-react";
 import Modal, { ModalBody, ModalFooter } from "./Modal";
 import type { IOrganization } from "../../types/organization.types";
 import useOrganizationApiService from "../../hooks/apiHooks/useOrganizationApiService";
@@ -280,6 +273,15 @@ const ViewSocietyDetailsModal: React.FC<ViewSocietyDetailsModalProps> = ({
                             amount={data.tenant_maintenance_amount as number}
                             rate={data.tenant_maintenance_rate as number}
                           />
+                        </p>
+                      </div>
+
+                      <div>
+                        <p className="text-xs text-green-700">
+                          Calculate Maintenance of
+                        </p>
+                        <p className="text-base font-semibold text-green-800">
+                          {data.is_prev ? "Previous Month" : "Current Month"}
                         </p>
                       </div>
                     </div>

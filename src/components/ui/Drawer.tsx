@@ -31,11 +31,15 @@ export default function Drawer({ open, onClose, title = "Menu" }: DrawerProps) {
     { to: "/income", label: "Income", icon: BadgeIndianRupee },
     { to: "/expenses", label: "Expenses", icon: ArrowDownWideNarrow },
     { to: "/reports", label: "Reports", icon: FileChartColumn },
-    {
-      to: `/configure-settings/${profile?.organization?.id ?? ""}`,
-      label: "Settings",
-      icon: Settings,
-    },
+    ...(profile?.role === "admin"
+      ? [
+          {
+            to: `/configure-settings/${profile?.organization?.id ?? ""}`,
+            label: "Settings",
+            icon: Settings,
+          },
+        ]
+      : []),
   ];
 
   // Focus trap and ESC close

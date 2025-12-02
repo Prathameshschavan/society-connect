@@ -39,7 +39,7 @@ const CustomSelect = forwardRef<HTMLSelectElement, CustomSelectProps>(
 
     const baseLabelClasses = `
       block text-sm font-medium mb-2
-      ${error ? "text-red-700" : "text-gray-700"}
+      ${error ? "text-gray-700" : "text-gray-700"}
     `;
 
     const baseErrorClasses = `

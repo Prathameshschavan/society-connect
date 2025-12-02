@@ -16,6 +16,8 @@ import SocietyConfigurationPage from "./views/ConfigureSettings.tsx";
 import ChangePassword from "./views/ChangePassword.tsx";
 import SignUp from "./views/SignUp.tsx";
 import UnauthorizedPage from "./views/Unauthorized.tsx";
+import Units from "./views/Units.tsx";
+import Residents from "./views/Residents.tsx";
 function App() {
   return (
     <Routes>
@@ -76,6 +78,22 @@ function App() {
         }
       ></Route>
       <Route
+        path="/units"
+        element={
+          <ProtectedRoute allowedRoles={["admin", "committee_member"]}>
+            <Units />
+          </ProtectedRoute>
+        }
+      ></Route>
+      <Route
+        path="/residents"
+        element={
+          <ProtectedRoute allowedRoles={["admin", "committee_member"]}>
+            <Residents />
+          </ProtectedRoute>
+        }
+      ></Route>
+      <Route
         path="/owner"
         element={
           <ProtectedRoute allowedRoles={["resident", "tenant"]}>
@@ -110,14 +128,11 @@ function App() {
       />
       <Route path="/sign-up" element={<SignUp />}></Route>
       <Route path="/unauthorized" element={<UnauthorizedPage />}></Route>
-      <Route
-        path="/change-password"
-        element={<ChangePassword />}
-      ></Route>
+      <Route path="/change-password" element={<ChangePassword />}></Route>
       <Route
         path="/configure-settings/:orgId"
         element={
-        <ProtectedRoute allowedRoles={["admin"]}>
+          <ProtectedRoute allowedRoles={["admin"]}>
             <SocietyConfigurationPage />
           </ProtectedRoute>
         }

@@ -1,12 +1,12 @@
 import React from "react";
 import { User, Phone, Shield, Home, FileText, Building2 } from "lucide-react";
 import Modal, { ModalBody, ModalFooter } from "./Modal";
-import type { IProfile } from "../../types/user.types";
+import type { IUnit } from "../../types/unit.types";
 
 interface ViewResidentDetailsModalProps {
   isOpen: boolean;
   onClose: () => void;
-  resident: IProfile | null;
+  resident: IUnit | null;
 }
 
 const ViewResidentDetailsModal: React.FC<ViewResidentDetailsModalProps> = ({
@@ -14,7 +14,7 @@ const ViewResidentDetailsModal: React.FC<ViewResidentDetailsModalProps> = ({
   onClose,
   resident,
 }) => {
-  if (!isOpen || !resident) return null;
+  if (!isOpen || !resident || !resident.profile) return null;
 
   const getRoleColor = (role: string) => {
     switch (role) {
@@ -54,16 +54,16 @@ const ViewResidentDetailsModal: React.FC<ViewResidentDetailsModalProps> = ({
               </div>
               <div>
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                  {resident.full_name}
+                  {resident.profile.full_name}
                 </h3>
                 <div className="flex items-center gap-3">
                   <span
                     className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium border ${getRoleColor(
-                      resident.role
+                      resident.profile.role
                     )}`}
                   >
                     <Shield className="w-4 h-4" />
-                    {getRoleLabel(resident.role)}
+                    {getRoleLabel(resident.profile.role)}
                   </span>
                   <span className="text-lg font-medium text-gray-600">
                     Unit {resident.unit_number}
@@ -89,13 +89,13 @@ const ViewResidentDetailsModal: React.FC<ViewResidentDetailsModalProps> = ({
                   <div>
                     <p className="text-xs text-gray-500">Full Name</p>
                     <p className="font-medium text-gray-900 text-lg">
-                      {resident.full_name}
+                      {resident.profile.full_name}
                     </p>
                   </div>
                   <div>
                     <p className="text-xs text-gray-500">Role</p>
                     <p className="font-medium text-gray-900">
-                      {getRoleLabel(resident.role)}
+                      {getRoleLabel(resident.profile.role)}
                     </p>
                   </div>
                 </div>
@@ -114,10 +114,10 @@ const ViewResidentDetailsModal: React.FC<ViewResidentDetailsModalProps> = ({
                   <div>
                     <p className="text-xs text-blue-700">Phone Number</p>
                     <a
-                      href={`tel:+91${resident.phone}`}
+                      href={`tel:+91${resident.profile.phone}`}
                       className="font-medium text-blue-900 hover:text-blue-700 text-lg"
                     >
-                      +91 {resident.phone}
+                      +91 {resident.profile.phone}
                     </a>
                   </div>
                 </div>
@@ -185,13 +185,21 @@ const ViewResidentDetailsModal: React.FC<ViewResidentDetailsModalProps> = ({
                         </p>
                       </div>
                     )}
+                    {resident.unit_type && (
+                      <div className="mt-3">
+                        <p className="text-sm text-green-700">Type</p>
+                        <p className="text-lg font-semibold text-green-800">
+                          {resident.unit_type}
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
             )}
 
             {/* Organization Information */}
-            {resident.organization && (
+            {resident.profile.organization && (
               <div>
                 <label className="block text-sm font-medium text-gray-500 mb-3">
                   <Building2 className="w-4 h-4 inline mr-2" />
@@ -204,14 +212,14 @@ const ViewResidentDetailsModal: React.FC<ViewResidentDetailsModalProps> = ({
                       <div>
                         <p className="text-xs text-indigo-700">Society Name</p>
                         <p className="font-medium text-indigo-900 text-lg">
-                          {resident.organization.name}
+                          {resident.profile.organization.name}
                         </p>
                       </div>
                     </div>
                     <div>
                       <p className="text-xs text-indigo-700">Organization ID</p>
                       <p className="font-mono text-sm text-indigo-800 bg-indigo-100 rounded px-2 py-1 inline-block">
-                        {resident?.organization_id?.slice(0, 8)}...
+                        {resident.organization_id?.slice(0, 8)}...
                       </p>
                     </div>
                   </div>
@@ -233,13 +241,13 @@ const ViewResidentDetailsModal: React.FC<ViewResidentDetailsModalProps> = ({
             <div>
               <span className="text-gray-700 font-medium">Resident ID:</span>
               <span className="text-gray-900 ml-2 font-mono text-xs">
-                {(resident?.id as string).slice(0, 8)}...
+                {(resident.profile?.id as string).slice(0, 8)}...
               </span>
             </div>
             <div>
               <span className="text-gray-700 font-medium">Role:</span>
               <span className="text-gray-900 ml-2">
-                {getRoleLabel(resident.role)}
+                {getRoleLabel(resident.profile.role)}
               </span>
             </div>
           </div>

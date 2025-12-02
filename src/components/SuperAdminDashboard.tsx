@@ -9,7 +9,7 @@ import GenericTable, {
   type TableColumn,
 } from "./ui/GenericTable";
 import ConfirmationAlert from "./Modals/ConfirmationAlert";
-import UpdateSocietyModal from "./Modals/UpdatedSocietyModal";
+import UpdateSocietyModal from "./Modals/UpdateSocietyModal";
 import ViewSocietyDetailsModal from "./Modals/ViewSocietyDetailsModal";
 import usePaginationService from "../hooks/serviceHooks/usePaginationService";
 import type { IOrganization } from "../types/organization.types";

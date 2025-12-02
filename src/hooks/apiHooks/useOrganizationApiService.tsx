@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import toast from "react-hot-toast";
 import {
   createOrganization,
@@ -6,7 +7,10 @@ import {
   updateOrganization,
 } from "../../apis/organization.apis";
 import type { GETMethodParams } from "../../types/general.types";
-import type { IOrganization, TCreateOrganizationData } from "../../types/organization.types";
+import type {
+  IOrganization,
+  TCreateOrganizationData,
+} from "../../types/organization.types";
 import { useProfileStore } from "../../libs/stores/useProfileStore";
 import { useOrganizationStore } from "../../libs/stores/useOrganizationStore";
 
@@ -58,8 +62,9 @@ const useOrganizationApiService = () => {
       const response = await updateOrganization(id, data);
       setProfileOrganization(response?.data?.data);
       return response?.data?.data;
-    } catch (error) {
+    } catch (error: any) {
       console.error("Organization error:", error);
+      throw Error(error.response.data.message);
     }
   };
 
@@ -67,10 +72,9 @@ const useOrganizationApiService = () => {
     try {
       const response = await createOrganization(data);
       return response?.data?.data;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error : any) {
+    } catch (error: any) {
       console.error("Organization error:", error);
-      throw Error(error.response.data.message)
+      throw Error(error.response.data.message);
     }
   };
 

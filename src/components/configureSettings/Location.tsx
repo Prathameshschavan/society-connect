@@ -1,11 +1,17 @@
 import React from "react";
-import type { FieldErrors, UseFormRegister } from "react-hook-form";
+import type {
+  FieldErrors,
+  UseFormRegister,
+  UseFormWatch,
+} from "react-hook-form";
 import type { IOrganization } from "../../types/organization.types";
+import CustomInput from "../ui/CustomInput";
 
 const Location: React.FC<{
   register: UseFormRegister<IOrganization>;
   errors: FieldErrors<IOrganization>;
-}> = ({ errors, register }) => {
+  watch: UseFormWatch<IOrganization>;
+}> = ({ errors, register, watch }) => {
   return (
     <div className="space-y-6">
       <div>
@@ -13,108 +19,55 @@ const Location: React.FC<{
           Location Details
         </h3>
         <div className="space-y-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Address line 1
-            </label>
-            <textarea
-              {...register("address_line_1", {
-                required: "Address is required",
-                minLength: {
-                  value: 10,
-                  message: "Please enter a complete address",
-                },
+          <CustomInput
+            type="text"
+            label="Address line 1"
+            {...register("address_line_1", {
+              required: "Address is required",
+            })}
+            error={errors?.address_line_1}
+            value={watch("address_line_1")}
+          />
+
+          <CustomInput
+            type="text"
+            label="Address line 2"
+            {...register("address_line_2")}
+            error={errors?.address_line_2}
+            value={watch("address_line_2")}
+          />
+
+          <div className="grid grid-cols-2 gap-3">
+            <CustomInput
+              type="text"
+              label="City"
+              {...register("city", {
+                required: "City is required",
               })}
-              rows={3}
-              className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent ${
-                errors.address_line_1 ? "border-red-500" : "border-gray-300"
-              }`}
-              placeholder="Enter complete address"
+              error={errors?.city}
+              value={watch("city")}
             />
-            {errors.address_line_1 && (
-              <p className="text-red-500 text-xs mt-1">
-                {errors.address_line_1.message}
-              </p>
-            )}
+
+            <CustomInput
+              type="text"
+              label="State"
+              {...register("state", {
+                required: "State is required",
+              })}
+              error={errors?.state}
+              value={watch("state")}
+            />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                City *
-              </label>
-              <input
-                type="text"
-                {...register("city", {
-                  required: "City is required",
-                  minLength: {
-                    value: 2,
-                    message: "City name must be at least 2 characters",
-                  },
-                })}
-                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent ${
-                  errors.city ? "border-red-500" : "border-gray-300"
-                }`}
-                placeholder="Enter city"
-              />
-              {errors.city && (
-                <p className="text-red-500 text-xs mt-1">
-                  {errors.city.message}
-                </p>
-              )}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                State *
-              </label>
-              <input
-                type="text"
-                {...register("state", {
-                  required: "State is required",
-                  minLength: {
-                    value: 2,
-                    message: "State name must be at least 2 characters",
-                  },
-                })}
-                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent ${
-                  errors.state ? "border-red-500" : "border-gray-300"
-                }`}
-                placeholder="Enter state"
-              />
-              {errors.state && (
-                <p className="text-red-500 text-xs mt-1">
-                  {errors.state.message}
-                </p>
-              )}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Pincode *
-              </label>
-              <input
-                type="text"
-                {...register("pincode", {
-                  required: "Pincode is required",
-                  pattern: {
-                    value: /^\d{6}$/,
-                    message: "Pincode must be exactly 6 digits",
-                  },
-                })}
-                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent ${
-                  errors.pincode ? "border-red-500" : "border-gray-300"
-                }`}
-                placeholder="Enter 6-digit pincode"
-                maxLength={6}
-              />
-              {errors.pincode && (
-                <p className="text-red-500 text-xs mt-1">
-                  {errors.pincode.message}
-                </p>
-              )}
-            </div>
-          </div>
+          <CustomInput
+            type="text"
+            label="Pincode"
+            {...register("pincode", {
+              required: "Pincode is required",
+            })}
+            error={errors?.pincode}
+            value={watch("pincode")}
+          />
         </div>
       </div>
     </div>

@@ -10,7 +10,7 @@ import {
 } from "../libs/stores/useMaintenanceStore";
 import { Eye } from "lucide-react";
 import GenericTable from "./ui/GenericTable";
-import ViewMaintananceDetailsModal from "./Modals/ViewMaintananceDetailsModal";
+import ViewMaintenanceDetailsModal from "./Modals/ViewMaintenanceDetailsModal";
 import usePaginationService from "../hooks/serviceHooks/usePaginationService";
 import useAdminService from "../hooks/serviceHooks/useAdminService";
 
@@ -27,7 +27,7 @@ const RoomOwnerDashboard = () => {
   const [selectedBill, setSelectedBill] = useState<MaintenanceBill | null>(
     null
   );
-  const [isOpenMaintananceDetailsModal, setIsOpenMaintananceDetailsModal] =
+  const [isOpenMaintenanceDetailsModal, setIsOpenMaintenanceDetailsModal] =
     useState(false);
 
   // Pagination state
@@ -110,7 +110,7 @@ const RoomOwnerDashboard = () => {
       icon: <Eye className="w-4 h-4" />,
       onClick: (bill: MaintenanceBill) => {
         setSelectedBill(bill);
-        setIsOpenMaintananceDetailsModal(true);
+        setIsOpenMaintenanceDetailsModal(true);
       },
       className:
         "cursor-pointer p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors",
@@ -193,11 +193,11 @@ const RoomOwnerDashboard = () => {
           {showPaymentModal && <PaymentModal setOpen={setShowPaymentModal} />}
         </div>
       </main>
-      <ViewMaintananceDetailsModal
+      <ViewMaintenanceDetailsModal
         bill={selectedBill}
         residentInfo={false}
-        isOpen={isOpenMaintananceDetailsModal}
-        onClose={() => setIsOpenMaintananceDetailsModal(false)}
+        isOpen={isOpenMaintenanceDetailsModal}
+        onClose={() => setIsOpenMaintenanceDetailsModal(false)}
       />
     </div>
   );

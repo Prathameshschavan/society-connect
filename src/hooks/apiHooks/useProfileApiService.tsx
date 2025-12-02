@@ -7,28 +7,36 @@ import {
 } from "../../apis/profile.apis";
 import { useProfileStore } from "../../libs/stores/useProfileStore";
 import type { IProfile } from "../../types/user.types";
-import { addUser } from "../../apis/user.apis";
+import { addResident, type AddResidentParams } from "../../apis/resident.apis";
 
 const useProfileApiService = () => {
-  const { setResidents, setProfile } = useProfileStore();
+  const { setResidents } = useProfileStore();
 
-  const handleAddProfile = async (data: IProfile) => {
+  const handleAddProfile = async (data: AddResidentParams) => {
     try {
-      const response = await addUser({
-        email: `${data?.phone}@society.app`,
-        password: "123456",
-        organization_id: data?.organization_id as string,
-      });
-
+      const response = await addResident(data);
       console.log(response);
-
-      await updateProfile(response?.data?.data?.id, data);
-      toast.success("Resident onboarded successfully!");
-    } catch (error) {
-      console.error("Profile error:", error);
-      toast.error("Failed to add residents");
+      return response?.data?.data;
+    } catch (error: any) {
+      console.log(error);
+      throw Error(error.response.data.message);
     }
   };
+  // const handleAddProfile = async (data: IProfile) => {
+  //   try {
+  //     const response = await addUser({
+  //       email: `${data?.phone}@society.app`,
+  //       password: "123456",
+  //       organization_id: data?.organization_id as string,
+  //     });
+
+  //     console.log(response);
+
+  //     await updateProfile(response?.data?.data?.id, data);
+  //   } catch (error: any) {
+  //     throw Error(error.response.data.message);
+  //   }
+  // };
 
   const handleGetAllProfiles = async ({
     is_tenant,
@@ -51,6 +59,7 @@ const useProfileApiService = () => {
         search,
         sortBy,
       });
+      console.log(response);
       setResidents(response?.data?.data);
       return response?.data;
     } catch (error) {
@@ -68,12 +77,10 @@ const useProfileApiService = () => {
   }) => {
     try {
       const response = await updateProfile(id, data);
-      setProfile(response?.data?.data);
-      toast.success("Profile updated successfully!");
       return response?.data?.data;
-    } catch (error) {
+    } catch (error: any) {
       console.error("Profile error:", error);
-      toast.error("Failed to update profile");
+      throw Error(error.response.data.message);
     }
   };
 

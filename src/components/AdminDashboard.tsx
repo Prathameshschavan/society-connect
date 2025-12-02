@@ -14,8 +14,6 @@ import {
 } from "lucide-react";
 
 import OnboardResidentModal from "./Modals/OnboardResidentModal";
-import ViewMaintananceDetailsModal from "./Modals/ViewMaintananceDetailsModal";
-import UpdateMaintananceStatusModal from "./Modals/UpdateMaintananceStatusModal";
 
 import GenericTable, { type TableAction } from "./ui/GenericTable";
 
@@ -33,6 +31,8 @@ import { columns } from "../config/tableConfig/adminDashboard";
 import { GenericSelect, type OptionValue } from "./ui/GenericSelect";
 import { siteSetting } from "../config/siteSetting";
 import Layout from "./Layout/Layout";
+import ViewMaintenanceDetailsModal from "./Modals/ViewMaintenanceDetailsModal";
+import UpdateMaintenanceStatusModal from "./Modals/UpdateMaintenanceStatusModal";
 
 // Custom hook for debounced search [web:45]
 const useDebounce = (value: string, delay: number) => {
@@ -96,11 +96,11 @@ const AdminDashboard = () => {
 
   // Modal states
   const [isOnboardModalOpen, setIsOnboardModalOpen] = useState(false);
-  const [isOpenMaintananceDetailsModal, setIsOpenMaintananceDetailsModal] =
+  const [isOpenMaintenanceDetailsModal, setIsOpenMaintenanceDetailsModal] =
     useState(false);
   const [
-    isOpenUpdateMaintananceDetailsModal,
-    setIsOpenUpdateMaintananceDetailsModal,
+    isOpenUpdateMaintenanceDetailsModal,
+    setIsOpenUpdateMaintenanceDetailsModal,
   ] = useState(false);
   const [selectedBill, setSelectedBill] = useState<MaintenanceBill | null>(
     null
@@ -229,7 +229,7 @@ const AdminDashboard = () => {
       icon: <Eye className="w-4 h-4" />,
       onClick: (bill: MaintenanceBill) => {
         setSelectedBill(bill);
-        setIsOpenMaintananceDetailsModal(true);
+        setIsOpenMaintenanceDetailsModal(true);
       },
       className:
         "cursor-pointer p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors",
@@ -243,7 +243,7 @@ const AdminDashboard = () => {
             icon: <Edit className="w-4 h-4" />,
             onClick: (bill: MaintenanceBill) => {
               setSelectedBill(bill);
-              setIsOpenUpdateMaintananceDetailsModal(true);
+              setIsOpenUpdateMaintenanceDetailsModal(true);
             },
             className:
               "cursor-pointer p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors",
@@ -424,13 +424,11 @@ const AdminDashboard = () => {
             ? "No maintenance bills found matching your criteria"
             : "No maintenance bills generated this month"
         }
-        searchPlaceholder="" // Disable table's built-in search
         showPagination
         pagination={pagination}
         onPageChange={handlePageChange}
         onPageSizeChange={handlePageSizeChange}
         pageSizeOptions={[5, 10, 20, 50]}
-        onSearch={() => {}} // Disabled since we handle search above
       />
 
       {/* Modals */}
@@ -439,16 +437,16 @@ const AdminDashboard = () => {
         onClose={() => setIsOnboardModalOpen(false)}
       />
 
-      <ViewMaintananceDetailsModal
+      <ViewMaintenanceDetailsModal
         bill={selectedBill}
-        isOpen={isOpenMaintananceDetailsModal}
-        onClose={() => setIsOpenMaintananceDetailsModal(false)}
+        isOpen={isOpenMaintenanceDetailsModal}
+        onClose={() => setIsOpenMaintenanceDetailsModal(false)}
       />
 
-      <UpdateMaintananceStatusModal
+      <UpdateMaintenanceStatusModal
         bill={selectedBill}
-        isOpen={isOpenUpdateMaintananceDetailsModal}
-        onClose={() => setIsOpenUpdateMaintananceDetailsModal(false)}
+        isOpen={isOpenUpdateMaintenanceDetailsModal}
+        onClose={() => setIsOpenUpdateMaintenanceDetailsModal(false)}
         onSuccess={loadData}
       />
     </Layout>

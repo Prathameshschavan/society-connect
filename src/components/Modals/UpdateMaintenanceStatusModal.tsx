@@ -5,14 +5,14 @@ import useCommonService from "../../hooks/serviceHooks/useCommonService";
 import useAdminService from "../../hooks/serviceHooks/useAdminService";
 import { useForm } from "react-hook-form";
 
-interface UpdateMaintananceModalProps {
+interface UpdateMaintenanceModalProps {
   isOpen: boolean;
   onClose: () => void;
   bill: MaintenanceBill | null;
   onSuccess?: () => void;
 }
 
-const UpdateMaintananceStatusModal: React.FC<UpdateMaintananceModalProps> = ({
+const UpdateMaintenanceStatusModal: React.FC<UpdateMaintenanceModalProps> = ({
   isOpen,
   onClose,
   bill,
@@ -59,7 +59,7 @@ const UpdateMaintananceStatusModal: React.FC<UpdateMaintananceModalProps> = ({
 
   return (
     <Modal
-      title={`Update Maintanance Details`}
+      title={`Update Maintenance Details`}
       isOpen={isOpen}
       onClose={onClose}
       size="lg"
@@ -137,4 +137,4 @@ const UpdateMaintananceStatusModal: React.FC<UpdateMaintananceModalProps> = ({
   );
 };
 
-export default UpdateMaintananceStatusModal;
+export default UpdateMaintenanceStatusModal;

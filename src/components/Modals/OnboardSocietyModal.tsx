@@ -117,9 +117,13 @@ const OnboardSocietyModal: React.FC<OnboardSocietyModalProps> = ({
         ...(data.total_units ? { total_units: data?.total_units } : {}),
         is_prev: `${data.is_prev}` === "true" ? true : false,
         admin: {
-          ...data?.admin,
+          name: data?.admin?.name,
           email: `${data?.admin?.phone}@society.app`,
           password: "123456",
+          unit_number: data?.admin?.unit_number,
+          phone: data?.admin?.phone,
+          square_footage: Number(data?.admin?.square_footage || 0),
+          unit_type: data?.admin?.unit_type,
         },
       };
 
@@ -161,6 +165,7 @@ const OnboardSocietyModal: React.FC<OnboardSocietyModalProps> = ({
             />
 
             <CustomInput
+              key="society_name"
               type="text"
               label="Society Name"
               {...register("name", {
@@ -171,6 +176,7 @@ const OnboardSocietyModal: React.FC<OnboardSocietyModalProps> = ({
             />
 
             <CustomInput
+              key="registration_number"
               type="text"
               label="Registration Number"
               {...register("registration_number")}
@@ -179,6 +185,7 @@ const OnboardSocietyModal: React.FC<OnboardSocietyModalProps> = ({
             />
 
             <CustomInput
+              key="established_date"
               type="date"
               label="Established Date"
               {...register("established_date")}
@@ -200,6 +207,7 @@ const OnboardSocietyModal: React.FC<OnboardSocietyModalProps> = ({
             />
 
             <CustomInput
+              key="address_line_1"
               type="text"
               label="Address line 1"
               {...register("address_line_1", {
@@ -210,6 +218,7 @@ const OnboardSocietyModal: React.FC<OnboardSocietyModalProps> = ({
             />
 
             <CustomInput
+              key="address_line_2"
               type="text"
               label="Address line 2"
               {...register("address_line_2")}
@@ -219,6 +228,7 @@ const OnboardSocietyModal: React.FC<OnboardSocietyModalProps> = ({
 
             <div className="grid grid-cols-2 gap-3">
               <CustomInput
+                key="city"
                 type="text"
                 label="City"
                 {...register("city", {
@@ -229,6 +239,7 @@ const OnboardSocietyModal: React.FC<OnboardSocietyModalProps> = ({
               />
 
               <CustomInput
+                key="state"
                 type="text"
                 label="State"
                 {...register("state", {
@@ -240,6 +251,7 @@ const OnboardSocietyModal: React.FC<OnboardSocietyModalProps> = ({
             </div>
 
             <CustomInput
+              key="pincode"
               type="text"
               label="Pincode"
               {...register("pincode", {
@@ -263,6 +275,7 @@ const OnboardSocietyModal: React.FC<OnboardSocietyModalProps> = ({
             />
 
             <CustomInput
+              key="phone"
               type="tel"
               label="Society Phone Number"
               {...register("phone", {
@@ -291,6 +304,7 @@ const OnboardSocietyModal: React.FC<OnboardSocietyModalProps> = ({
             />
 
             <CustomInput
+              key="admin_name"
               type="text"
               label="Admin Name"
               {...register("admin.name", {
@@ -305,6 +319,7 @@ const OnboardSocietyModal: React.FC<OnboardSocietyModalProps> = ({
             />
 
             <CustomInput
+              key="admin_phone"
               type="tel"
               label="Admin Phone"
               {...register("admin.phone", {
@@ -320,12 +335,42 @@ const OnboardSocietyModal: React.FC<OnboardSocietyModalProps> = ({
             />
 
             <CustomInput
+              key="admin_unit_number"
               type="text"
-              label="Admin Unit"
-              {...register("admin.unit_number")}
+              label="Admin Unit Number"
+              {...register("admin.unit_number", {
+                required: "Admin Unit Number is required",
+              })}
               error={errors?.admin?.unit_number}
               value={watch("admin.unit_number")}
             />
+
+            <CustomInput
+              key="admin_sqft"
+              type="number"
+              label="Admin Unit SQFT"
+              {...register("admin.square_footage", {
+                required: "Admin SQFT is required",
+              })}
+              error={errors?.admin?.square_footage}
+              value={watch("admin.square_footage")}
+            />
+
+            <CustomSelect
+              key="admin_unit_type"
+              label="Admin Unit Type"
+              {...register("admin.unit_type", {
+                required: "Admin unit type is required",
+              })}
+            >
+              <option value="1RK">1RK</option>
+              <option value="1BHK">1 BHK</option>
+              <option value="2BHK">2 BHK</option>
+              <option value="3BHK">3 BHK</option>
+              <option value="4BHK">4 BHK</option>
+              <option value="Shop">Shop</option>
+              <option value="Other">Other</option>
+            </CustomSelect>
           </div>
         );
 
@@ -341,6 +386,7 @@ const OnboardSocietyModal: React.FC<OnboardSocietyModalProps> = ({
             />
 
             <CustomInput
+              key="total_units"
               type="number"
               label="Total Number of Flats"
               {...register("total_units", {
@@ -356,6 +402,7 @@ const OnboardSocietyModal: React.FC<OnboardSocietyModalProps> = ({
             />
 
             <CustomSelect
+              key="is_prev"
               {...register("is_prev")}
               label="Create Previous Month Bill"
             >

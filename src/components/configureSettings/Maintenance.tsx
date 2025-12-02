@@ -1,10 +1,13 @@
 import type React from "react";
 import type {
+  Control,
   FieldErrors,
   UseFormRegister,
   UseFormSetValue,
+  UseFormTrigger,
   UseFormWatch,
 } from "react-hook-form";
+import { Controller } from "react-hook-form";
 import type { ExtraItem } from "../../libs/stores/useOrganizationStore";
 import { useEffect, useState } from "react";
 import { AlertCircle, Minus, Plus } from "lucide-react";
@@ -17,18 +20,34 @@ const Maintenance: React.FC<{
   register: UseFormRegister<IOrganization>;
   setValue: UseFormSetValue<IOrganization>;
   watch: UseFormWatch<IOrganization>;
+  control: Control<IOrganization>;
+  trigger: UseFormTrigger<IOrganization>;
   errors: FieldErrors<IOrganization>;
-}> = ({ register, setValue, watch, errors }) => {
+}> = ({ register, setValue, watch, control, trigger, errors }) => {
   const watchedExtras = watch("extras") || [];
   const [extras, setExtras] = useState<ExtraItem[]>([]);
   const [isMaintenanceCalculatedByFixed, setIsMaintenanceCalculatedByFixed] =
     useState(watch("calculate_maintenance_by") === "fixed");
 
-  // Sync local state with form state
+  // Sync local state with form state when form value changes externally
   useEffect(() => {
-    if (watchedExtras.length > 0) {
+    if (watchedExtras.length !== extras.length) {
       setExtras(watchedExtras);
+    } else {
+      // Deep comparison by IDs
+      const currentIds = extras
+        .map((e) => e.id)
+        .sort()
+        .join(",");
+      const watchedIds = watchedExtras
+        .map((e) => e.id)
+        .sort()
+        .join(",");
+      if (currentIds !== watchedIds) {
+        setExtras(watchedExtras);
+      }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [watchedExtras]);
 
   const addExtra = () => {
@@ -36,18 +55,27 @@ const Maintenance: React.FC<{
       id: Date.now().toString(),
       name: "",
       month: "",
-      amount: Number("null"),
+      amount: 0,
       year: "",
     };
     const updatedExtras = [...extras, newExtra];
     setExtras(updatedExtras);
-    setValue("extras", updatedExtras, { shouldDirty: true });
+    setValue("extras", updatedExtras, {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
   };
 
-  const removeExtra = (id: string) => {
+  const removeExtra = async (id: string) => {
     const updatedExtras = extras.filter((extra) => extra.id !== id);
     setExtras(updatedExtras);
-    setValue("extras", updatedExtras, { shouldDirty: true });
+    // Create a new array reference to ensure react-hook-form recognizes the change
+    setValue("extras", [...updatedExtras], {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
+    // Trigger validation to update form state
+    await trigger("extras");
   };
 
   const updateExtra = (
@@ -59,10 +87,21 @@ const Maintenance: React.FC<{
       extra.id === id ? { ...extra, [field]: value } : extra
     );
     setExtras(updatedExtras);
-    setValue("extras", updatedExtras, { shouldDirty: true });
+    setValue("extras", updatedExtras, {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
   };
 
-  console.log(errors);
+  // Get error for a specific extra field
+  const getExtraError = (index: number, field: "name" | "amount") => {
+    const extraErrors = errors.extras as
+      | Array<{ name?: { message?: string }; amount?: { message?: string } }>
+      | undefined;
+    return extraErrors?.[index]?.[field];
+  };
+
+  console.log("due_date", watch("due_date"), errors);
 
   return (
     <div className="space-y-8">
@@ -111,18 +150,18 @@ const Maintenance: React.FC<{
               <CustomInput
                 label="Maintenance Rate (₹ per sq ft)"
                 type="number"
-                step="0.01"
                 {...register("maintenance_rate", {
                   required:
-                    "Maintenance rate should be greater than and equal to 1",
+                    "Maintenance rate should be greater than or equal to 1",
                   min: {
                     value: 1,
                     message:
-                      "Maintenance rate should be greater than and equal to 1",
+                      "Maintenance rate should be greater than or equal to 1",
                   },
                   valueAsNumber: true,
                 })}
                 error={errors?.maintenance_rate}
+                value={watch("maintenance_rate")}
               />
               <p className="text-[10px] text-gray-500 mt-1">
                 Example: If rate is ₹2.50, a 1000 sq ft unit will pay
@@ -133,18 +172,18 @@ const Maintenance: React.FC<{
             <CustomInput
               label="Maintenance Fixed Amount (₹ per month)"
               type="number"
-              step="0.01"
               {...register("maintenance_amount", {
                 required:
-                  "Maintenance amount should be greater than and equal to 1",
+                  "Maintenance amount should be greater than or equal to 1",
                 min: {
                   value: 1,
                   message:
-                    "Maintenance amount should be greater than and equal to 1",
+                    "Maintenance amount should be greater than or equal to 1",
                 },
                 valueAsNumber: true,
               })}
               error={errors?.maintenance_amount}
+              value={watch("maintenance_amount")}
             />
           )}
 
@@ -153,19 +192,18 @@ const Maintenance: React.FC<{
               <CustomInput
                 label="Tenant Maintenance Rate (₹ per sq ft)"
                 type="number"
-                min="0"
-                step="0.01"
                 {...register("tenant_maintenance_rate", {
                   required:
-                    "Tenant maintenance rate should be greater than and equal to 1",
+                    "Tenant maintenance rate should be greater than or equal to 1",
                   min: {
                     value: 1,
                     message:
-                      "Tenant maintenance rate should be greater than and equal to 1",
+                      "Tenant maintenance rate should be greater than or equal to 1",
                   },
                   valueAsNumber: true,
                 })}
                 error={errors?.tenant_maintenance_rate}
+                value={watch("tenant_maintenance_rate")}
               />
               <p className="text-[10px] text-gray-500 mt-1">
                 Example: If rate is ₹2.50, a 1000 sq ft unit will pay
@@ -176,19 +214,18 @@ const Maintenance: React.FC<{
             <CustomInput
               label="Tenant Maintenance Fixed Amount (₹ per month)"
               type="number"
-              min="0"
-              step="0.01"
               {...register("tenant_maintenance_amount", {
                 required:
-                  "Tenant maintenance amount should be greater than and equal to 1",
+                  "Tenant maintenance amount should be greater than or equal to 1",
                 min: {
                   value: 1,
                   message:
-                    "Tenant maintenance amount should be greater than and equal to 1",
+                    "Tenant maintenance amount should be greater than or equal to 1",
                 },
                 valueAsNumber: true,
               })}
               error={errors?.tenant_maintenance_amount}
+              value={watch("tenant_maintenance_amount")}
             />
           )}
 
@@ -196,41 +233,40 @@ const Maintenance: React.FC<{
             <CustomInput
               label="Penalty Rate (₹ per sq ft)"
               type="number"
-              min="0"
-              step="0.01"
               {...register("penalty_rate", {
-                required: "Penalty rate should be greater than and equal to 1",
+                required: "Penalty rate should be greater than or equal to 1",
                 min: {
                   value: 1,
-                  message: "Penalty rate should be greater than and equal to 1",
+                  message: "Penalty rate should be greater than or equal to 1",
                 },
                 valueAsNumber: true,
               })}
               error={errors?.penalty_rate}
+              value={watch("penalty_rate")}
             />
           ) : (
             <CustomInput
               label="Penalty Fixed Amount (₹ per month)"
               type="number"
-              min="0"
-              step="0.01"
               {...register("penalty_amount", {
-                required:
-                  "Penalty amount should be greater than and equal to 1",
+                required: "Penalty amount should be greater than or equal to 1",
                 min: {
                   value: 1,
                   message:
-                    "Penalty amount should be greater than and equal to 1",
+                    "Penalty amount should be greater than or equal to 1",
                 },
                 valueAsNumber: true,
               })}
               error={errors?.penalty_amount}
+              value={watch("penalty_amount")}
             />
           )}
 
           <CustomSelect
             label="Due Date Per Month"
             {...register("due_date", { required: "Due date is required" })}
+            value={watch("due_date")}
+            error={errors?.due_date}
           >
             {[...Array(28).keys()].map((d) => {
               const day = d + 1;
@@ -286,57 +322,111 @@ const Maintenance: React.FC<{
         </div>
 
         <div className="space-y-4">
-          {extras.map((extra) => (
-            <div
-              key={extra.id}
-              className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg border border-gray-200"
-            >
-              <div className="flex-1">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Extra Name
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={extra.name}
-                  onChange={(e) =>
-                    updateExtra(extra.id, "name", e.target.value)
-                  }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                  placeholder="e.g., Parking Fee, Generator Charge"
-                />
-              </div>
+          {extras.map((extra, index) => {
+            const nameError = getExtraError(index, "name");
+            const amountError = getExtraError(index, "amount");
 
-              <div className="flex-1">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Amount (₹)
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  required
-                  step="0.01"
-                  value={extra.amount}
-                  onChange={(e) =>
-                    updateExtra(extra.id, "amount", parseFloat(e.target.value))
-                  }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                  placeholder="0.00"
-                />
-              </div>
+            return (
+              <div
+                key={extra.id}
+                className="flex items-start gap-4 p-4 bg-gray-50 rounded-lg border border-gray-200"
+              >
+                <div className="flex-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Extra Name <span className="text-red-500">*</span>
+                  </label>
+                  <Controller
+                    name={`extras.${index}.name` as const}
+                    control={control}
+                    rules={{
+                      required: "Extra name is required",
+                      minLength: {
+                        value: 1,
+                        message: "Extra name cannot be empty",
+                      },
+                    }}
+                    render={({ field }) => (
+                      <>
+                        <input
+                          type="text"
+                          {...field}
+                          onChange={(e) => {
+                            field.onChange(e);
+                            updateExtra(extra.id, "name", e.target.value);
+                          }}
+                          className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent ${
+                            nameError ? "border-red-300" : "border-gray-300"
+                          }`}
+                          placeholder="e.g., Parking Fee, Generator Charge"
+                        />
+                        {nameError && (
+                          <p className="mt-1 text-sm text-red-600">
+                            {nameError.message}
+                          </p>
+                        )}
+                      </>
+                    )}
+                  />
+                </div>
 
-              <div className="flex items-end pb-2">
-                <button
-                  type="button"
-                  onClick={() => removeExtra(extra.id)}
-                  className="p-2 rounded-lg transition-colors mt-8 text-red-600 hover:bg-red-50 hover:text-red-700"
-                  title="Remove this extra"
-                >
-                  <Minus className="w-4 h-4" />
-                </button>
+                <div className="flex-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Amount (₹) <span className="text-red-500">*</span>
+                  </label>
+                  <Controller
+                    name={`extras.${index}.amount` as const}
+                    control={control}
+                    rules={{
+                      required: "Amount is required",
+                      min: {
+                        value: 0.01,
+                        message: "Amount must be greater than 0",
+                      },
+                    }}
+                    render={({ field }) => (
+                      <>
+                        <input
+                          type="number"
+                          {...field}
+                          value={field.value || ""}
+                          onChange={(e) => {
+                            const value =
+                              e.target.value === ""
+                                ? 0
+                                : parseFloat(e.target.value);
+                            field.onChange(value);
+                            updateExtra(extra.id, "amount", value);
+                          }}
+                          className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent ${
+                            amountError ? "border-red-300" : "border-gray-300"
+                          }`}
+                          placeholder="0.00"
+                          step="0.01"
+                          min="0"
+                        />
+                        {amountError && (
+                          <p className="mt-1 text-sm text-red-600">
+                            {amountError.message}
+                          </p>
+                        )}
+                      </>
+                    )}
+                  />
+                </div>
+
+                <div className="flex items-end pb-2">
+                  <button
+                    type="button"
+                    onClick={() => removeExtra(extra.id)}
+                    className="p-2 rounded-lg transition-colors mt-8 text-red-600 hover:bg-red-50 hover:text-red-700"
+                    title="Remove this extra"
+                  >
+                    <Minus className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
 
           {extras.length === 0 && (
             <div className="text-center py-8 text-gray-500">

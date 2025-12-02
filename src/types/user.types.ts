@@ -1,4 +1,5 @@
 import type { IOrganization } from "./organization.types";
+import type { IUnit } from "./unit.types";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export type TSignIn = {
@@ -15,6 +16,7 @@ export interface IFamilyMembers {
 
 export interface IVehicles {
   twoWheeler?: number;
+  fourWheeler?: number;
 }
 
 export interface IProfile {
@@ -23,9 +25,6 @@ export interface IProfile {
   email?: string;
   full_name: string;
   phone: string;
-  unit_number: string;
-  square_footage: number;
-  unit_type: string;
   family_members: IFamilyMembers;
   vehicles?: IVehicles;
   is_tenant?: boolean;
@@ -33,6 +32,7 @@ export interface IProfile {
   organization?: IOrganization;
   must_change_password?: boolean;
   emergency_contact?: IContact;
+  unit?: IUnit;
 }
 
 export interface IContact {

@@ -16,6 +16,7 @@ import CustomInput from "../ui/CustomInput";
 import useOrganizationApiService from "../../hooks/apiHooks/useOrganizationApiService";
 import type { TUpdateOrganizationData } from "../../types/organization.types";
 import CustomSelect from "../ui/CustomSelect";
+import { formatDateforInput } from "../../utility/dateTimeServices";
 
 interface UpdateSocietyModalProps {
   isOpen: boolean;
@@ -318,6 +319,9 @@ const UpdateSocietyModal: React.FC<UpdateSocietyModalProps> = ({
     }
   };
 
+  const etbd = watch("established_date");
+  console.log(etbd);
+
   useEffect(() => {
     if (!isOpen || !orgId) {
       return;
@@ -328,7 +332,7 @@ const UpdateSocietyModal: React.FC<UpdateSocietyModalProps> = ({
       .then((res) => {
         setValue("name", res?.name);
         setValue("registration_number", res?.registration_number);
-        setValue("established_date", res?.established_date);
+        setValue("established_date", formatDateforInput(res?.established_date));
         setValue("address_line_1", res?.address_line_1);
         setValue("address_line_2", res?.address_line_2);
         setValue("city", res?.city);

@@ -41,6 +41,8 @@ export type TCreateOrganizationData = Partial<IOrganization> & {
     password: string;
     unit_number: string;
     phone: string;
+    square_footage: number;
+    unit_type: string;
   };
 };
 

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import {
@@ -30,17 +29,18 @@ import Contact from "../components/configureSettings/Contact";
 import Property from "../components/configureSettings/Property";
 import usePaginationService from "../hooks/serviceHooks/usePaginationService";
 import { columns } from "../config/tableConfig/configureSettings";
-import type { IProfile } from "../types/user.types";
 import { getOrganization } from "../apis/organization.apis";
-import useProfileApiService from "../hooks/apiHooks/useProfileApiService";
 import Layout from "../components/Layout/Layout";
 import useOrganizationApiService from "../hooks/apiHooks/useOrganizationApiService";
 import type { IOrganization } from "../types/organization.types";
+import useUnitApiService from "../hooks/apiHooks/useUnitApiService";
+import { useUnitStore } from "../libs/stores/useUnitStore";
+import type { IUnit } from "../types/unit.types";
 
 const SocietyConfigurationPage: React.FC = () => {
   const { orgId } = useParams<{ orgId: string }>();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [selectedProfile, setSelectedProfile] = useState<IProfile | null>(null);
+  const [selectedUnit, setSelectedUnit] = useState<IUnit | null>(null);
   const [isViewResidentModalOpen, setIsViewResidentModalOpen] =
     useState<boolean>(false);
   const [isUpdateResidentModalOpen, setIsUpdateResidentModalOpen] =
@@ -51,8 +51,10 @@ const SocietyConfigurationPage: React.FC = () => {
   const [organization, setOrganization] = useState<IOrganization | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
-  const { residents, profile } = useProfileStore();
-  const { handleGetAllProfiles, handleDeleteProfile } = useProfileApiService();
+  const { units } = useUnitStore();
+  const { profile } = useProfileStore();
+  const { handleDeleteUnit } = useUnitApiService();
+  const { handleGetAllUnits } = useUnitApiService();
   const [loading, setLoading] = useState(false);
   const [isOnboardModalOpen, setIsOnboardModalOpen] = useState(false);
   const [refetch, setRefetch] = useState(true);
@@ -72,11 +74,11 @@ const SocietyConfigurationPage: React.FC = () => {
   const loadData = async () => {
     setLoading(true);
     try {
-      const result = await handleGetAllProfiles({
+      const result = await handleGetAllUnits({
         page: currentPage,
         limit: pageSize,
-        sortBy: "unit_number",
         order: "asc",
+        sortBy: "unit_number",
         organization_id: orgId,
       });
 
@@ -101,11 +103,11 @@ const SocietyConfigurationPage: React.FC = () => {
     loadData();
   }, [currentPage, pageSize]);
 
-  const actions: TableAction<IProfile>[] = [
+  const actions: TableAction<IUnit>[] = [
     {
       icon: <Eye className="w-4 h-4" />,
-      onClick: (profile) => {
-        setSelectedProfile(profile);
+      onClick: (unit) => {
+        setSelectedUnit(unit);
         setIsViewResidentModalOpen(true);
       },
       className:
@@ -114,8 +116,8 @@ const SocietyConfigurationPage: React.FC = () => {
     },
     {
       icon: <Edit className="w-4 h-4" />,
-      onClick: (profile) => {
-        setSelectedProfile(profile);
+      onClick: (unit) => {
+        setSelectedUnit(unit);
         setIsUpdateResidentModalOpen(true);
       },
       className:
@@ -124,8 +126,8 @@ const SocietyConfigurationPage: React.FC = () => {
     },
     {
       icon: <Trash2 className="w-4 h-4" />,
-      onClick: (profile) => {
-        setSelectedProfile(profile);
+      onClick: (unit) => {
+        setSelectedUnit(unit);
         setIsDeleteConfirmationModalOpen(true);
       },
       className:
@@ -137,23 +139,12 @@ const SocietyConfigurationPage: React.FC = () => {
   const {
     register,
     handleSubmit,
-    formState: { errors, isDirty },
+    formState: { errors },
     setValue,
     watch,
-  } = useForm<IOrganization>({
-    defaultValues: {
-      name: "",
-      address_line_1: "",
-      city: "",
-      state: "",
-      pincode: "",
-      phone: "",
-      registration_number: "",
-      established_date: "",
-      total_units: 0,
-      extras: [],
-    },
-  });
+    control,
+    trigger,
+  } = useForm<IOrganization>();
 
   const onSubmit = async (data: IOrganization) => {
     if (!orgId) {
@@ -166,7 +157,8 @@ const SocietyConfigurationPage: React.FC = () => {
       const updateData = {
         ...profile?.organization,
         name: data.name,
-        address: data.address_line_1 || "",
+        address_line_1: data.address_line_1 || "",
+        address_line_2: data.address_line_2 || "",
         city: data.city || "",
         state: data.state || "",
         pincode: data.pincode || "",
@@ -174,24 +166,29 @@ const SocietyConfigurationPage: React.FC = () => {
         registration_number: data.registration_number || "",
         established_date: data.established_date || "",
         total_units: data.total_units,
-        maintenance_rate: data.maintenance_rate ,
-        maintenance_amount: data.maintenance_amount ,
-        tenant_maintenance_rate: data.tenant_maintenance_rate ,
-        tenant_maintenance_amount: data.tenant_maintenance_amount ,
+        maintenance_rate: data.maintenance_rate || 0,
+        maintenance_amount: data.maintenance_amount || 0,
+        tenant_maintenance_rate: data.tenant_maintenance_rate || 0,
+        tenant_maintenance_amount: data.tenant_maintenance_amount || 0,
         extras: data.extras || [],
         due_date: Number(data.due_date),
-        penalty_rate: data?.penalty_rate,
-        penalty_amount: data?.penalty_amount,
+        penalty_rate: data?.penalty_rate || 0,
+        penalty_amount: data?.penalty_amount || 0,
         calculate_maintenance_by: data?.calculate_maintenance_by,
       };
 
-      handleUpdateOrganization({
+      await handleUpdateOrganization({
         data: updateData as IOrganization,
         id: orgId,
       });
-    } catch (error) {
+      toast.success("Society configuration updated successfully!");
+    } catch (error: any) {
       console.error("Error updating society:", error);
-      toast.error("Failed to update society configuration!");
+      if (error instanceof Error) {
+        toast.error(error.message || "Failed to update society configuration!");
+      } else {
+        toast.error("Failed to update society configuration!");
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -208,16 +205,16 @@ const SocietyConfigurationPage: React.FC = () => {
   const renderTabContent = () => {
     switch (activeTab) {
       case "basic":
-        return <Basic errors={errors} register={register} />;
+        return <Basic errors={errors} register={register} watch={watch} />;
 
       case "location":
-        return <Location errors={errors} register={register} />;
+        return <Location errors={errors} register={register} watch={watch} />;
 
       case "contact":
-        return <Contact errors={errors} register={register} />;
+        return <Contact errors={errors} register={register} watch={watch} />;
 
       case "property":
-        return <Property errors={errors} register={register} />;
+        return <Property errors={errors} register={register} watch={watch} />;
 
       case "maintenance":
         return (
@@ -225,6 +222,8 @@ const SocietyConfigurationPage: React.FC = () => {
             setValue={setValue}
             watch={watch}
             register={register}
+            control={control}
+            trigger={trigger}
             errors={errors}
           />
         );
@@ -267,7 +266,8 @@ const SocietyConfigurationPage: React.FC = () => {
           setOrganization(data);
           // Populate form fields
           setValue("name", data?.name || "");
-          setValue("address_line_1", data?.address || "");
+          setValue("address_line_1", data?.address_line_1 || "");
+          setValue("address_line_2", data?.address_line_2 || "");
           setValue("city", data?.city || "");
           setValue("state", data?.state || "");
           setValue("pincode", data?.pincode || "");
@@ -275,18 +275,15 @@ const SocietyConfigurationPage: React.FC = () => {
           setValue("registration_number", data?.registration_number || "");
           setValue("established_date", establishedDate);
           setValue("total_units", data?.total_units || 0);
-          setValue("maintenance_rate", data?.maintenance_rate );
-          setValue("maintenance_amount", data?.maintenance_amount );
+          setValue("maintenance_rate", data?.maintenance_rate);
+          setValue("maintenance_amount", data?.maintenance_amount);
           setValue("due_date", data?.due_date || "");
-          setValue("penalty_amount", data?.penalty_amount );
-          setValue("penalty_rate", data?.penalty_rate );
-          setValue(
-            "tenant_maintenance_rate",
-            data?.tenant_maintenance_rate 
-          );
+          setValue("penalty_amount", data?.penalty_amount);
+          setValue("penalty_rate", data?.penalty_rate);
+          setValue("tenant_maintenance_rate", data?.tenant_maintenance_rate);
           setValue(
             "tenant_maintenance_amount",
-            data?.tenant_maintenance_amount 
+            data?.tenant_maintenance_amount
           );
           setValue("extras", data?.extras || []);
           setValue("calculate_maintenance_by", data?.calculate_maintenance_by);
@@ -368,7 +365,7 @@ const SocietyConfigurationPage: React.FC = () => {
           <div className="pr-6 pb-6 flex justify-end">
             <button
               type="submit"
-              disabled={isSubmitting || !isDirty}
+              disabled={isSubmitting}
               className="inline-flex items-center gap-2 px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isSubmitting ? (
@@ -386,53 +383,59 @@ const SocietyConfigurationPage: React.FC = () => {
           </div>
         </div>
       </form>
-      <button
+      {/* <button
         type="button"
         onClick={() => setIsOnboardModalOpen(true)}
         className={`bg-[#22C36E] w-full sm:w-fit flex items-center whitespace-nowrap justify-center gap-2 text-white px-6 py-2 rounded-lg font-medium transition-colors disabled:opacity-70`}
       >
         <Plus className="w-5 h-5" />
         Add Room Owner
-      </button>
-      <GenericTable
+      </button> */}
+      {/* <GenericTable
         title="Residents"
         columns={columns}
-        data={residents}
+        data={units}
         actions={actions}
         loading={loading}
         emptyMessage="No Resident Found"
-        searchPlaceholder="Search resident"
         showPagination
         pagination={pagination}
         onPageChange={handlePageChange}
         onPageSizeChange={handlePageSizeChange}
         pageSizeOptions={[5, 10, 20, 50]}
       />
-      <OnboardResidentModal
-        isOpen={isOnboardModalOpen}
-        onClose={() => setIsOnboardModalOpen(false)}
-      />
-      <ViewResidentDetailsModal
-        resident={selectedProfile}
-        isOpen={isViewResidentModalOpen}
-        onClose={() => setIsViewResidentModalOpen(false)}
-      />
-      <UpdateResidentModal
-        resident={selectedProfile}
-        isOpen={isUpdateResidentModalOpen}
-        onClose={() => setIsUpdateResidentModalOpen(false)}
-        callback={() => setRefetch(true)}
-      />
+      {isOnboardModalOpen && (
+        <OnboardResidentModal
+          isOpen={isOnboardModalOpen}
+          onClose={() => setIsOnboardModalOpen(false)}
+          callback={() => setRefetch(true)}
+        />
+      )}
+      {isViewResidentModalOpen && (
+        <ViewResidentDetailsModal
+          resident={selectedUnit}
+          isOpen={isViewResidentModalOpen}
+          onClose={() => setIsViewResidentModalOpen(false)}
+        />
+      )}
+      {isUpdateResidentModalOpen && (
+        <UpdateResidentModal
+          resident={selectedUnit}
+          isOpen={isUpdateResidentModalOpen}
+          onClose={() => setIsUpdateResidentModalOpen(false)}
+          callback={() => setRefetch(true)}
+        />
+      )}
       <ConfirmationAlert
         isOpen={isDeleteConfirmationModalOpen}
         onClose={() => setIsDeleteConfirmationModalOpen(false)}
         message="Are you sure want to delete this resident?"
         onConfirm={async () => {
-          await handleDeleteProfile(selectedProfile?.id as string);
+          await handleDeleteUnit(selectedUnit?.id as string);
           setRefetch(true);
           setIsDeleteConfirmationModalOpen(false);
         }}
-      />
+      /> */}
     </Layout>
   );
 };

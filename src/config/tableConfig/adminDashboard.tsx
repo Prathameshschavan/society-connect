@@ -5,14 +5,14 @@ import { shortMonth } from "../../utility/dateTimeServices";
 
 export const columns: TableColumn<MaintenanceBill>[] = [
   {
-    key: "resident",
-    header: "Resident",
+    key: "unit",
+    header: "Unit",
     render: (bill) => (
       <div>
         <p className="font-medium text-gray-900">
-          {bill.resident?.unit_number || "N/A"}
+          {bill?.unit_number || "N/A"}
         </p>
-        <p className="font-light text-gray-900">{bill.resident?.full_name}</p>
+        <p className="font-light text-gray-900">{bill.profile?.full_name}</p>
       </div>
     ),
     className: "text-gray-900 font-medium",

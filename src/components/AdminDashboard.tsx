@@ -5,7 +5,8 @@ import { useEffect, useState, useCallback } from "react";
 import {
   Edit,
   Eye,
-  ReceiptText,
+  LayoutDashboard,
+  Plus,
   Search,
   SlidersHorizontal,
   SortAsc,
@@ -17,7 +18,6 @@ import OnboardResidentModal from "./Modals/OnboardResidentModal";
 
 import GenericTable, { type TableAction } from "./ui/GenericTable";
 
-import useAdminService from "../hooks/serviceHooks/useAdminService";
 import usePaginationService from "../hooks/serviceHooks/usePaginationService";
 
 import {
@@ -33,6 +33,8 @@ import { siteSetting } from "../config/siteSetting";
 import Layout from "./Layout/Layout";
 import ViewMaintenanceDetailsModal from "./Modals/ViewMaintenanceDetailsModal";
 import UpdateMaintenanceStatusModal from "./Modals/UpdateMaintenanceStatusModal";
+import useMaintenanceApiService from "../hooks/apiHooks/useMaintenanceApiService";
+import toast from "react-hot-toast";
 
 // Custom hook for debounced search [web:45]
 const useDebounce = (value: string, delay: number) => {
@@ -53,13 +55,9 @@ const useDebounce = (value: string, delay: number) => {
 
 // Sort options for the dropdown
 const sortOptions = [
-  { label: "Unit Number", value: "unit_number" },
-  { label: "Resident Name", value: "resident_name" },
-  { label: "Year", value: "year" },
-  { label: "Month", value: "month" },
-  { label: "Amount", value: "amount" },
-  { label: "Due Date", value: "due_date" },
   { label: "Created Date", value: "created_at" },
+  { label: "Unit Number", value: "unit_number" },
+  { label: "Amount", value: "amount" },
 ];
 
 // Filter interface
@@ -77,9 +75,9 @@ interface SortState {
 }
 
 const AdminDashboard = () => {
-  // Services
-  const { createBillsWithPenaltyForAllResidents, fetchMaintenanceBills } =
-    useAdminService();
+
+  const { handleCreateMaintenanceBill, handleGetMaintenanceBills } =
+    useMaintenanceApiService();
   const {
     currentPage,
     pageSize,
@@ -133,18 +131,18 @@ const AdminDashboard = () => {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const result = await fetchMaintenanceBills({
+      const result = await handleGetMaintenanceBills({
         page: currentPage,
-        pageSize: pageSize,
-        searchQuery: debouncedSearchQuery,
+        limit: pageSize,
+        search: debouncedSearchQuery,
         sortBy: sortState.sortBy as any,
-        sortOrder: sortState.sortOrder,
-        filters: {
-          ...filters,
-          billMonth: filters.billMonth as string,
-          billYear: filters.billYear as string,
-        },
+        order: sortState.sortOrder,
+        bill_month: Number(filters.billMonth),
+        bill_year: Number(filters.billYear),
+        organization_id: profile?.organization_id as string,
       });
+
+      console.log(result);
 
       if (result) {
         setPagination(result.pagination as any);
@@ -160,7 +158,6 @@ const AdminDashboard = () => {
     debouncedSearchQuery,
     sortState,
     filters,
-    fetchMaintenanceBills,
     setPagination,
   ]);
 
@@ -214,10 +211,16 @@ const AdminDashboard = () => {
   const handleCreateBill = async () => {
     try {
       setGenerateBillLoading(true);
-      await createBillsWithPenaltyForAllResidents();
+      await handleCreateMaintenanceBill({
+        organization_id: profile?.organization_id as string,
+        bill_month: Number(currMonth),
+        bill_year: Number(currYear),
+      });
       await loadData();
-    } catch (error) {
+      toast.success("Bill generated successfully");
+    } catch (error: any) {
       console.log(error);
+      toast.error(error?.message || "Failed to generate bill");
     } finally {
       setGenerateBillLoading(false);
     }
@@ -235,9 +238,10 @@ const AdminDashboard = () => {
         "cursor-pointer p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors",
       label: "View",
     },
-    ...(filters.billMonth === currMonth &&
-    filters.billYear === currYear &&
-    profile?.role === "admin"
+    ...((filters.billMonth === currMonth &&
+      filters.billYear === currYear &&
+      profile?.role === "admin") ||
+    true
       ? [
           {
             icon: <Edit className="w-4 h-4" />,
@@ -254,7 +258,15 @@ const AdminDashboard = () => {
   ];
 
   return (
-    <Layout role="admin">
+    <Layout
+      role="admin"
+      pageHeader={{
+        description: "Manage and track all maintenance bills and activities.",
+        title: "Maintenance",
+        icon: <LayoutDashboard className="w-6 h-6 text-[#0154AC]" />,
+      }}
+      visibileTopSection={false}
+    >
       <div className="flex flex-col sm:flex-row items-center justify-between gap-5">
         <div className="flex  items-center justify-between gap-5 w-full sm:w-fit">
           {profile?.role === "admin" &&
@@ -267,7 +279,7 @@ const AdminDashboard = () => {
                 className={`bg-[#22C36E] w-full sm:w-fit flex items-center whitespace-nowrap justify-center gap-2 text-white px-6 py-2 rounded-lg font-medium transition-colors disabled:opacity-70`}
                 aria-busy={generateBillLoading}
               >
-                <ReceiptText className="w-5 h-5" />
+                <Plus className="w-5 h-5" />
                 {generateBillLoading ? "Generating..." : "Generate Bill"}
               </button>
             )}
@@ -309,7 +321,9 @@ const AdminDashboard = () => {
           <div className=" grid grid-cols-3 lg:grid-cols-7 gap-4">
             <GenericSelect
               id="months"
-              onChange={(value) => handleFilterChange("billMonth", value as string)}
+              onChange={(value) =>
+                handleFilterChange("billMonth", value as string)
+              }
               options={[
                 { label: "All Months", value: "" },
                 ...shortMonth.map((month, i) => ({
@@ -323,7 +337,9 @@ const AdminDashboard = () => {
 
             <GenericSelect
               id="years"
-              onChange={(value) => handleFilterChange("billYear", value as string)}
+              onChange={(value) =>
+                handleFilterChange("billYear", value as string)
+              }
               options={[
                 { label: "All Years", value: "" },
                 ...Array.from(

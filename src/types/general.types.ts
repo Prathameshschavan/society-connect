@@ -1,6 +1,8 @@
 export type GETMethodParams = {
   page?: number;
   limit?: number;
+  bill_month?: number;
+  bill_year?: number;
   search?: string;
   sortBy?: string;
   order?: "asc" | "desc";

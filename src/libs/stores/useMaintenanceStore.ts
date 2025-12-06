@@ -3,6 +3,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { BillBreakdown } from "../../hooks/serviceHooks/useAdminService";
 import type { ExtraItem } from "./useOrganizationStore";
+import type { TBillStatus } from "../../types/maintenance.types";
 
 export interface MaintenanceBill {
   id: string;
@@ -12,7 +13,7 @@ export interface MaintenanceBill {
   bill_month: string;
   bill_year?: string;
   due_date: string;
-  status?: "pending" | "paid" | "overdue";
+  status?: TBillStatus;
   razorpay_payment_id?: string | null;
   late_fee?: number;
   penalty?: number;
@@ -20,13 +21,13 @@ export interface MaintenanceBill {
   updated_at?: string;
   breakdown: BillBreakdown;
   extras: ExtraItem[];
-  // Optional resident data if fetched with join
-  resident?: {
+  unit_id: string;
+  unit_number: string;
+  profile: {
     id: string;
+    role: string;
     full_name: string;
-    email: string;
     phone: string;
-    unit_number: string;
   };
 }
 

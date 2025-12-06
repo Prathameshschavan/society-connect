@@ -176,9 +176,9 @@ export const ReceiptTemplate: React.FC<{
               color: "#1f2937",
             }}
           >
-            {bill?.resident?.full_name}
+            {bill?.profile?.full_name}
           </p>
-          {bill?.resident?.unit_number && (
+          {bill?.unit_number && (
             <p
               style={{
                 margin: "0 0 5px 0",
@@ -186,12 +186,12 @@ export const ReceiptTemplate: React.FC<{
                 color: "#6b7280",
               }}
             >
-              Flat: {bill?.resident?.unit_number}
+              Flat: {bill?.unit_number}
             </p>
           )}
-          {bill?.resident?.phone && (
+          {bill?.profile?.phone && (
             <p style={{ margin: "0", fontSize: "14px", color: "#6b7280" }}>
-              Phone: {bill?.resident?.phone}
+              Phone: {bill?.profile?.phone}
             </p>
           )}
         </div>

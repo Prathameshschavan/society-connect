@@ -48,6 +48,10 @@ const Autocomplete: React.FC<AutocompleteProps> = ({
   const dropdownRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  console.log(options)
+
+
+
   const errorMessage = typeof error === "string" ? error : error?.message;
 
   // Get selected option label
@@ -58,6 +62,9 @@ const Autocomplete: React.FC<AutocompleteProps> = ({
   const filteredOptions = options.filter((option) =>
     option.label.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+
+  console.log(filteredOptions)
 
   // Update dropdown position when opening
   useEffect(() => {

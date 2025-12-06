@@ -1,0 +1,1 @@
+export type TBillStatus = "pending" | "paid" | "overdue";

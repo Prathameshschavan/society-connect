@@ -115,7 +115,7 @@ const ViewMaintenanceDetailsModal: React.FC<ViewMaintenanceModalProps> = ({
                       <div>
                         <p className="text-xs text-gray-500">Unit Number</p>
                         <p className="font-medium text-gray-900">
-                          {bill.resident?.unit_number}
+                          {bill?.unit_number}
                         </p>
                       </div>
                     </div>
@@ -124,7 +124,7 @@ const ViewMaintenanceDetailsModal: React.FC<ViewMaintenanceModalProps> = ({
                       <div>
                         <p className="text-xs text-gray-500">Full Name</p>
                         <p className="font-medium text-gray-900">
-                          {bill.resident?.full_name}
+                          {bill?.profile?.full_name}
                         </p>
                       </div>
                     </div>
@@ -133,7 +133,7 @@ const ViewMaintenanceDetailsModal: React.FC<ViewMaintenanceModalProps> = ({
                       <div>
                         <p className="text-xs text-gray-500">Phone</p>
                         <p className="font-medium text-gray-900">
-                          {bill.resident?.phone}
+                          {bill?.profile?.phone}
                         </p>
                       </div>
                     </div>

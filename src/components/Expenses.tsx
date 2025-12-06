@@ -9,6 +9,7 @@ import {
   SortDesc,
   X,
   SlidersHorizontal,
+  Plus,
 } from "lucide-react";
 
 import { GenericSelect, type OptionValue } from "./ui/GenericSelect";
@@ -248,7 +249,15 @@ const Expenses = () => {
     debouncedSearchQuery || debouncedMinAmount || debouncedMaxAmount;
 
   return (
-    <Layout role="admin">
+    <Layout
+      role="admin"
+      pageHeader={{
+        description: "Manage and track all expenses and transactions.",
+        title: "Expenses",
+        icon: <ArrowDownWideNarrow className="w-6 h-6 text-[#0154AC]" />,
+      }}
+      visibileTopSection={false}
+    >
       <div className="flex flex-col sm:flex-row items-center justify-between gap-5">
         <div className="flex  items-center justify-between gap-5 w-full sm:w-fit">
           {profile?.role === "admin" && (
@@ -256,7 +265,7 @@ const Expenses = () => {
               onClick={() => setIsAddExpenseModalOpen(true)}
               className={`bg-[#22C36E] w-full sm:w-fit flex items-center whitespace-nowrap justify-center gap-2 text-white px-6 py-2 rounded-lg font-medium transition-colors disabled:opacity-70`}
             >
-              <ArrowDownWideNarrow className="w-5 h-5" />
+              <Plus className="w-5 h-5" />
               Add Expense
             </button>
           )}

@@ -292,9 +292,9 @@ function GenericTable<T extends Record<string, any>>({
   const cardsWrapperVisibility = `sm:hidden`;
 
   return (
-    <div className="bg-white rounded-xl shadow-sm  border border-gray-200">
+    <div className="bg-white rounded-xl shadow-sm  ">
       {(title || showSearch || showFilter) && (
-        <div className="p-4 sm:p-6 border-b border-gray-200 bg-[#0154AC] rounded-t-xl flex flex-col sm:flex-row items-center justify-between  gap-1">
+        <div className="p-4 sm:p-6  bg-[#0154AC] rounded-t-xl flex flex-col sm:flex-row items-center justify-between  gap-1">
           {title && (
             <h2 className="text-lg sm:text-xl font-medium  w-full sm:w-auto text-white!">
               {title}

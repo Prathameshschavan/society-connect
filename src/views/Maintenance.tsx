@@ -5,18 +5,14 @@ import { useEffect, useState, useCallback } from "react";
 import {
   Edit,
   Eye,
-  LayoutDashboard,
   Plus,
+  ReceiptText,
   Search,
   SlidersHorizontal,
   SortAsc,
   SortDesc,
   X,
 } from "lucide-react";
-
-import OnboardResidentModal from "./Modals/OnboardResidentModal";
-
-import GenericTable, { type TableAction } from "./ui/GenericTable";
 
 import usePaginationService from "../hooks/serviceHooks/usePaginationService";
 
@@ -28,13 +24,19 @@ import { useProfileStore } from "../libs/stores/useProfileStore";
 
 import { currMonth, currYear, shortMonth } from "../utility/dateTimeServices";
 import { columns } from "../config/tableConfig/adminDashboard";
-import { GenericSelect, type OptionValue } from "./ui/GenericSelect";
 import { siteSetting } from "../config/siteSetting";
-import Layout from "./Layout/Layout";
-import ViewMaintenanceDetailsModal from "./Modals/ViewMaintenanceDetailsModal";
-import UpdateMaintenanceStatusModal from "./Modals/UpdateMaintenanceStatusModal";
 import useMaintenanceApiService from "../hooks/apiHooks/useMaintenanceApiService";
 import toast from "react-hot-toast";
+import type { TableAction } from "../components/ui/GenericTable";
+import Layout from "../components/Layout/Layout";
+import {
+  GenericSelect,
+  type OptionValue,
+} from "../components/ui/GenericSelect";
+import GenericTable from "../components/ui/GenericTable";
+import OnboardResidentModal from "../components/Modals/OnboardResidentModal";
+import ViewMaintenanceDetailsModal from "../components/Modals/ViewMaintenanceDetailsModal";
+import UpdateMaintenanceStatusModal from "../components/Modals/UpdateMaintenanceStatusModal";
 
 // Custom hook for debounced search [web:45]
 const useDebounce = (value: string, delay: number) => {
@@ -74,8 +76,7 @@ interface SortState {
   sortOrder: "asc" | "desc";
 }
 
-const AdminDashboard = () => {
-
+const Maintenance = () => {
   const { handleCreateMaintenanceBill, handleGetMaintenanceBills } =
     useMaintenanceApiService();
   const {
@@ -145,7 +146,7 @@ const AdminDashboard = () => {
       console.log(result);
 
       if (result) {
-        setPagination(result.pagination as any);
+        setPagination(result.meta as any);
       }
     } catch (error) {
       console.error("Error loading data:", error);
@@ -263,7 +264,7 @@ const AdminDashboard = () => {
       pageHeader={{
         description: "Manage and track all maintenance bills and activities.",
         title: "Maintenance",
-        icon: <LayoutDashboard className="w-6 h-6 text-[#0154AC]" />,
+        icon: <ReceiptText className="w-6 h-6 text-[#0154AC]" />,
       }}
       visibileTopSection={false}
     >
@@ -455,4 +456,4 @@ const AdminDashboard = () => {
   );
 };
 
-export default AdminDashboard;
+export default Maintenance;

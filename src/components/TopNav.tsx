@@ -1,12 +1,6 @@
 import {
-  Home,
-  Settings,
-  Users,
   LogOut,
   Menu,
-  ArrowDownWideNarrow,
-  BadgeIndianRupee,
-  LayoutDashboard,
   User,
 } from "lucide-react";
 import React, { useState, useRef, useEffect } from "react";
@@ -17,6 +11,7 @@ import Drawer from "./ui/Drawer";
 import { siteSetting } from "../config/siteSetting";
 import type { TRole } from "../types/user.types";
 import useAuthApiService from "../hooks/apiHooks/useAuthApiService";
+import { getMenus } from "../config/menus";
 
 const linkBase = "flex items-center space-x-1 text-sm transition-colors";
 const active = "text-[#0154AC] font-medium";
@@ -30,25 +25,6 @@ const TopNav: React.FC<{ view: TRole }> = ({ view }) => {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const { profile } = useProfileStore();
   const { handleLogout } = useAuthApiService();
-
-  // derive menu from array
-  const adminLinks = [
-    { to: "/admin", label: "Dashboard", icon: LayoutDashboard, end: true },
-    { to: "/income", label: "Income", icon: BadgeIndianRupee },
-    { to: "/expenses", label: "Expenses", icon: ArrowDownWideNarrow },
-    { to: "/units", label: "Units", icon: Home },
-    { to: "/residents", label: "Residents", icon: Users },
-    // { to: "/reports", label: "Reports", icon: FileChartColumn },
-    ...(profile?.role === "admin"
-      ? [
-          {
-            to: `/configure-settings/${profile?.organization?.id ?? ""}`,
-            label: "Settings",
-            icon: Settings,
-          },
-        ]
-      : []),
-  ];
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -70,7 +46,7 @@ const TopNav: React.FC<{ view: TRole }> = ({ view }) => {
             {view === "admin" && (
               <Menu
                 onClick={() => setOpen(!open)}
-                className="cursor-pointer md:hidden text-black"
+                className="cursor-pointer lg:hidden text-black"
               />
             )}
             {/* <img src="/logo.png" className="h-8 w-8 min-h-8 min-w-8 max-h-8 max-w-8" alt="logo" /> */}
@@ -93,8 +69,8 @@ const TopNav: React.FC<{ view: TRole }> = ({ view }) => {
           <div className="flex items-center gap-4">
             <div className="flex items-center justify-center">
               {view === "admin" && (
-                <div className="hidden md:flex space-x-6">
-                  {adminLinks.map(({ to, label, icon: Icon, end }) => (
+                <div className="hidden lg:flex space-x-6">
+                  {getMenus(profile).map(({ to, label, icon: Icon, end }) => (
                     <NavLink
                       key={label}
                       to={to}

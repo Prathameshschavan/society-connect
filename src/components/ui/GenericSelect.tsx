@@ -78,7 +78,7 @@ export function GenericSelect<T extends OptionValue>({
 
       <ChevronDownIcon
         aria-hidden="true"
-        className="pointer-events-none absolute right-2.5 top-[36px] w-4 h-4 text-gray-400"
+        className={`pointer-events-none absolute right-2.5 ${label?"top-[36px]":"top-[11px]"} w-4 h-4 text-gray-400`}
       />
 
       {error && (

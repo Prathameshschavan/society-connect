@@ -322,9 +322,7 @@ export const ReceiptTemplate: React.FC<{
                     color: "#1f2937",
                   }}
                 >
-                  <p style={{ marginTop: "-15px" }}>
-                    ₹{r.amount.toLocaleString("en-IN")}
-                  </p>
+                  <p style={{ marginTop: "-15px" }}>₹{r.amount}</p>
                 </td>
                 <td
                   style={{
@@ -334,9 +332,7 @@ export const ReceiptTemplate: React.FC<{
                     color: r.penalty ? "#dc2626" : "#6b7280",
                   }}
                 >
-                  <p style={{ marginTop: "-15px" }}>
-                    ₹{(r.penalty || 0).toLocaleString("en-IN")}
-                  </p>
+                  <p style={{ marginTop: "-15px" }}>₹{r.penalty || 0}</p>
                 </td>
                 <td
                   style={{
@@ -349,10 +345,9 @@ export const ReceiptTemplate: React.FC<{
                 >
                   <p style={{ marginTop: "-15px" }}>
                     ₹
-                    {(r.subtotal != null
+                    {r.subtotal != null
                       ? r.subtotal
-                      : r.amount + (r.penalty || 0)
-                    ).toLocaleString("en-IN")}
+                      : r.amount + (r.penalty || 0)}
                   </p>
                 </td>
               </tr>

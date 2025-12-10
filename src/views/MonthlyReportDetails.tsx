@@ -7,16 +7,15 @@ import {
   IndianRupeeIcon,
   Eye,
   Calendar,
+  LayoutDashboard,
 } from "lucide-react";
 
 import GenericTable, { type TableAction } from "../components/ui/GenericTable";
 import ViewIncomeModal from "../components/Modals/ViewIncomeModal";
 import { ViewExpenseModal } from "../components/Modals/ViewExpenseModal";
-import useIncomeService, {
+import  {
   type IncomeRow,
 } from "../hooks/serviceHooks/useIncomeService";
-import useExpenseService from "../hooks/serviceHooks/useExpenseService";
-
 import { useProfileStore } from "../libs/stores/useProfileStore";
 import { longMonth } from "../utility/dateTimeServices";
 import type { Expense } from "../libs/stores/useReportStore";
@@ -24,6 +23,8 @@ import Layout from "../components/Layout/Layout";
 import usePaginationService from "../hooks/serviceHooks/usePaginationService";
 import { columns as incomeColumns } from "../config/tableConfig/income";
 import { columns as expenseColumns } from "../config/tableConfig/expense";
+import { getAllIncome } from "../apis/income.apis";
+import { getAllExpenses } from "../apis/expense.apis";
 
 const MonthlyReportDetails = () => {
   const [searchParams] = useSearchParams();
@@ -44,8 +45,6 @@ const MonthlyReportDetails = () => {
   const [isOpenViewExpenseModal, setIsOpenViewExpenseModal] = useState(false);
 
   const { profile } = useProfileStore();
-  const { fetchIncomes } = useIncomeService();
-  const { fetchExpenses } = useExpenseService();
   const { setPagination: setIncomePagination, pagination: incomePagination } =
     usePaginationService();
   const { setPagination: setExpensePagination, pagination: expensePagination } =
@@ -74,40 +73,34 @@ const MonthlyReportDetails = () => {
     setLoading(true);
     try {
       const [incomeResult, expenseResult] = await Promise.all([
-        fetchIncomes({
+        getAllIncome({
           page: 1,
-          pageSize: 1000,
-          searchQuery: "",
+          limit: 1000,
           sortBy: "date",
-          sortOrder: "desc",
-          filters: {
-            month: month,
-            year: year,
-          },
-          orgId: profile?.organization?.id,
+          order: "desc",
+          month: Number(month),
+          year: Number(year),
+          organization_id: profile?.organization?.id,
         }),
-        fetchExpenses({
+        getAllExpenses({
           page: 1,
-          pageSize: 1000,
-          searchQuery: "",
+          limit: 1000,
           sortBy: "date",
-          sortOrder: "desc",
-          filters: {
-            month: month,
-            year: year,
-          },
-          orgId: profile?.organization?.id,
+          order: "desc",
+          month: Number(month),
+          year: Number(year),
+          organization_id: profile?.organization?.id,
         }),
       ]);
 
       if (incomeResult) {
-        setIncomeData(incomeResult.data || []);
-        setIncomePagination(incomeResult?.pagination as never);
+        setIncomeData(incomeResult.data?.data || []);
+        setIncomePagination(incomeResult?.data?.meta as never);
       }
 
       if (expenseResult) {
-        setExpenseData(expenseResult.data || []);
-        setExpensePagination(expenseResult?.pagination);
+        setExpenseData(expenseResult.data?.data || []);
+        setExpensePagination(expenseResult?.data?.meta as never);
       }
     } catch (error) {
       console.error("Error loading data:", error);
@@ -150,28 +143,37 @@ const MonthlyReportDetails = () => {
   ];
 
   return (
-    <Layout role={"admin"}>
-      {/* <h1 className="text-2xl poppins-medium flex items-center gap-2">
-         - Detailed Report
-      </h1> */}
-
+    <Layout
+      role={"admin"}
+      visibileTopSection={false}
+      pageHeader={{
+        title: "Monthly Report",
+        description: `Detailed financial report for ${monthName} ${year}`,
+        icon: <LayoutDashboard className="w-6 h-6 text-[#0154AC]" />,
+      }}
+    >
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className=" border border-gray-200 rounded-lg p-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="bg-white border hover:shadow-md transition-shadow duration-200 border-gray-200 rounded-xl p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-600 text-sm font-medium">Period</p>
+              <p className="text-gray-500 text-sm font-medium mb-1">Period</p>
               <p className="text-2xl font-bold text-gray-800">{monthName}</p>
-              <p className="text-xs text-gray-600 mt-1">{year}</p>
+              <p className="text-xs text-gray-500 mt-1">{year}</p>
             </div>
-            <Calendar className="w-8 h-8 text-gray-600" />
+            <div className="bg-gray-100 p-3 rounded-full">
+              <Calendar className="w-6 h-6 text-gray-600" />
+            </div>
           </div>
         </div>
-        <div className="bg-green-50 border border-green-200 rounded-lg p-6">
+
+        <div className="bg-white border hover:shadow-md transition-shadow duration-200 border-green-200 rounded-xl p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-green-600 text-sm font-medium">Total Income</p>
-              <p className="text-2xl font-bold text-green-800">
+              <p className="text-gray-500 text-sm font-medium mb-1">
+                Total Income
+              </p>
+              <p className="text-2xl font-bold text-green-600">
                 ₹{totalIncome.toLocaleString("en-IN")}
               </p>
               <p className="text-xs text-green-600 mt-1">
@@ -179,15 +181,19 @@ const MonthlyReportDetails = () => {
                 {incomeData.length !== 1 ? "s" : ""}
               </p>
             </div>
-            <TrendingUp className="w-8 h-8 text-green-600" />
+            <div className="bg-green-100 p-3 rounded-full">
+              <TrendingUp className="w-6 h-6 text-green-600" />
+            </div>
           </div>
         </div>
 
-        <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+        <div className="bg-white border hover:shadow-md transition-shadow duration-200 border-red-200 rounded-xl p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-red-600 text-sm font-medium">Total Expenses</p>
-              <p className="text-2xl font-bold text-red-800">
+              <p className="text-gray-500 text-sm font-medium mb-1">
+                Total Expenses
+              </p>
+              <p className="text-2xl font-bold text-red-600">
                 ₹{totalExpenses.toLocaleString("en-IN")}
               </p>
               <p className="text-xs text-red-600 mt-1">
@@ -195,29 +201,21 @@ const MonthlyReportDetails = () => {
                 {expenseData.length !== 1 ? "s" : ""}
               </p>
             </div>
-            <TrendingDown className="w-8 h-8 text-red-600" />
+            <div className="bg-red-100 p-3 rounded-full">
+              <TrendingDown className="w-6 h-6 text-red-600" />
+            </div>
           </div>
         </div>
 
-        <div
-          className={`${
-            difference >= 0
-              ? "bg-blue-50 border-blue-200"
-              : "bg-orange-50 border-orange-200"
-          } border rounded-lg p-6`}
-        >
+        <div className="bg-white border hover:shadow-md transition-shadow duration-200 border-blue-200 rounded-xl p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p
-                className={`${
-                  difference >= 0 ? "text-blue-600" : "text-orange-600"
-                } text-sm font-medium`}
-              >
-                Net {difference >= 0 ? "Surplus" : "Deficit"}
+              <p className="text-gray-500 text-sm font-medium mb-1">
+                Net Position
               </p>
               <p
                 className={`text-2xl font-bold ${
-                  difference >= 0 ? "text-blue-800" : "text-orange-800"
+                  difference >= 0 ? "text-blue-600" : "text-orange-600"
                 }`}
               >
                 {difference >= 0 ? "+" : "-"}₹
@@ -228,79 +226,44 @@ const MonthlyReportDetails = () => {
                   difference >= 0 ? "text-blue-600" : "text-orange-600"
                 }`}
               >
-                {difference >= 0 ? "Positive balance" : "Negative balance"}
+                {difference >= 0 ? "Surplus" : "Deficit"}
               </p>
             </div>
-            <IndianRupeeIcon
-              className={`w-8 h-8 ${
-                difference >= 0 ? "text-blue-600" : "text-orange-600"
-              }`}
-            />
+            <div className="bg-blue-100 p-3 rounded-full">
+              <IndianRupeeIcon className="w-6 h-6 text-blue-600" />
+            </div>
           </div>
         </div>
       </div>
 
-      <GenericTable
-        title="Income Details"
-        columns={incomeColumns}
-        data={incomeData as any}
-        actions={incomeActions}
-        loading={loading}
-        emptyMessage="No income records found for this month"
-        searchPlaceholder=""
-        showPagination={false}
-        pagination={incomePagination}
-        onSearch={() => {}}
-      />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Income Table */}
+        <GenericTable
+            title="Income Details"
+            columns={incomeColumns}
+            data={incomeData as any}
+            actions={incomeActions}
+            loading={loading}
+            emptyMessage="No income records found for this month"
+            searchPlaceholder=""
+            showPagination={false}
+            pagination={incomePagination}
+            onSearch={() => {}}
+          />
 
-      <GenericTable
-        title="Expense Details"
-        columns={expenseColumns}
-        data={expenseData as any}
-        actions={expenseActions}
-        loading={loading}
-        emptyMessage="No expense records found for this month"
-        searchPlaceholder=""
-        showPagination={false}
-        pagination={expensePagination}
-        onSearch={() => {}}
-      />
-
-      {/* Summary Footer */}
-      <div className="bg-gray-50 border border-gray-300 rounded-lg p-6">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-center">
-          <div>
-            <p className="text-sm text-gray-600">Period</p>
-            <p className="text-lg font-bold text-gray-900">
-              {monthName} {year}
-            </p>
-          </div>
-          <div>
-            <p className="text-sm text-gray-600">Total Income</p>
-            <p className="text-lg font-bold text-green-600">
-              ₹{totalIncome.toLocaleString("en-IN")}
-            </p>
-          </div>
-          <div>
-            <p className="text-sm text-gray-600">Total Expenses</p>
-            <p className="text-lg font-bold text-red-600">
-              ₹{totalExpenses.toLocaleString("en-IN")}
-            </p>
-          </div>
-          <div>
-            <p className="text-sm text-gray-600">
-              Net {difference >= 0 ? "Surplus" : "Deficit"}
-            </p>
-            <p
-              className={`text-lg font-bold ${
-                difference >= 0 ? "text-blue-600" : "text-orange-600"
-              }`}
-            >
-              {difference >= 0 ? "+" : ""}₹
-              {Math.abs(difference).toLocaleString("en-IN")}
-            </p>
-          </div>
-        </div>
+        {/* Expense Table */}
+          <GenericTable
+            title="Expense Details"
+            columns={expenseColumns}
+            data={expenseData as any}
+            actions={expenseActions}
+            loading={loading}
+            emptyMessage="No expense records found for this month"
+            searchPlaceholder=""
+            showPagination={false}
+            pagination={expensePagination}
+            onSearch={() => {}}
+          />
       </div>
 
       {/* Income Modals */}

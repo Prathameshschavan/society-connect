@@ -1,15 +1,10 @@
 import { Route, Routes } from "react-router-dom";
 import "./App.css";
 
-import AdminDashboard from "./components/AdminDashboard";
 import RoomOwnerDashboard from "./components/RoomOwnerDashboard";
-import SuperAdminDashboard from "./components/SuperAdminDashboard";
 
 import ProtectedRoute from "./components/ProtectedRoute";
 
-import Expenses from "./components/Expenses";
-import Income from "./components/Income";
-import Reports from "./components/Reports";
 import MonthlyReportDetails from "./views/MonthlyReportDetails.tsx";
 import SignIn from "./views/SignIn.tsx";
 import SocietyConfigurationPage from "./views/ConfigureSettings.tsx";
@@ -18,22 +13,20 @@ import SignUp from "./views/SignUp.tsx";
 import UnauthorizedPage from "./views/Unauthorized.tsx";
 import Units from "./views/Units.tsx";
 import Residents from "./views/Residents.tsx";
+import Maintenance from "./views/Maintenance.tsx";
+import Income from "./views/Income.tsx";
+import Expenses from "./views/Expenses.tsx";
+import SuperAdminDashboard from "./views/SuperAdminDashboard.tsx";
+import Dashboard from "./views/Dashboard.tsx";
+
 function App() {
   return (
     <Routes>
       <Route
-        path="/admin"
+        path="/maintenance"
         element={
           <ProtectedRoute allowedRoles={["admin", "committee_member"]}>
-            <AdminDashboard />
-          </ProtectedRoute>
-        }
-      ></Route>
-      <Route
-        path="/"
-        element={
-          <ProtectedRoute allowedRoles={["admin", "committee_member"]}>
-            <AdminDashboard />
+            <Maintenance />
           </ProtectedRoute>
         }
       ></Route>
@@ -62,10 +55,10 @@ function App() {
         }
       ></Route>
       <Route
-        path="/reports"
+        path="/"
         element={
           <ProtectedRoute allowedRoles={["admin", "committee_member"]}>
-            <Reports />
+            <Dashboard />
           </ProtectedRoute>
         }
       ></Route>

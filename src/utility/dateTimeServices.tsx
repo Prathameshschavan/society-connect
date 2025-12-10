@@ -9,6 +9,7 @@ export const formatMonthNum = (num: string | number) => {
 export const currYear = `${new Date().getFullYear()}`;
 export const currDate = `${new Date().getDate()}`;
 export const currFullDate = `${currYear}-${currDate}-${currMonth}`;
+export const currFullDateForInput = `${currYear}-${currMonth}-${currDate}`;
 export const shortMonth = [
   "Jan",
   "Feb",
@@ -39,6 +40,8 @@ export const longMonth = [
 ];
 
 export function formatDate(inputDate: string) {
+
+  
   const date = new Date(inputDate);
 
   const day = date.getDate();

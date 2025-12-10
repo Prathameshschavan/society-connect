@@ -1,104 +1,128 @@
 import { useForm } from "react-hook-form";
 import {
-  currFullDate,
+  currFullDateForInput,
+  currMonth,
+  currYear,
 } from "../../utility/dateTimeServices";
-import Modal, { ModalBody, ModalFooter } from "./Modal";
-import useIncomeService from "../../hooks/serviceHooks/useIncomeService";
-
-export type IncomeFormValues = {
-  name: string;
-  description?: string;
-  amount: number;
-  month: string;
-  year: string;
-  organization_id: string;
-  date: string;
-};
+import Modal from "./Modal";
+import type { IncomeFormValues } from "../../libs/stores/useReportStore";
+import { useProfileStore } from "../../libs/stores/useProfileStore";
+import CustomInput from "../ui/CustomInput";
+import toast from "react-hot-toast";
+import useIncomeApiService from "../../hooks/apiHooks/useIncomeApiService";
 
 type IncomeModalProps = {
   isOpen: boolean;
   onClose: () => void;
+  callback: () => void;
 };
 
-export function AddIncomeModal({ isOpen, onClose }: IncomeModalProps) {
-  const { addIncome, fetchIncomes } = useIncomeService();
+export function AddIncomeModal({
+  isOpen,
+  onClose,
+  callback,
+}: IncomeModalProps) {
+  const { profile } = useProfileStore();
+  const { handleAddIncome } = useIncomeApiService();
 
   const {
     register,
     handleSubmit,
+    reset,
+    watch,
     formState: { errors, isSubmitting, isDirty },
   } = useForm<IncomeFormValues>({
     defaultValues: {
       name: "",
       description: "",
       amount: undefined as unknown as number,
-      date: currFullDate,
+      month: currMonth,
+      year: currYear,
+      organization_id: profile?.organization?.id,
+      date: currFullDateForInput,
     },
   });
 
   const submit = async (data: IncomeFormValues) => {
     try {
-      await addIncome(data);
-      await fetchIncomes();
+      const incomeData = {
+        name: data.name,
+        organization_id: profile?.organization?.id as string,
+        description: data.description || "",
+        amount: data.amount,
+        date: data.date,
+        month: Number(new Date(data.date).getMonth() + 1),
+        year: Number(new Date(data.date).getFullYear()),
+      };
+
+      await handleAddIncome(incomeData);
+
+      reset();
+      callback();
       onClose();
-    } catch (error) {
+      toast.success("Income added successfully!");
+    } catch (error: any) {
       console.log(error);
+      toast.error(error?.message || "Failed to add income");
     }
+  };
+
+  const handleModalClose = () => {
+    reset();
+    onClose();
   };
 
   if (!isOpen) return null;
 
   return (
-    <Modal title={`Add Income`} isOpen={isOpen} onClose={onClose} size="lg">
+    <Modal
+      title="Add Income"
+      isOpen={isOpen}
+      onClose={handleModalClose}
+      size="lg"
+    >
       <form onSubmit={handleSubmit(submit)}>
-        <ModalBody className="space-y-2">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Name
-            </label>
-            <input
+        {/* Form Content */}
+        <div className="p-6 max-h-[60vh] overflow-y-auto">
+          <div className="space-y-4">
+            <CustomInput
+              key="name"
+              label="Name"
               type="text"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
               placeholder="e.g. Clubhouse Rent"
               {...register("name", {
                 required: "Name is required",
                 minLength: { value: 2, message: "Min 2 characters" },
                 maxLength: { value: 120, message: "Max 120 characters" },
               })}
+              error={errors.name}
+              value={watch("name")}
             />
-            {errors.name && (
-              <p className="mt-1 text-xs text-red-600">{errors.name.message}</p>
-            )}
-          </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Description
-            </label>
-            <input
-              type="text"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-              placeholder="Optional notes"
-              {...register("description", {
-                maxLength: { value: 500, message: "Max 500 characters" },
-              })}
-            />
-            {errors.description && (
-              <p className="mt-1 text-xs text-red-600">
-                {errors.description.message}
-              </p>
-            )}
-          </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Description
+              </label>
+              <textarea
+                rows={3}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors duration-200"
+                placeholder="Optional notes"
+                {...register("description", {
+                  maxLength: { value: 500, message: "Max 500 characters" },
+                })}
+              />
+              {errors.description && (
+                <p className="text-red-500 text-xs mt-1">
+                  {errors.description.message}
+                </p>
+              )}
+            </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Amount (INR)
-            </label>
-            <input
+            <CustomInput
+              key="amount"
+              label="Amount (INR)"
               type="number"
-              step="0.01"
               inputMode="decimal"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
               placeholder="0.00"
               {...register("amount", {
                 required: "Amount is required",
@@ -107,40 +131,47 @@ export function AddIncomeModal({ isOpen, onClose }: IncomeModalProps) {
                 max: { value: 9999999999.99, message: "Too large" },
                 validate: (v) => isFinite(Number(v)) || "Invalid number",
               })}
+              error={errors.amount}
+              value={watch("amount")}
             />
-            {errors.amount && (
-              <p className="mt-1 text-xs text-red-600">
-                {errors.amount.message}
-              </p>
-            )}
-          </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Date
-            </label>
-            <input
+            <CustomInput
+              key="date"
+              label="Date"
               type="date"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
               {...register("date", {
                 required: "Date is required",
               })}
+              error={errors.date}
+              value={watch("date")}
             />
-            {errors.date && (
-              <p className="mt-1 text-xs text-red-600">{errors.date.message}</p>
-            )}
           </div>
-        </ModalBody>
+        </div>
 
-        <ModalFooter className="flex items-center justify-end gap-2">
+        {/* Action Buttons */}
+        <div className="flex justify-end items-center gap-2 p-6 border-t bg-gray-50">
+          <button
+            type="button"
+            onClick={handleModalClose}
+            className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+          >
+            Cancel
+          </button>
           <button
             type="submit"
             disabled={isSubmitting || !isDirty}
-            className="rounded bg-blue-600 px-4 py-2 text-white disabled:opacity-60"
+            className="inline-flex items-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isSubmitting ? "Saving..." : "Save Income"}
+            {isSubmitting ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                Saving...
+              </>
+            ) : (
+              "Add Income"
+            )}
           </button>
-        </ModalFooter>
+        </div>
       </form>
     </Modal>
   );

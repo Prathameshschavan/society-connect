@@ -12,13 +12,6 @@ import {
   Plus,
 } from "lucide-react";
 
-import { GenericSelect, type OptionValue } from "./ui/GenericSelect";
-import GenericTable, { type TableAction } from "./ui/GenericTable";
-import { AddExpenseModal } from "./Modals/AddExpenseModal";
-import { ViewExpenseModal } from "./Modals/ViewExpenseModal";
-import { EditExpenseModal } from "./Modals/EditExpenseModal";
-import ConfirmationAlert from "./Modals/ConfirmationAlert";
-
 import usePaginationService from "../hooks/serviceHooks/usePaginationService";
 import useExpenseService, {
   type ExpenseSortByOptions,
@@ -29,8 +22,19 @@ import { useReportStore, type Expense } from "../libs/stores/useReportStore";
 import { currMonth, currYear, shortMonth } from "../utility/dateTimeServices";
 import { columns } from "../config/tableConfig/expense";
 import { useProfileStore } from "../libs/stores/useProfileStore";
-import Layout from "./Layout/Layout";
+import Layout from "../components/Layout/Layout";
 import { siteSetting } from "../config/siteSetting";
+import type { TableAction } from "../components/ui/GenericTable";
+import {
+  GenericSelect,
+  type OptionValue,
+} from "../components/ui/GenericSelect";
+import GenericTable from "../components/ui/GenericTable";
+import { AddExpenseModal } from "../components/Modals/AddExpenseModal";
+import { ViewExpenseModal } from "../components/Modals/ViewExpenseModal";
+import { EditExpenseModal } from "../components/Modals/EditExpenseModal";
+import ConfirmationAlert from "../components/Modals/ConfirmationAlert";
+import useExpenseApiService from "../hooks/apiHooks/useExpenseApiService";
 
 // Custom hook for debounced search
 const useDebounce = (value: string | number | undefined, delay: number) => {
@@ -115,6 +119,7 @@ const Expenses = () => {
   // Stores & Services
   const { expenses } = useReportStore();
   const { profile } = useProfileStore();
+  const { handleGetAllExpenses } = useExpenseApiService();
   const {
     setCurrentPage,
     pagination,
@@ -124,29 +129,27 @@ const Expenses = () => {
     pageSize,
     setPagination,
   } = usePaginationService();
-  const { fetchExpenses, deleteExpense } = useExpenseService();
+  const { deleteExpense } = useExpenseService();
 
   // Load data function
   const loadData = async () => {
     setLoading(true);
     try {
-      const result = await fetchExpenses({
+      const result = await handleGetAllExpenses({
         page: currentPage,
-        pageSize,
-        searchQuery: debouncedSearchQuery as string,
+        limit: pageSize,
+        order: sortState.sortOrder,
         sortBy: sortState.sortBy as ExpenseSortByOptions,
-        sortOrder: sortState.sortOrder,
-        filters: {
-          month: filters.month,
-          year: filters.year,
-          minAmount: debouncedMinAmount as number,
-          maxAmount: debouncedMaxAmount as number,
-        },
-        orgId: profile?.organization?.id as string,
+        organization_id: profile?.organization?.id as string,
+        month: Number(filters.month),
+        year: Number(filters.year),
+        ...(debouncedSearchQuery
+          ? { search: debouncedSearchQuery as string }
+          : {}),
       });
 
       if (result) {
-        setPagination(result.pagination);
+        setPagination(result.meta);
       }
     } catch (error) {
       console.error("Error loading data:", error);
@@ -416,6 +419,7 @@ const Expenses = () => {
       <AddExpenseModal
         isOpen={isAddExpenseModalOpen}
         onClose={() => setIsAddExpenseModalOpen(false)}
+        callback={() => loadData()}
       />
       <ViewExpenseModal
         isOpen={isOpenViewExpenseModal}
@@ -426,6 +430,10 @@ const Expenses = () => {
         isOpen={isOpenUpdateExpenseModal}
         onClose={() => setIsOpenUpdateExpenseModal(false)}
         expense={selectedExpense}
+        callback={() => {
+          loadData();
+          setIsOpenUpdateExpenseModal(false);
+        }}
       />
       <ConfirmationAlert
         isOpen={isOpenDeleteExpenseModal}

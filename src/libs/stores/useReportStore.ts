@@ -3,6 +3,16 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { IncomeRow } from "../../hooks/serviceHooks/useIncomeService";
 
+export type IncomeFormValues = {
+  name: string;
+  description: string | null;
+  amount: number;
+  date: string;
+  month: string;
+  year: string;
+  organization_id: string;
+};
+
 export type ExpenseFormValues = {
   name: string;
   description: string | null;
@@ -13,7 +23,12 @@ export type ExpenseFormValues = {
   month: string;
   year: string;
   organization_id: string;
-  status: "paid" | "unpaid" | "overdue";
+  status: "paid" | "pending";
+  files: {
+    type: string;
+    name: string;
+    url: string;
+  }[];
 };
 
 export type Expense = ExpenseFormValues & {

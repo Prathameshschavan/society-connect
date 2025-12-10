@@ -12,13 +12,6 @@ import {
   Plus,
 } from "lucide-react";
 
-import { GenericSelect, type OptionValue } from "./ui/GenericSelect";
-import GenericTable, { type TableAction } from "./ui/GenericTable";
-import { AddIncomeModal } from "./Modals/AddIncomeModal";
-import ViewIncomeModal from "./Modals/ViewIncomeModal";
-import { UpdateIncomeModal } from "./Modals/UpdateIncomeModal";
-import ConfirmationAlert from "./Modals/ConfirmationAlert";
-
 import usePaginationService from "../hooks/serviceHooks/usePaginationService";
 import useIncomeService, {
   type IncomeRow,
@@ -30,8 +23,19 @@ import { useReportStore } from "../libs/stores/useReportStore";
 import { currMonth, currYear, shortMonth } from "../utility/dateTimeServices";
 import { columns } from "../config/tableConfig/income";
 import { useProfileStore } from "../libs/stores/useProfileStore";
-import Layout from "./Layout/Layout";
 import { siteSetting } from "../config/siteSetting";
+import type { TableAction } from "../components/ui/GenericTable";
+import {
+  GenericSelect,
+  type OptionValue,
+} from "../components/ui/GenericSelect";
+import GenericTable from "../components/ui/GenericTable";
+import { AddIncomeModal } from "../components/Modals/AddIncomeModal";
+import ViewIncomeModal from "../components/Modals/ViewIncomeModal";
+import { UpdateIncomeModal } from "../components/Modals/UpdateIncomeModal";
+import ConfirmationAlert from "../components/Modals/ConfirmationAlert";
+import Layout from "../components/Layout/Layout";
+import useIncomeApiService from "../hooks/apiHooks/useIncomeApiService";
 
 // Custom hook for debounced search [web:149]
 const useDebounce = (value: string | number | undefined, delay: number) => {
@@ -123,29 +127,28 @@ const Income = () => {
     pageSize,
     setPagination,
   } = usePaginationService();
-  const { fetchIncomes, deleteIncome } = useIncomeService();
+  const { deleteIncome } = useIncomeService();
+  const { handleGetAllIncome } = useIncomeApiService();
 
   // Load data function
   const loadData = async () => {
     setLoading(true);
     try {
-      const result = await fetchIncomes({
+      const result = await handleGetAllIncome({
         page: currentPage,
-        pageSize,
-        searchQuery: debouncedSearchQuery as string,
+        limit: pageSize,
+        ...(debouncedSearchQuery
+          ? { search: debouncedSearchQuery as string }
+          : {}),
         sortBy: sortState.sortBy as IncomeSortByOptions,
-        sortOrder: sortState.sortOrder,
-        filters: {
-          month: filters.month,
-          year: filters.year,
-          minAmount: debouncedMinAmount as number, // Use debounced value [web:149]
-          maxAmount: debouncedMaxAmount as number, // Use debounced value [web:149]
-        },
-        orgId: profile?.organization?.id as string,
+        order: sortState.sortOrder,
+        organization_id: profile?.organization?.id as string,
+        month: Number(filters.month),
+        year: Number(filters.year),
       });
 
       if (result) {
-        setPagination(result.pagination as never);
+        setPagination(result.meta as never);
       }
     } catch (error) {
       console.error("Error loading data:", error);
@@ -417,6 +420,7 @@ const Income = () => {
       <AddIncomeModal
         isOpen={isAddIncomeModalOpen}
         onClose={() => setIsAddIncomeModalOpen(false)}
+        callback={() => loadData()}
       />
       <ViewIncomeModal
         income={selectedIncome as IncomeRow}
@@ -427,6 +431,7 @@ const Income = () => {
         income={selectedIncome as IncomeRow}
         isOpen={isOpenUpdateIncomeModal}
         onClose={() => setIsOpenUpdateIncomeModal(false)}
+        callback={() => loadData()}
       />
       <ConfirmationAlert
         isOpen={isOpenDeleteIncomeModal}

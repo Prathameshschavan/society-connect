@@ -1,5 +1,5 @@
 import toast from "react-hot-toast";
-import type { IncomeFormValues } from "../../components/Modals/AddIncomeModal";
+import type { IncomeFormValues } from "../../libs/stores/useReportStore";
 import { supabase } from "../../libs/supabase/supabaseClient";
 import { useReportStore } from "../../libs/stores/useReportStore";
 import { getMonthAndYearFromDate } from "../../utility/dateTimeServices";

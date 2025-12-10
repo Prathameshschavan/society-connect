@@ -212,7 +212,7 @@ const SocietyConfigurationPage: React.FC = () => {
         <div className="min-h-screen bg-gray-50 flex mt-[150px] justify-center">
           <Loader />
         </div>
-      ) : true || !organization ? (
+      ) : !organization ? (
         <div className="min-h-screen bg-gray-50 flex mt-[150px] justify-center">
           <div className="text-center">
             <AlertCircle className="w-12 h-12 text-gray-400 mx-auto mb-4" />

@@ -1,20 +1,18 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Plus, Edit, Eye, Trash2 } from "lucide-react";
-import TopNav from "./TopNav";
 import { useEffect, useState } from "react";
-import OnboardSocietyModal from "./Modals/OnboardSocietyModal";
 import { useOrganizationStore } from "../libs/stores/useOrganizationStore";
-import GenericTable, {
-  type TableAction,
-  type TableColumn,
-} from "./ui/GenericTable";
-import ConfirmationAlert from "./Modals/ConfirmationAlert";
-import UpdateSocietyModal from "./Modals/UpdateSocietyModal";
-import ViewSocietyDetailsModal from "./Modals/ViewSocietyDetailsModal";
 import usePaginationService from "../hooks/serviceHooks/usePaginationService";
 import type { IOrganization } from "../types/organization.types";
 import useOrganizationApiService from "../hooks/apiHooks/useOrganizationApiService";
 import { deleteOrganization } from "../apis/organization.apis";
+import type { TableAction, TableColumn } from "../components/ui/GenericTable";
+import TopNav from "../components/TopNav";
+import GenericTable from "../components/ui/GenericTable";
+import OnboardSocietyModal from "../components/Modals/OnboardSocietyModal";
+import UpdateSocietyModal from "../components/Modals/UpdateSocietyModal";
+import ViewSocietyDetailsModal from "../components/Modals/ViewSocietyDetailsModal";
+import ConfirmationAlert from "../components/Modals/ConfirmationAlert";
 
 const SuperAdminDashboard = () => {
   const [isOnboardModalOpen, setIsOnboardModalOpen] = useState(false);

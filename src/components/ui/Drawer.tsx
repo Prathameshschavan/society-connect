@@ -1,15 +1,8 @@
 import { useEffect, useRef } from "react";
 import { NavLink } from "react-router-dom";
-import {
-  Home,
-  Settings,
-  BadgeIndianRupee,
-  ArrowDownWideNarrow,
-  LayoutDashboard,
-  Users,
-} from "lucide-react";
 import { useProfileStore } from "../../libs/stores/useProfileStore";
 import { siteSetting } from "../../config/siteSetting";
+import { getMenus } from "../../config/menus";
 
 type DrawerProps = {
   open: boolean;
@@ -27,23 +20,6 @@ export default function Drawer({ open, onClose, title = "Menu" }: DrawerProps) {
   const firstFocusRef = useRef<HTMLButtonElement>(null);
   const lastFocusRef = useRef<HTMLButtonElement>(null);
 
-  const adminLinks = [
-    { to: "/admin", label: "Dashboard", icon: LayoutDashboard, end: true },
-    { to: "/income", label: "Income", icon: BadgeIndianRupee },
-    { to: "/expenses", label: "Expenses", icon: ArrowDownWideNarrow },
-    { to: "/units", label: "Units", icon: Home },
-    { to: "/residents", label: "Residents", icon: Users },
-    // { to: "/reports", label: "Reports", icon: FileChartColumn },
-    ...(profile?.role === "admin"
-      ? [
-          {
-            to: `/configure-settings/${profile?.organization?.id ?? ""}`,
-            label: "Settings",
-            icon: Settings,
-          },
-        ]
-      : []),
-  ];
   // Focus trap and ESC close
   useEffect(() => {
     if (open) {
@@ -79,7 +55,7 @@ export default function Drawer({ open, onClose, title = "Menu" }: DrawerProps) {
   return (
     <div
       aria-hidden={!open}
-      className={`fixed inset-0 z-50 md:hidden ${
+      className={`fixed inset-0 z-50 lg:hidden ${
         open ? "" : "pointer-events-none"
       }`}
     >
@@ -111,7 +87,7 @@ export default function Drawer({ open, onClose, title = "Menu" }: DrawerProps) {
         </div>
 
         <nav className="p-2">
-          {adminLinks.map(({ to, label, icon: Icon, end }) => (
+          {getMenus(profile).map(({ to, label, icon: Icon, end }) => (
             <NavLink
               key={label}
               to={to}

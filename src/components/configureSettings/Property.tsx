@@ -21,6 +21,7 @@ const Property: React.FC<{
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <CustomInput
             type="number"
+            disabled
             label="Total Number of Units"
             {...register("total_units", {
               required: "Total units is required",

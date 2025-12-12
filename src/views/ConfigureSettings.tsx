@@ -100,22 +100,29 @@ const SocietyConfigurationPage: React.FC = () => {
     { id: "maintenance", label: "Maintenance", icon: IndianRupee },
   ];
 
+  const onError = (errors: any) => {
+    console.log("Form Errors:", errors);
+    toast.error(
+      "Please check the form for errors. Some required fields are missing or invalid."
+    );
+  };
+
   const renderTabContent = () => {
-    switch (activeTab) {
-      case "basic":
-        return <Basic errors={errors} register={register} watch={watch} />;
-
-      case "location":
-        return <Location errors={errors} register={register} watch={watch} />;
-
-      case "contact":
-        return <Contact errors={errors} register={register} watch={watch} />;
-
-      case "property":
-        return <Property errors={errors} register={register} watch={watch} />;
-
-      case "maintenance":
-        return (
+    return (
+      <>
+        <div className={activeTab === "basic" ? "block" : "hidden"}>
+          <Basic errors={errors} register={register} watch={watch} />
+        </div>
+        <div className={activeTab === "location" ? "block" : "hidden"}>
+          <Location errors={errors} register={register} watch={watch} />
+        </div>
+        <div className={activeTab === "contact" ? "block" : "hidden"}>
+          <Contact errors={errors} register={register} watch={watch} />
+        </div>
+        <div className={activeTab === "property" ? "block" : "hidden"}>
+          <Property errors={errors} register={register} watch={watch} />
+        </div>
+        <div className={activeTab === "maintenance" ? "block" : "hidden"}>
           <Maintenance
             setValue={setValue}
             watch={watch}
@@ -124,11 +131,9 @@ const SocietyConfigurationPage: React.FC = () => {
             trigger={trigger}
             errors={errors}
           />
-        );
-
-      default:
-        return null;
-    }
+        </div>
+      </>
+    );
   };
 
   useEffect(() => {
@@ -233,7 +238,10 @@ const SocietyConfigurationPage: React.FC = () => {
         </div>
       ) : (
         <div className="mx-auto">
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          <form
+            onSubmit={handleSubmit(onSubmit, onError)}
+            className="space-y-6"
+          >
             {/* Tab Navigation - Mobile First */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
               <div className="overflow-x-auto scrollbar-hide">

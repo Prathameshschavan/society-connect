@@ -46,7 +46,7 @@ const CustomInput = forwardRef<HTMLInputElement, CustomInputProps>(
     `;
 
     const baseLabelClasses = `
-      block text-sm font-medium mb-2
+      block text-xs font-medium mb-1
       ${error ? 'text-gray-700' : 'text-gray-700'}
     `;
 

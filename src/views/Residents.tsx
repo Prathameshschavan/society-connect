@@ -287,7 +287,7 @@ const Residents = () => {
             className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 bg-[#22C36E] text-white rounded-lg font-medium hover:bg-[#1ea05f] transition-all duration-200 shadow-sm hover:shadow-md active:scale-[0.98]"
           >
             <Plus className="w-5 h-5" />
-            <span>Add Resident</span>
+            <span className="whitespace-nowrap">Add Resident</span>
           </button>
           <button
             onClick={() => setVisibleFilters(!visibleFilters)}

@@ -13,8 +13,8 @@ import toast from "react-hot-toast";
 import type { IProfile, TRole } from "../../types/user.types";
 import ActionModalHeader from "../ActionModalHeader";
 import CustomInput from "../ui/CustomInput";
-import CustomSelect from "../ui/CustomSelect";
 import useProfileApiService from "../../hooks/apiHooks/useProfileApiService";
+import { GenericSelect } from "../ui/GenericSelect";
 
 export interface UpdateResidentFormData {
   // Personal Info
@@ -171,10 +171,17 @@ const UpdateResidentModal: React.FC<UpdateResidentModalProps> = ({
     onClose();
   };
 
+  const onError = (errors: any) => {
+    console.log("Form Errors:", errors);
+    toast.error(
+      "Please check the form for errors. Some required fields are missing or invalid."
+    );
+  };
+
   const renderStepContent = () => {
-    switch (currentStep) {
-      case 1:
-        return (
+    return (
+      <>
+        <div className={currentStep === 1 ? "block" : "hidden"}>
           <div className="space-y-4">
             <ActionModalHeader
               Icon={User}
@@ -215,16 +222,20 @@ const UpdateResidentModal: React.FC<UpdateResidentModalProps> = ({
               maxLength={10}
             />
 
-            <CustomSelect
-              key="role"
+            <GenericSelect
+              id="role"
+              key={"role"}
               label="Role"
-              {...register("role", { required: "Role is required" })}
-              error={errors.role}
-            >
-              <option value="resident">Resident</option>
-              <option value="admin">Admin</option>
-              <option value="committee_member">Committee Member</option>
-            </CustomSelect>
+              onChange={(e) => {
+                setValue("role", e);
+              }}
+              options={[
+                { value: "resident", label: "Resident" },
+                { value: "admin", label: "Admin" },
+                { value: "committee_member", label: "Committee Member" },
+              ]}
+              value={watch("role")}
+            />
 
             <div>
               <label className="flex items-center space-x-3 cursor-pointer w-fit">
@@ -239,35 +250,32 @@ const UpdateResidentModal: React.FC<UpdateResidentModalProps> = ({
               </label>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <CustomInput
-                key="emergencyContactName"
-                label="Emergency Contact Name"
-                type="text"
-                {...register("emergencyContactName")}
-                error={errors.emergencyContactName}
-                value={watch("emergencyContactName")}
-              />
-              <CustomInput
-                key="emergencyContact"
-                label="Emergency Contact"
-                type="tel"
-                {...register("emergencyContact", {
-                  pattern: {
-                    value: /^\d{10}$/,
-                    message: "Phone must be exactly 10 digits",
-                  },
-                })}
-                error={errors.emergencyContact}
-                value={watch("emergencyContact")}
-                maxLength={10}
-              />
-            </div>
+            <CustomInput
+              key="emergencyContactName"
+              label="Emergency Contact Name"
+              type="text"
+              {...register("emergencyContactName")}
+              error={errors.emergencyContactName}
+              value={watch("emergencyContactName")}
+            />
+            <CustomInput
+              key="emergencyContact"
+              label="Emergency Contact"
+              type="tel"
+              {...register("emergencyContact", {
+                pattern: {
+                  value: /^\d{10}$/,
+                  message: "Phone must be exactly 10 digits",
+                },
+              })}
+              error={errors.emergencyContact}
+              value={watch("emergencyContact")}
+              maxLength={10}
+            />
           </div>
-        );
+        </div>
 
-      case 2:
-        return (
+        <div className={currentStep === 2 ? "block" : "hidden"}>
           <div className="space-y-4">
             <ActionModalHeader
               Icon={Users}
@@ -308,10 +316,9 @@ const UpdateResidentModal: React.FC<UpdateResidentModalProps> = ({
               value={watch("childrenCount")}
             />
           </div>
-        );
+        </div>
 
-      case 3:
-        return (
+        <div className={currentStep === 3 ? "block" : "hidden"}>
           <div className="space-y-4">
             <ActionModalHeader
               Icon={CreditCard}
@@ -351,11 +358,9 @@ const UpdateResidentModal: React.FC<UpdateResidentModalProps> = ({
               value={watch("fourWheelerCount")}
             />
           </div>
-        );
-
-      default:
-        return null;
-    }
+        </div>
+      </>
+    );
   };
 
   if (!isOpen || !resident) return null;
@@ -367,7 +372,7 @@ const UpdateResidentModal: React.FC<UpdateResidentModalProps> = ({
       onClose={handleModalClose}
       size="lg"
     >
-      <form onSubmit={handleSubmit(onFormSubmit)}>
+      <form onSubmit={handleSubmit(onFormSubmit, onError)}>
         <div className="p-6 max-h-[60vh] overflow-y-auto">
           {renderStepContent()}
         </div>
@@ -380,8 +385,8 @@ const UpdateResidentModal: React.FC<UpdateResidentModalProps> = ({
             disabled={currentStep === 1}
             className="inline-flex items-center gap-2 px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <ArrowLeft className="w-4 h-4" />
-            Previous
+            <ArrowLeft className="md:w-4 md:h-4 w-6 h-6" />
+            <span className="hidden md:inline">Previous</span>
           </button>
 
           {currentStep < 3 ? (
@@ -394,12 +399,12 @@ const UpdateResidentModal: React.FC<UpdateResidentModalProps> = ({
                 {isSubmitting ? (
                   <>
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                    Updating...
+                    <span className="hidden md:inline">Updating...</span>
                   </>
                 ) : (
                   <>
-                    <CheckCircle className="w-4 h-4" />
-                    Complete Update
+                    <CheckCircle className="md:w-4 md:h-4 w-6 h-6" />
+                    <span className="hidden md:inline">Complete Update</span>
                   </>
                 )}
               </button>
@@ -408,8 +413,8 @@ const UpdateResidentModal: React.FC<UpdateResidentModalProps> = ({
                 onClick={nextStep}
                 className="inline-flex items-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
               >
-                Next Step
-                <ArrowRight className="w-4 h-4" />
+                <span className="hidden md:inline">Next Step</span>
+                <ArrowRight className="md:w-4 md:h-4 w-6 h-6" />
               </button>
             </div>
           ) : (
@@ -421,12 +426,12 @@ const UpdateResidentModal: React.FC<UpdateResidentModalProps> = ({
               {isSubmitting ? (
                 <>
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                  Updating...
+                  <span className="hidden md:inline">Updating...</span>
                 </>
               ) : (
                 <>
                   <CheckCircle className="w-4 h-4" />
-                  Complete Update
+                  <span className="hidden md:inline">Complete Update</span>
                 </>
               )}
             </button>

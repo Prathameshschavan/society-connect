@@ -7,4 +7,5 @@ export const siteSetting = {
   gradientBg:
     "bg-[linear-gradient(to_bottom_right,_#0154AC_10%,_#0365BA_20%,_#0487D7_40%,_#22C36E_75%,_#22C36E_85%,_#22C36E_100%)]",
   mainColor: "#0154AC",
+  contactUsNumber: "+919860204367",
 };

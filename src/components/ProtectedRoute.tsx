@@ -43,7 +43,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     ) {
       return <Navigate to="/" replace />;
     } else if (profile?.role === "resident") {
-      return <Navigate to="/owner" replace />;
+      return <Navigate to="/" replace />;
     }
     return <Navigate to={redirectTo} replace />;
   }

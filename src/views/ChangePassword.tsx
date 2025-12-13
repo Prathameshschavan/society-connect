@@ -16,7 +16,8 @@ type TChangePassword = {
 
 const ChangePassword: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
-  const [isLogoutConfirmationOpen, setIsLogoutConfirmationOpen] = useState(false);
+  const [isLogoutConfirmationOpen, setIsLogoutConfirmationOpen] =
+    useState(false);
   const { updatePassword } = useAuthService();
   const { reset: resetProfile } = useProfileStore();
   const navigate = useNavigate();
@@ -62,9 +63,7 @@ const ChangePassword: React.FC = () => {
             <div className="inline-flex items-center justify-center w-16 h-16 bg-indigo-600 rounded-full mb-2">
               <Building className="w-8 h-8 text-white" />
             </div>
-            <h1 className="text-xl font-bold text-gray-900">
-              MaintainEase
-            </h1>
+            <h1 className="text-xl font-bold text-gray-900">MaintainEase</h1>
             <p className="text-gray-600 mt-1">
               Manage your society maintenance effortlessly
             </p>
@@ -79,7 +78,8 @@ const ChangePassword: React.FC = () => {
                   Password Change Required
                 </h3>
                 <p className="text-xs text-yellow-700">
-                  For security reasons, you must change your password before accessing the application.
+                  For security reasons, you must change your password before
+                  accessing the application.
                 </p>
               </div>
             </div>

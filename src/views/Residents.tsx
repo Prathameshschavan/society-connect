@@ -1,5 +1,9 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { addResident } from "../apis/resident.apis";
+import { residentsData } from "../constants/residentsData";
+import toast from "react-hot-toast";
+import { Upload } from "lucide-react";
 
 import { useEffect, useState, useCallback } from "react";
 import {
@@ -50,7 +54,6 @@ const useDebounce = (value: string, delay: number) => {
 // Sort options
 const sortOptions = [
   { label: "Name", value: "full_name" },
-  { label: "Unit Number", value: "unit_number" },
   { label: "Phone", value: "phone" },
   { label: "Created Date", value: "created_at" },
 ];
@@ -109,6 +112,60 @@ const Residents = () => {
 
   // Loading states
   const [loading, setLoading] = useState(false);
+  const [isBulkUploading, setIsBulkUploading] = useState(false);
+
+  const handleBulkUpload = async () => {
+    if (!residentsData || residentsData.length === 0) {
+      toast.error("No resident data found to import");
+      return;
+    }
+
+    if (
+      !window.confirm(
+        `Are you sure you want to import ${residentsData.length} residents?`
+      )
+    ) {
+      return;
+    }
+
+    setIsBulkUploading(true);
+    let successCount = 0;
+    let failureCount = 0;
+    const toastId = toast.loading("Starting import...");
+
+    try {
+      for (let i = 0; i < residentsData.length; i++) {
+        const resident = residentsData[i];
+        try {
+          toast.loading(
+            `Importing ${i + 1}/${residentsData.length}: ${resident.full_name}`,
+            {
+              id: toastId,
+            }
+          );
+          await addResident(resident);
+          successCount++;
+        } catch (error) {
+          console.error(`Failed to import ${resident.full_name}:`, error);
+          failureCount++;
+        }
+      }
+
+      toast.success(
+        `Import completed! Success: ${successCount}, Failed: ${failureCount}`,
+        {
+          id: toastId,
+          duration: 5000,
+        }
+      );
+      await loadData();
+    } catch (error) {
+      console.error("Bulk upload error:", error);
+      toast.error("Bulk upload failed", { id: toastId });
+    } finally {
+      setIsBulkUploading(false);
+    }
+  };
 
   /**
    * Load data with all filters, search, and sorting applied
@@ -282,6 +339,21 @@ const Residents = () => {
       {/* Actions Bar */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4 mb-6">
         <div className="flex items-center gap-3 w-full sm:w-auto">
+          <button
+            onClick={handleBulkUpload}
+            disabled={isBulkUploading}
+            // className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 bg-[#0154AC] text-white rounded-lg font-medium hover:bg-[#01449c] transition-all duration-200 shadow-sm hover:shadow-md active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+            className="hidden"
+          >
+            {isBulkUploading ? (
+              <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent" />
+            ) : (
+              <Upload className="w-5 h-5" />
+            )}
+            <span className="whitespace-nowrap">
+              {isBulkUploading ? "Importing..." : "Bulk Import"}
+            </span>
+          </button>
           <button
             onClick={() => setIsAddModalOpen(true)}
             className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 bg-[#22C36E] text-white rounded-lg font-medium hover:bg-[#1ea05f] transition-all duration-200 shadow-sm hover:shadow-md active:scale-[0.98]"

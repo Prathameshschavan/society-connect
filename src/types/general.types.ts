@@ -13,4 +13,5 @@ export type GETMethodParams = {
   is_tenant?: boolean;
   status?: string;
   date?: string;
+  resident_id?: string;
 };

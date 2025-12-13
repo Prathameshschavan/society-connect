@@ -1,12 +1,9 @@
 import toast from "react-hot-toast";
-import type {
-  FetchMaintenanceBillsParams,
-  FetchMaintenanceBillsResponse,
-} from "./useAdminService";
 import { supabase } from "../../libs/supabase/supabaseClient";
 import { useProfileStore } from "../../libs/stores/useProfileStore";
 import { useResidentStore } from "../../libs/stores/useResidentStore";
 import type { PaginationInfo } from "../../components/ui/GenericTable";
+import type { FetchMaintenanceBillsParams, FetchMaintenanceBillsResponse } from "../../types/maintenance.types";
 
 const useResidentService = () => {
   const { profile } = useProfileStore();

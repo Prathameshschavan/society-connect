@@ -34,13 +34,15 @@ const useAuthService = () => {
 
       // Update must_change_password flag in profiles table
       const { error: profileUpdateError } = await supabase
-        .from('profiles')
+        .from("profiles")
         .update({ must_change_password: false })
-        .eq('id', profile?.id);
+        .eq("id", profile?.id);
 
       if (profileUpdateError) {
         console.error("Profile update error:", profileUpdateError);
-        toast.error("Password updated but profile update failed. Please contact support.");
+        toast.error(
+          "Password updated but profile update failed. Please contact support."
+        );
         return;
       }
 
@@ -53,13 +55,19 @@ const useAuthService = () => {
       }
 
       toast.success("Password changed successfully!");
-      navigate("/");
+
+      if (profile?.role === "resident") {
+        navigate("/owner");
+      } else if (profile?.role === "super_admin") {
+        navigate("/super-admin");
+      } else {
+        navigate("/");
+      }
     } catch (error: unknown) {
       console.error("Unexpected error:", error);
       toast.error("An unexpected error occurred. Please try again.");
     }
   };
-
 
   return {
     updatePassword,

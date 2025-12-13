@@ -1,9 +1,8 @@
 // stores/useMaintenanceStore.ts
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { BillBreakdown } from "../../hooks/serviceHooks/useAdminService";
 import type { ExtraItem } from "./useOrganizationStore";
-import type { TBillStatus } from "../../types/maintenance.types";
+import type { BillBreakdown, TBillStatus } from "../../types/maintenance.types";
 
 export interface MaintenanceBill {
   id: string;
@@ -33,7 +32,7 @@ export interface MaintenanceBill {
 
 interface MaintenanceState {
   // State
-  maintenanceBills: MaintenanceBill[];
+  maintenanceBills: { bills: MaintenanceBill[]; is_bill_generated: boolean };
   billsCount: number;
   totalRevenue: number;
   pendingAmount: number;
@@ -41,21 +40,19 @@ interface MaintenanceState {
   overdueAmount: number;
 
   // Actions
-  setMaintenanceBills: (bills: MaintenanceBill[]) => void;
+  setMaintenanceBills: ({
+    bills,
+    is_bill_generated,
+  }: {
+    bills: MaintenanceBill[];
+    is_bill_generated: boolean;
+  }) => void;
   setBillsCount: (count: number) => void;
   setTotalRevenue: (amount: number) => void;
   setPendingAmount: (amount: number) => void;
   setPaidAmount: (amount: number) => void;
   setOverdueAmount: (amount: number) => void;
-  updateBillStatus: (
-    billId: string,
-    status: "pending" | "paid" | "overdue"
-  ) => void;
   addMaintenanceBill: (bill: MaintenanceBill) => void;
-  updateMaintenanceBill: (
-    billId: string,
-    updates: Partial<MaintenanceBill>
-  ) => void;
   reset: () => void;
 }
 
@@ -63,7 +60,7 @@ export const useMaintenanceStore = create<MaintenanceState>()(
   persist(
     (set) => ({
       // Initial state
-      maintenanceBills: [],
+      maintenanceBills: { bills: [], is_bill_generated: false },
       billsCount: 0,
       totalRevenue: 0,
       pendingAmount: 0,
@@ -71,36 +68,28 @@ export const useMaintenanceStore = create<MaintenanceState>()(
       overdueAmount: 0,
 
       // Actions
-      setMaintenanceBills: (bills) => set({ maintenanceBills: bills }),
+      setMaintenanceBills: (data) =>
+        set({
+          maintenanceBills: {
+            bills: data.bills,
+            is_bill_generated: data.is_bill_generated,
+          },
+        }),
       setBillsCount: (billsCount) => set({ billsCount }),
       setTotalRevenue: (totalRevenue) => set({ totalRevenue }),
       setPendingAmount: (pendingAmount) => set({ pendingAmount }),
       setPaidAmount: (paidAmount) => set({ paidAmount }),
       setOverdueAmount: (overdueAmount) => set({ overdueAmount }),
 
-      updateBillStatus: (billId, status) =>
-        set((state) => ({
-          maintenanceBills: state.maintenanceBills.map((bill) =>
-            bill.id === billId ? { ...bill, status } : bill
-          ),
-        })),
-
       addMaintenanceBill: (bill) =>
         set((state) => ({
-          maintenanceBills: [bill, ...state.maintenanceBills],
+          maintenanceBills: {bills:[bill, ...state.maintenanceBills.bills], is_bill_generated: state.maintenanceBills.is_bill_generated},
           billsCount: state.billsCount + 1,
-        })),
-
-      updateMaintenanceBill: (billId, updates) =>
-        set((state) => ({
-          maintenanceBills: state.maintenanceBills.map((bill) =>
-            bill.id === billId ? { ...bill, ...updates } : bill
-          ),
         })),
 
       reset: () =>
         set({
-          maintenanceBills: [],
+          maintenanceBills: { bills: [], is_bill_generated: false },
           billsCount: 0,
           totalRevenue: 0,
           pendingAmount: 0,

@@ -79,7 +79,7 @@ const OnboardResidentModal: React.FC<OnboardResidentModalProps> = ({
   // Define fields for each step for validation
   const stepFields = {
     1: ["fullName", "phone", "email"],
-    2: [ "adultsCount", "childrenCount"],
+    2: ["adultsCount", "childrenCount"],
     3: [], // Vehicle step doesn't have required fields
   } as const;
 
@@ -154,7 +154,7 @@ const OnboardResidentModal: React.FC<OnboardResidentModalProps> = ({
   //   { roomNo: "001", name: "Vinit Bharti", number: "8983153894" },
   //   { roomNo: "002", name: "Pratibha Bhatkar", number: "8433631562" },
   //   { roomNo: "003", name: "Shailesh Devale", number: "9773960445" },
-  //   { roomNo: "004", name: "Bhushan Dalvi", number: null },
+  //   { roomNo: "004", name: "Bhushan Dalvi", number: "8767634666" },
   //   { roomNo: "005", name: "Mahendra Gavnang", number: "9619395317" },
   //   { roomNo: "006", name: "Suhas Shetkar", number: "9404915304" },
   //   { roomNo: "008", name: "Eknath Patil", number: "8820263031" },
@@ -189,7 +189,7 @@ const OnboardResidentModal: React.FC<OnboardResidentModalProps> = ({
   //   { roomNo: "308", name: "Sharad Patil", number: "9764600777" },
   //   { roomNo: "401", name: "Bhumi Monde", number: "9004715662" },
   //   { roomNo: "402", name: "Rakesh More", number: "8692884588" },
-  //   { roomNo: "403", name: "Vrushal Pichurle", number: null },
+  //   { roomNo: "403", name: "Vrushal Pichurle", number: "7756834490" },
   //   { roomNo: "404", name: "Jaymanjay Singh", number: "9920436406" },
   //   { roomNo: "405", name: "Akshay Kadvadkar", number: "9768597275" },
   //   { roomNo: "406", name: "Yam Bahadur Rai", number: "9920859707" },
@@ -440,8 +440,8 @@ const OnboardResidentModal: React.FC<OnboardResidentModalProps> = ({
             disabled={currentStep === 1}
             className="inline-flex items-center gap-2 px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <ArrowLeft className="w-4 h-4" />
-            Previous
+            <ArrowLeft className="w-6 h-6 md:w-4 md:h-4" />
+            <span className="hidden md:inline">Previous</span>
           </button>
 
           {currentStep < 3 ? (
@@ -450,8 +450,8 @@ const OnboardResidentModal: React.FC<OnboardResidentModalProps> = ({
               onClick={nextStep}
               className="inline-flex items-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
             >
-              Next Step
-              <ArrowRight className="w-4 h-4" />
+              <span className="hidden md:inline">Next Step</span>
+              <ArrowRight className="w-6 h-6 md:w-4 md:h-4" />
             </button>
           ) : (
             <button
@@ -462,12 +462,12 @@ const OnboardResidentModal: React.FC<OnboardResidentModalProps> = ({
               {isSubmitting ? (
                 <>
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                  Creating...
+                  <span className="hidden md:inline">Creating...</span>
                 </>
               ) : (
                 <>
-                  <CheckCircle className="w-4 h-4" />
-                  Complete Onboarding
+                  <CheckCircle className="w-6 h-6 md:w-4 md:h-4" />
+                  <span className="hidden md:inline">Complete Onboarding</span>
                 </>
               )}
             </button>

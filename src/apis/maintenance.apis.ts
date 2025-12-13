@@ -1,6 +1,6 @@
 import api from "../libs/axios";
 import type { GETMethodParams } from "../types/general.types";
-import type { TBillStatus } from "../types/maintenance.types";
+import type { BillBreakdown, TBillStatus } from "../types/maintenance.types";
 
 export const getMaintenanceBill = async (id: string) => {
   return await api.get(`maintenance-bill/${id}`);
@@ -15,6 +15,7 @@ export const getAllMaintenanceBills = async ({
   sortBy,
   bill_month,
   bill_year,
+  resident_id,
 }: GETMethodParams) => {
   const params = new URLSearchParams();
 
@@ -26,6 +27,7 @@ export const getAllMaintenanceBills = async ({
   if (sortBy) params.append("sortBy", sortBy);
   if (bill_month) params.append("bill_month", String(bill_month));
   if (bill_year) params.append("bill_year", String(bill_year));
+  if (resident_id) params.append("resident_id", String(resident_id));
 
   const queryString = params.toString();
 
@@ -36,8 +38,16 @@ export const getAllMaintenanceBills = async ({
   return await api.get(url);
 };
 
-export const updateMaintenanceBill = async (id: string, status: TBillStatus) => {
-  return await api.put(`maintenance-bill/${id}`, { status });
+export const updateMaintenanceBill = async ({
+  id,
+  status,
+  breakdown,
+}: {
+  id: string;
+  status: TBillStatus;
+  breakdown: BillBreakdown;
+}) => {
+  return await api.put(`maintenance-bill/${id}`, { status, breakdown });
 };
 
 export interface ICreateMaintenanceBillParams {

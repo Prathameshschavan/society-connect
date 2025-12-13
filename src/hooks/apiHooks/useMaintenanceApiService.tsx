@@ -10,7 +10,7 @@ import {
   updateMaintenanceBill,
   type ICreateMaintenanceBillParams,
 } from "../../apis/maintenance.apis";
-import type { TBillStatus } from "../../types/maintenance.types";
+import type { BillBreakdown, TBillStatus } from "../../types/maintenance.types";
 
 const useMaintenanceApiService = () => {
   const { setMaintenanceBills } = useMaintenanceStore();
@@ -37,6 +37,7 @@ const useMaintenanceApiService = () => {
     sortBy,
     bill_month,
     bill_year,
+    resident_id,
   }: GETMethodParams) => {
     try {
       const response = await getAllMaintenanceBills({
@@ -48,6 +49,7 @@ const useMaintenanceApiService = () => {
         sortBy,
         bill_month,
         bill_year,
+        resident_id,
       });
       console.log(response);
       setMaintenanceBills(response?.data?.data);
@@ -60,12 +62,14 @@ const useMaintenanceApiService = () => {
   const handleUpdateMaintenanceBill = async ({
     id,
     status,
+    breakdown,
   }: {
     id: string;
     status: TBillStatus;
+    breakdown: BillBreakdown;
   }) => {
     try {
-      const response = await updateMaintenanceBill(id, status);
+      const response = await updateMaintenanceBill({ id, status, breakdown });
       return response?.data?.data;
     } catch (error: any) {
       console.error("Profile error:", error);

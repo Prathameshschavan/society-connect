@@ -1,6 +1,7 @@
 import React, { forwardRef, useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 import type { FieldError } from 'react-hook-form';
+import { currFullDateForInput } from '../../utility/dateTimeServices';
 
 interface CustomInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label: string;
@@ -23,6 +24,7 @@ const CustomInput = forwardRef<HTMLInputElement, CustomInputProps>(
       inputClassName = '',
       errorClassName = '',
       type = 'text',
+      max,
       className,
       ...props
     },
@@ -63,6 +65,7 @@ const CustomInput = forwardRef<HTMLInputElement, CustomInputProps>(
         <div className="relative">
           <input
             ref={ref}
+            max={max ? max : type === 'date' ? currFullDateForInput : undefined}
             type={inputType}
             className={`${baseInputClasses} ${inputClassName} ${className || ''}`}
             {...props}

@@ -18,8 +18,10 @@ import Income from "./views/Income.tsx";
 import Expenses from "./views/Expenses.tsx";
 import SuperAdminDashboard from "./views/SuperAdminDashboard.tsx";
 import Dashboard from "./views/Dashboard.tsx";
+import { useProfileStore } from "./libs/stores/useProfileStore.ts";
 
 function App() {
+  const { profile } = useProfileStore()
   return (
     <Routes>
       <Route
@@ -57,8 +59,8 @@ function App() {
       <Route
         path="/"
         element={
-          <ProtectedRoute allowedRoles={["admin", "committee_member"]}>
-            <Dashboard />
+          <ProtectedRoute allowedRoles={["admin", "committee_member", "resident"]}>
+            {profile?.role === "resident" ? <RoomOwnerDashboard /> : <Dashboard />}
           </ProtectedRoute>
         }
       ></Route>

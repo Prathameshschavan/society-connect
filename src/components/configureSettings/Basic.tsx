@@ -44,7 +44,9 @@ const Basic: React.FC<{
           <CustomInput
             type="date"
             label="Established Date"
-            {...register("established_date")}
+            {...register("established_date", {
+              required: "Established date is required",
+            })}
             error={errors.established_date}
             value={watch("established_date")}
           />

@@ -14,6 +14,7 @@ import useCommonService from "../../hooks/serviceHooks/useCommonService";
 import { type ExtraItem } from "../../libs/stores/useOrganizationStore";
 import { useMemo } from "react";
 import BillPdfDownload from "../recieptTemplates.tsx/BasicReceiptTemplate";
+import StatusBadge from "../ui/StatusBadge";
 
 interface ViewMaintenanceModalProps {
   isOpen: boolean;
@@ -29,13 +30,13 @@ const ViewMaintenanceDetailsModal: React.FC<ViewMaintenanceModalProps> = ({
   residentInfo = true,
 }) => {
   console.log("Selected Bill:", bill);
-  const { getStatusIcon, longMonth } = useCommonService();
+  const { longMonth } = useCommonService();
 
   const extrasList = useMemo(() => {
-    const bills = bill?.breakdown?.dues?.map((due) => due?.extras);
+    // const bills = bill?.breakdown?.dues?.map((due) => due?.extras);
     return bill
       ? [
-          ...(bills || []),
+          // ...(bills || []),
           ...(bill?.breakdown?.extras?.length ? [bill?.breakdown?.extras] : []),
         ]
       : [];
@@ -43,22 +44,6 @@ const ViewMaintenanceDetailsModal: React.FC<ViewMaintenanceModalProps> = ({
 
   if (!isOpen || !bill) return null;
 
-  const getMaintenanceStatusColor = (status: string) => {
-    switch (status?.toLowerCase()) {
-      case "paid":
-        return "bg-green-100 text-green-800 border-green-200";
-      case "overdue":
-        return "bg-red-100 text-red-800 border-red-200";
-      case "pending":
-        return "bg-yellow-100 text-yellow-800 border-yellow-200";
-      case "partial":
-        return "bg-orange-100 text-orange-800 border-orange-200";
-      default:
-        return "bg-gray-100 text-gray-800 border-gray-200";
-    }
-  };
-
-  console.log(bill);
 
   return (
     <Modal
@@ -130,14 +115,8 @@ const ViewMaintenanceDetailsModal: React.FC<ViewMaintenanceModalProps> = ({
               </div>
               <div>
                 <p className="text-xs text-gray-500">Status</p>
-                <span
-                  className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${getMaintenanceStatusColor(
-                    bill.status as string
-                  )}`}
-                >
-                  {getStatusIcon(bill.status as string)}
-                  <span className="capitalize">{bill?.status}</span>
-                </span>
+
+                <StatusBadge status={bill.status as string} />
               </div>
             </div>
           </div>
@@ -228,7 +207,7 @@ const ViewMaintenanceDetailsModal: React.FC<ViewMaintenanceModalProps> = ({
                 </h4>
                 <div className="space-y-2">
                   {/* Prior dues */}
-                  {(bill.breakdown?.dues || []).map((due) => (
+                  {(bill.breakdown?.dues || [])?.reverse().map((due) => (
                     <div
                       key={`${due.year}-${due.month}`}
                       className="space-y-2 "
@@ -239,7 +218,7 @@ const ViewMaintenanceDetailsModal: React.FC<ViewMaintenanceModalProps> = ({
                           {due.year})
                         </span>
                         <span className="font-medium text-gray-900">
-                          ₹{due?.amount}
+                          ₹{due?.base_amount}
                         </span>
                       </div>
                       {due.penalty > 0 && (
@@ -257,13 +236,13 @@ const ViewMaintenanceDetailsModal: React.FC<ViewMaintenanceModalProps> = ({
                   ))}
 
                   {/* Current base */}
-                  <div className="flex justify-between items-center p-3 text-sm border-t border-gray-100">
+                  <div className="flex justify-between items-center p-3 text-sm ">
                     <span className="text-gray-600">
                       Maintenance ({longMonth[Number(bill.bill_month) - 1]}{" "}
                       {bill.bill_year})
                     </span>
                     <span className="font-medium text-gray-900">
-                      ₹{bill.breakdown?.base}
+                      ₹{bill.breakdown?.base_amount}
                     </span>
                   </div>
                 </div>

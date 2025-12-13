@@ -143,8 +143,6 @@ const Maintenance = () => {
         organization_id: profile?.organization_id as string,
       });
 
-      console.log(result);
-
       if (result) {
         setPagination(result.meta as any);
       }
@@ -270,20 +268,17 @@ const Maintenance = () => {
     >
       <div className="flex flex-col sm:flex-row items-center justify-between gap-5">
         <div className="flex  items-center justify-between gap-5 w-full sm:w-fit">
-          {profile?.role === "admin" &&
-            filters.billMonth === currMonth &&
-            filters.billYear === currYear &&
-            maintenanceBills?.length === 0 && (
-              <button
-                disabled={generateBillLoading}
-                onClick={handleCreateBill}
-                className={`bg-[#22C36E] w-full sm:w-fit flex items-center whitespace-nowrap justify-center gap-2 text-white px-6 py-2 rounded-lg font-medium transition-colors disabled:opacity-70`}
-                aria-busy={generateBillLoading}
-              >
-                <Plus className="w-5 h-5" />
-                {generateBillLoading ? "Generating..." : "Generate Bill"}
-              </button>
-            )}
+          {profile?.role === "admin" && !maintenanceBills?.is_bill_generated && (
+            <button
+              disabled={generateBillLoading}
+              onClick={handleCreateBill}
+              className={`bg-[#22C36E] w-full sm:w-fit flex items-center whitespace-nowrap justify-center gap-2 text-white px-6 py-2 rounded-lg font-medium transition-colors disabled:opacity-70`}
+              aria-busy={generateBillLoading}
+            >
+              <Plus className="w-5 h-5" />
+              {generateBillLoading ? "Generating..." : "Generate Bill"}
+            </button>
+          )}
           <button
             onClick={() => setVisiblefilters(!visiblefilters)}
             className={`w-full sm:w-fit flex items-center whitespace-nowrap justify-center gap-2 text-[${siteSetting?.mainColor}] border-[0.5px] px-6 py-2 rounded-lg font-medium transition-colors disabled:opacity-70`}
@@ -301,7 +296,7 @@ const Maintenance = () => {
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
           <input
             type="text"
-            placeholder="Search by resident name"
+            placeholder="Search by unit number"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full sm:max-w-[280px]  pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
@@ -419,7 +414,7 @@ const Maintenance = () => {
       <GenericTable
         title="Maintenance Bills"
         columns={columns}
-        data={maintenanceBills}
+        data={maintenanceBills?.bills}
         actions={actions}
         loading={loading}
         emptyMessage={

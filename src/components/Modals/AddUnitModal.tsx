@@ -20,8 +20,7 @@ interface UnitFormData {
     | "2BHK"
     | "3BHK"
     | "4BHK"
-    | "Studio"
-    | "Penthouse"
+    | "shop"
     | "Other";
   profileId: string;
 }
@@ -145,8 +144,7 @@ const AddUnitModal: React.FC<AddUnitModalProps> = ({
               <option value="2BHK">2BHK</option>
               <option value="3BHK">3BHK</option>
               <option value="4BHK">4BHK</option>
-              <option value="Studio">Studio</option>
-              <option value="Penthouse">Penthouse</option>
+              <option value="shop">Shop</option>
               <option value="Other">Other</option>
             </CustomSelect>
 

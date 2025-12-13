@@ -35,7 +35,7 @@ export const ReceiptTemplate: React.FC<{
   // Current month base
   rows.push({
     desc: `Base charge (${monthLabel})`,
-    amount: bill?.breakdown?.base ?? 0,
+    amount: bill?.breakdown?.base_amount ?? 0,
   });
 
   // Previous dues
@@ -43,16 +43,16 @@ export const ReceiptTemplate: React.FC<{
     const label = `Due ${longMonth[Number(d.month)]} ${d.year}`;
     rows.push({
       desc: `${label}${d.penalty ? " + Penalty" : ""}`,
-      amount: d.amount,
+      amount: d.base_amount,
       penalty: d.penalty || 0,
-      subtotal: d.amount + (d.penalty || 0),
+      subtotal: d.base_amount + (d.penalty || 0),
     });
   });
 
   // Totals
-  const baseTotal = bill?.breakdown?.base ?? 0;
+  const baseTotal = bill?.breakdown?.base_amount ?? 0;
   const duesPenaltyTotal = (bill?.breakdown?.dues || []).reduce(
-    (sum, d) => sum + (d.amount || 0) + (d.penalty || 0),
+    (sum, d) => sum + (d.base_amount || 0) + (d.penalty || 0),
     0
   );
   const subTotal = baseTotal + duesPenaltyTotal;

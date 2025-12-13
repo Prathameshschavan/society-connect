@@ -1,7 +1,8 @@
 import type { TableColumn } from "../../components/ui/GenericTable";
 import type { MaintenanceBill } from "../../libs/stores/useMaintenanceStore";
-import { getStatusColor, getStatusIcon } from "../../utility/chipServices";
+
 import { shortMonth } from "../../utility/dateTimeServices";
+import StatusBadge from "../../components/ui/StatusBadge";
 
 export const columns: TableColumn<MaintenanceBill>[] = [
   {
@@ -41,17 +42,6 @@ export const columns: TableColumn<MaintenanceBill>[] = [
   {
     key: "status",
     header: "Status",
-    render: (bill) => (
-      <div>
-        <span
-          className={`capitalize inline-flex text-white! items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(
-            bill.status as string
-          )}`}
-        >
-          {getStatusIcon(bill.status as string)}
-          {bill.status}
-        </span>
-      </div>
-    ),
+    render: (bill) => <StatusBadge status={bill.status as string} />,
   },
 ];

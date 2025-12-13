@@ -16,5 +16,10 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      document.getElementById("dateInput").max = new Date()
+        .toISOString()
+        .split("T")[0];
+    </script>
   </body>
 </html>

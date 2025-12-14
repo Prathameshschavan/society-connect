@@ -69,3 +69,26 @@ export function formatDateforInput(inputDate: string) {
 
   return `${year}-${month}-${day}`;
 }
+
+export function isPassedDueDate(societyDueDate: number | "last", inputDate?: string): boolean {
+  const checkDate = inputDate ? new Date(inputDate) : new Date();
+  checkDate.setHours(0, 0, 0, 0); // Normalize to the start of the day for accurate comparison
+
+  const year = checkDate.getFullYear();
+  const month = checkDate.getMonth(); // 0-indexed month
+
+  let calculatedDueDate: Date;
+
+  if (societyDueDate === "last") {
+    // Get the last day of the current month
+    // Setting day to 0 of the next month gives the last day of the current month
+    calculatedDueDate = new Date(year, month + 1, 0);
+  } else {
+    // societyDueDate is a number representing the day of the month
+    calculatedDueDate = new Date(year, month, societyDueDate);
+  }
+
+  calculatedDueDate.setHours(0, 0, 0, 0); // Normalize due date to start of the day
+
+  return checkDate > calculatedDueDate;
+}

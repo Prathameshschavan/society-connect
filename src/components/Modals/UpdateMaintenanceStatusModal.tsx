@@ -6,7 +6,9 @@ import useMaintenanceApiService from "../../hooks/apiHooks/useMaintenanceApiServ
 import type { DuesLine, TBillStatus } from "../../types/maintenance.types";
 import { Switch } from "../ui/GenericSwitch";
 import StatusBadge from "../ui/StatusBadge";
-import { shortMonth } from "../../utility/dateTimeServices";
+import { isPassedDueDate, shortMonth } from "../../utility/dateTimeServices";
+import { type ExtraItem } from "../../libs/stores/useOrganizationStore";
+import { useProfileStore } from "../../libs/stores/useProfileStore";
 
 interface UpdateMaintenanceModalProps {
   isOpen: boolean;
@@ -20,6 +22,10 @@ interface PayableItem {
   month: string;
   year: string;
   amount: number;
+  baseAmount: number;
+  extrasTotal: number;
+  extras: ExtraItem[];
+  penalty: number;
   status: string;
   isMainBill: boolean;
   originalDue?: DuesLine;
@@ -34,9 +40,7 @@ const UpdateMaintenanceStatusModal: React.FC<UpdateMaintenanceModalProps> = ({
   const { handleUpdateMaintenanceBill } = useMaintenanceApiService();
   const { handleSubmit } = useForm();
   const [loading, setLoading] = useState(false);
-
-  // Status to apply to selected bills
-  const [targetStatus, setTargetStatus] = useState<TBillStatus>("paid");
+  const { profile } = useProfileStore();
 
   // Selected Bill IDs
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -49,18 +53,37 @@ const UpdateMaintenanceStatusModal: React.FC<UpdateMaintenanceModalProps> = ({
       id: (due as any).bill_id || `${due.month}-${due.year}`, // Fallback if bill_id missing
       month: String(due.month).padStart(2, "0"),
       year: String(due.year),
-      amount: due.subtotal,
+      baseAmount: due.base_amount,
+      extrasTotal: (due.extras || []).reduce(
+        (sum, e) => sum + (e.amount || 0),
+        0
+      ),
+      extras: due.extras || [],
+      penalty: due.penalty || 0,
+      amount:
+        due.base_amount +
+        (due.penalty || 0) +
+        (due.extras || []).reduce((sum, e) => sum + (e.amount || 0), 0),
       status: due.status,
       isMainBill: false,
       originalDue: due,
     }));
 
     // Main bill
+    const currentExtras = (bill?.breakdown?.extras || []).reduce(
+      (sum, e) => sum + (e.amount || 0),
+      0
+    );
+
     const current: PayableItem = {
       id: bill.id,
       month: String(bill.bill_month).padStart(2, "0"),
       year: String(bill.bill_year || new Date().getFullYear()),
-      amount: bill.amount,
+      baseAmount: bill.breakdown.base_amount,
+      extrasTotal: currentExtras,
+      extras: bill?.breakdown?.extras || [],
+      penalty: bill.penalty || 0,
+      amount: bill.breakdown.base_amount + (bill.penalty || 0) + currentExtras,
       status: bill.status || "pending",
       isMainBill: true,
     };
@@ -80,7 +103,6 @@ const UpdateMaintenanceStatusModal: React.FC<UpdateMaintenanceModalProps> = ({
         .map((b) => b.id);
 
       setSelectedIds(new Set(paidIds));
-      setTargetStatus("paid");
     }
   }, [isOpen, allBills]);
 
@@ -113,22 +135,29 @@ const UpdateMaintenanceStatusModal: React.FC<UpdateMaintenanceModalProps> = ({
   }, [allBills, selectedIds]);
 
   const onSubmit = async () => {
-    if (!bill || selectedIds.size === 0) return;
+    if (!bill) return;
     setLoading(true);
 
     try {
       // 3. Construct Payload
       const newDues = (bill.breakdown.dues || []).map((due) => {
         const id = (due as any).bill_id;
-        // If this due is selected, update status
         if (id && selectedIds.has(id)) {
-          return { ...due, status: targetStatus };
+          return { ...due, status: "paid" };
         }
-        return due;
+        return { ...due, status: "overdue" };
       });
 
       const isMainSelected = selectedIds.has(bill.id);
-      const newMainStatus = isMainSelected ? targetStatus : bill.status;
+      const newMainStatus = isMainSelected
+        ? "paid"
+        : isPassedDueDate(
+            isNaN(Number(profile?.organization?.due_date))
+              ? "last"
+              : Number(profile?.organization?.due_date)
+          )
+        ? "overdue"
+        : "pending";
 
       // Ensure type safety for status
       const safeMainStatus = (newMainStatus as TBillStatus) || "pending";
@@ -161,8 +190,6 @@ const UpdateMaintenanceStatusModal: React.FC<UpdateMaintenanceModalProps> = ({
       <form onSubmit={handleSubmit(onSubmit)} className="relative">
         <ModalBody>
           <div className="space-y-6">
-            {/* Header / Summary */}
-            {/* Header / Summary */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center bg-gray-50 p-4 rounded-xl border border-gray-200 gap-4">
               <div>
                 <p className="text-gray-500 text-sm">Total Selected Amount</p>
@@ -170,7 +197,6 @@ const UpdateMaintenanceStatusModal: React.FC<UpdateMaintenanceModalProps> = ({
                   ₹{totalAmount.toLocaleString()}
                 </p>
               </div>
-
             </div>
 
             {/* Bill List */}
@@ -196,7 +222,7 @@ const UpdateMaintenanceStatusModal: React.FC<UpdateMaintenanceModalProps> = ({
                     }`}
                   >
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                      <div className="flex items-center gap-4">
+                      <div className="flex items-start gap-4 w-full">
                         <div className="w-12 h-12 bg-gray-100 rounded-lg flex flex-col items-center justify-center text-gray-700 shrink-0">
                           <span className="text-xs font-bold uppercase">
                             {shortMonth[Number(item.month) - 1]}
@@ -204,17 +230,43 @@ const UpdateMaintenanceStatusModal: React.FC<UpdateMaintenanceModalProps> = ({
                           <span className="text-[10px]">{item.year}</span>
                         </div>
                         <div className="w-full">
-                          <div className="flex items-center justify-between gap-4 flex-wrap w-full">
+                          <div className="flex items-center justify-between gap-4 flex-wrap w-full mb-1">
                             <p className="text-gray-900 font-semibold text-lg">
                               {item.isMainBill ? "Current Bill" : "Past Due"}
                             </p>
-                            <StatusBadge status={item.status} />
+                            <StatusBadge status={item.status} size="sm" />
                           </div>
-                          <p className="text-gray-500 text-sm">
-                            Amount:{" "}
-                            <span className="font-medium text-gray-900">
-                              ₹{item.amount.toLocaleString()}
-                            </span>
+
+                          <div className="flex flex-col gap-0.5 text-xs text-gray-500 mb-2">
+                            <div className="flex justify-between">
+                              <span>Base Amount:</span>
+                              <span>₹{item.baseAmount.toLocaleString()}</span>
+                            </div>
+                            {item.penalty > 0 && (
+                              <div className="flex justify-between text-red-600">
+                                <span>Penalty:</span>
+                                <span>+₹{item.penalty.toLocaleString()}</span>
+                              </div>
+                            )}
+                            {item.extrasTotal > 0 && (
+                              <div>
+                                <span>Extras:</span>
+                                {item.extras.map((extra) => (
+                                  <div className="flex justify-between">
+                                    <span>{extra.name}</span>
+                                    <span>
+                                      +₹{extra.amount.toLocaleString()}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                            <div className="border-t border-gray-200 my-1"></div>
+                          </div>
+
+                          <p className="text-gray-900 text-sm flex justify-between font-medium">
+                            <span>Total:</span>
+                            <span>₹{item.amount.toLocaleString()}</span>
                           </p>
                         </div>
                       </div>
@@ -244,15 +296,11 @@ const UpdateMaintenanceStatusModal: React.FC<UpdateMaintenanceModalProps> = ({
             Cancel
           </button>
           <button
-            disabled={loading || selectedIds.size === 0}
+            disabled={loading}
             type="submit"
             className="px-6 py-2 bg-[#22C36E] text-white rounded-lg hover:bg-[#1ea05f] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loading
-              ? "Saving..."
-              : `Update ${selectedIds.size} Bill${
-                  selectedIds.size !== 1 ? "s" : ""
-                }`}
+            {loading ? "Saving..." : `Update`}
           </button>
         </ModalFooter>
       </form>

@@ -35,7 +35,7 @@ export const columns: TableColumn<MaintenanceBill>[] = [
     header: <p>Amount</p>,
     render: (bill) => (
       <div>
-        <div className=" text-gray-900">₹ {bill?.amount}</div>
+        <div className=" text-gray-900">₹ {bill?.breakdown?.base_amount}</div>
       </div>
     ),
   },
